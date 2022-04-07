@@ -1,0 +1,15 @@
+/*
+ * @file
+ * CSS for display of info boxes.
+ */
+
+/* side by side formatting. */
+div.end-big-box { clear: both; }
+div.big-box { width: 810px; margin:0; padding:0;}
+div.inner-box-left {float: left; font-size:x-small;  margin:0; padding:4px 0 0 0;}
+div.x-small-box-left {float: left; font-size:x-small; width:75px; margin:0; padding:4px 0 0 0;}
+div.small-box-left {float: left; font-size:x-small; width: 200px; margin:0; padding:4px 0 0 0;}
+div.medium-box-left {float: left; font-size:x-small; width: 400px; margin:0; padding:4px 0 0 0;}
+div.button-box-left {float: left; font-size:x-small; width: 200px; margin:0; padding:12px 0 0 0;}
+div.submit-box-left {float: left; font-size:x-small; width: 50px; margin:0; padding:27px 0 0 0;}
+div.sort-box-left {float: left; font-size:x-small; width: 110px; margin:0; padding:4px 0 0 0;}

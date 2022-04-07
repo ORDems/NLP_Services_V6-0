@@ -1,0 +1,79 @@
+/*
+ * @file
+ * CSS for the data entry table.
+ */
+
+.voter-table {font-size:small; padding:0; border-color:#d3e7f4; border-width:1px; table-layout: fixed; width:1207px; }
+.no-border {border-collapse: collapse; border-style: hidden; table-layout:fixed;}
+.no-white {margin:0; padding:0; line-height:100%;}
+.form-item {margin-top:0;}
+.td-de {margin-left:2px; margin-bottom:2px; line-height:100%; font-size:small; vertical-align: text-top;}
+.form-type-textfield {margin: 2px 2px;}
+div.voter-name { float: left; font-size:medium; font-weight:bold; }
+div.voter-name { float: left; }
+div.rt {padding:0; margin:0; line-height:100%;}
+section.rt {padding:0; margin:0; line-height:100%;}
+div.response-title-note { font-size:x-small; font-style:italic; color:red; }
+div.response-title { font-weight:bold; }
+div.line-spacer { padding-bottom:4px; }
+.voter-deceased { color:#cfb53b; font-weight: bold; }
+.voter-moved { color:#cfb53b; font-weight: bold; }
+.voter-hostile { color:red; font-weight: bold; }
+.voter-pledge { color:green; font-weight: bold; }
+.voter-county { color:green; font-weight: bold; }
+.voter-postcard { color:orange; font-weight: bold; }
+.voter-attempt { color:orange; font-weight: bold; }
+.voter-no-attempt { color:red; font-weight: bold; }
+.historical-report-title { color:blue; font-weight: bold; }
+.historical-report-list { left: -175px; top: 16px; width: 500px; font-size:x-small; }
+.hint_note { position: relative; }
+.hint_note p { margin: 0; padding: 0; line-height:100%; }
+.hint_note p span { display: none; color: #0033ff; }
+.hint_note p:hover span { display: block; position: absolute;
+    font-weight: normal; color: #000000; text-align: left; padding: 3px;
+    border: 2px solid #0000ff; border-radius:5px;
+    background: rgba(255, 255, 255, 1.0) }
+div.end-big-box { clear: both; }
+div.date-box { width: 1210px; margin:0; padding:0;}
+div.inner-box-left {float: left; font-size:x-small;  margin:0; padding:4px 0 0 0;}
+div.x-small-box-left {float: left; font-size:x-small; width: 50px; margin:0; padding:4px 0 0 0;}
+div.small-box-left {float: left; font-size:x-small; width: 200px; margin:0; padding:4px 0 0 0;}
+div.medium-box-left {float: left; font-size:x-small; width: 400px; margin:0; padding:4px 0 0 0;}
+div.button-box-left {float: left; font-size:x-small; width: 200px; margin:0; padding:12px 0 0 0;}
+div.submit-box-left {float: left; font-size:x-small; width: 50px; margin:0; padding:27px 0 0 0;}
+div.sort-box-left {float: left; font-size:x-small; width: 90px; margin:0; padding:4px 0 0 0;}
+div.medium-box-right {float: right; font-size:x-small; width: 400px; margin:0; padding:4px 0 0 0;}
+
+.name_box { width: 363px; margin:0; padding:5px; font-size:x-small; }
+.file_name { color:blue; font-size:x-small; font-weight:bold; }
+.nav_box { width: 361px; margin:0; padding:5px; border: 1px solid blue; border-radius: 5px; font-size:x-small; }
+.nav_div { width: 360px; background-image: none; padding:0; margin:0; border:1px; }
+.nav_back { width: 90px; float:left; text-align: center; padding: 0; }
+.nav_note { color:red; font-size:x-small; }
+.nav_voter_display { padding:0; margin:10px 5px 0 5px; line-height: 100%; text-align: center; vertical-align: middle; }
+.nav_page { width: 80px; float:left; text-align: center; padding: 0; }
+.nav_next { width: 90px; float:left; }
+
+div.canvass_date { border: 1px solid red; border-radius: 5px;
+    padding-left:5px; padding-right:5px; box-sizing: border-box;
+    width:130px; font-size:x-small;}
+div.voter-counts { margin:15px 0 0 0; padding:10px 5px 10px 5px; border: 1px solid blue;
+    border-radius: 5px; line-height:100%; font-size:x-small; width:130px; }
+.voting-counts-title { font-weight: bold; }
+.voting-counts { color: green; }
+
+div.award-box { width:290px; }
+div.badge-container { position: relative; color: white; float:left; width:140px; }
+img.badge-img { width:80%; margin:0; padding:0; }
+div.note-container { float:left; width: 150px; font-size: small;
+    line-height: 105%; padding-top: 20px; color:maroon; }
+div.single-digit { left: 49px; }
+div.double-digit { left: 44px; }
+div.election-count { position: absolute; bottom: 27px; font-size:x-large; color:maroon; }
+
+.yes { color: green; font-weight: bold;}
+.no { color: brown; font-weight: bold;}
+.not-voted { color: orange; }
+div.star-box { width: 225px; margin:0; padding:0; position:relative; }
+div.star-img { float: left; width: 101px; margin:0; padding:0; }
+div.star-text { float: right; width: 118px; padding:0; margin-left: 105px; position:absolute; top:30%; }

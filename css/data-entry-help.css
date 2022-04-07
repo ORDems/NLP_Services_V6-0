@@ -1,0 +1,18 @@
+/*
+ * @file
+ * CSS for the data entry help page.
+ */
+
+.help-bold { font-weight: bold; }
+.help-indent { margin-left:30px; }
+.help-call { color:red; }
+.help-not-voted { color:red; }
+
+table.call-table { border: 1px solid green; border-collapse: collapse; width:685px; }
+td.name { border: 1px solid green; border-collapse: collapse; width:350px; }
+td.address { border: 1px solid green; border-collapse: collapse; width:200px; }
+td.call-status { border: 1px solid green; border-collapse: collapse; width:30px; }
+
+table.mail-table { border-collapse: collapse; font-size:small; padding:0; border: 1px solid green; width:555px; }
+th.name { border: 1px solid green; border-collapse: collapse; width:350px; }
+th.address { border: 1px solid green; border-collapse: collapse; width:200px; }
