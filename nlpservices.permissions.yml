@@ -1,0 +1,10 @@
+nlp administer:
+  title: 'Administer nlpservices access.'
+  description: 'Allow user to change nlpservices settings.'
+  restrict access: true
+nlp tools access:
+  title: 'Access nlpservices tools.'
+  description: 'Allow coordinators to access nlpservices tools.'
+nlp data entry:
+  title: 'Neighborhood Leader access to report results.'
+  description: 'Allow NLs to access data entry page.'

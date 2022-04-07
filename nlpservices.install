@@ -1,0 +1,555 @@
+<?php
+
+use Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException;
+use Drupal\Component\Plugin\Exception\PluginNotFoundException;
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\node\Entity\Node;
+
+/**
+ * Implements hook_install().
+ * @noinspection PhpUndefinedFieldInspection
+ * @noinspection PhpUnused
+ */
+function nlpservices_install()
+{
+  // Remove any page with the title of Welcome.
+  $query = Drupal::entityQuery('node')
+    ->condition('type', 'page')
+    ->condition('title', 'Welcome');
+  $nids = $query->execute();
+  //nlp_debug_msg('$nids',$nids);
+  try {
+    $node_storage = Drupal::entityTypeManager()->getStorage('node');
+  } catch (InvalidPluginDefinitionException | PluginNotFoundException $e) {
+    return;
+  }
+  $nodes = $node_storage->loadMultiple($nids);
+
+  if(!empty($nodes)) {
+    foreach ($nodes as $node) {
+      //$title = $node->title->value;
+      $nid = $node->nid->value;
+      //nlp_debug_msg('$title',$title);
+      //nlp_debug_msg('$nid',$nid);
+      try {
+        $node_storage = Drupal::entityTypeManager()->getStorage('node');
+      } catch (InvalidPluginDefinitionException | PluginNotFoundException $e) {
+        nlp_debug_msg('error', $e->getMessage());
+      }
+      $node = $node_storage->load($nid);
+      try {
+        $node->delete();
+      } catch (EntityStorageException $e) {
+        nlp_debug_msg('error', $e->getMessage());
+      }
+    }
+  }
+
+  // Create the Welcome page and stick to the front page.
+  $node = Node::create([
+    'type'        => 'page',
+    'title'       => 'Welcome',
+    'promote' => 1,
+    'sticky' => 1,
+    'status' => 1,
+  ]);
+  $node->set('body', array(
+    'value' => '<p><span style="font-size:16px;">Welcome to the login for the Neighborhood Leader Program website.
+&nbsp Up and to the right, click on the <u>Log in</u> link to either login as a Neighborhood Leader to report the 
+results of a canvass or login as a coordinator to assist our Neighborhood Leaders.</span></p>
+<p><em><span style="font-size:16px;">By logging in, you are agreeing to keep the information secure and not to share 
+it with any unauthorized person. </span></em></p>
+<!--break-->',
+    'format' => 'full_html',
+  ));
+
+  try {
+    $node->save();
+  } catch (EntityStorageException $e) {
+    nlp_debug_msg('error', $e->getMessage());
+  }
+}
+
+/**
+ * Implements hook_schema().
+ * @noinspection PhpUnused
+ */
+function nlpservices_schema(): array
+{
+  $schema = array();
+  /*
+  $schema['nlp_activist_codes'] = array(
+    'description' => 'The table for remembering the current activist codes.',
+    'fields' => array(
+      'functionName' => array( 'type' => 'varchar', 'length' => 22,  'not null' => TRUE, ),
+      'name' => array( 'type' => 'varchar', 'length' => 22, 'not null' => TRUE, ),
+      'type' => array( 'type' => 'varchar', 'length' => 22, 'not null' => TRUE, ),
+      'description' => array( 'type' => 'varchar', 'length' => 256, ),
+      'activistCodeId' => array( 'type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, ),
+    ),
+    'primary key' => array( 'functionName', ),
+  );
+  */
+  $schema['nlp_awards'] = array(
+    'description' => 'Participation award status.',
+    'fields' => array(
+      'mcid' => array( 'type' => 'int',  'unsigned' => TRUE, 'not null' => TRUE, ),
+      'nickname' => array( 'type' => 'varchar', 'length' => 32, ),
+      'lastName' => array( 'type' => 'varchar', 'length' => 32, ),
+      'electionCount' => array( 'type' => 'int', 'size'=> 'tiny', 'unsigned' => TRUE, ),
+      'participation' => array( 'type' => 'varchar', 'length' => 1024, ),
+    ),
+    'primary key' => array( 'mcid', ),
+  );
+
+  $schema['nlp_ballot_count'] = array(
+    'description' => 'The table of crosstabs and counts from VoteBuilder.',
+    'fields' => array(
+      'county' => array( 'type' => 'varchar', 'length' => 32, ),
+      'party' => array( 'type' => 'varchar', 'length' => 64, ),
+      'registeredVoters' => array( 'type' => 'int', ),
+      'registeredVoted' => array( 'type' => 'int',  ),
+    ),
+    'unique keys' => array( 'bcIndex' => array( 'county', 'party', ),),
+  );
+  /*
+  $schema['nlp_candidates'] = array(
+    'description' => 'The table to keep track of candidates.',
+    'fields' => array(
+      'qid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'name' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'weight' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, 'default' => 0, ),
+      'scope' => array( 'type' => 'varchar', 'length' => 8, 'not null' => TRUE, ),
+      'county' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'cd' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, ),
+      'hd' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, ),
+      'precincts' => array( 'type' => 'varchar', 'length' => 240, ),
+    ),
+    'primary key' => array( 'qid', ),
+  );
+  */
+  /*
+  $schema['nlp_config'] = array(
+    'description' => 'Canvass response code types available in VoteBuilder.',
+    'fields' => array(
+      'configName' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'configValue' => array( 'type' => 'blob',  ),
+    ),
+    'primary key' => array( 'configName', ),
+  );
+  */
+  /*
+  $schema['nlp_contact_types'] = array(
+    'description' => 'Canvass response code types available in VoteBuilder.',
+    'fields' => array(
+      'name' => array( 'type' => 'varchar', 'length' => 16, 'not null' => TRUE, ),
+      'code' => array( 'type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, ),
+    ),
+    'primary key' => array( 'name', ),
+  );
+  */
+  $schema['nlp_coordinator'] = array(
+    'description' => 'The table to keep track of coordinators.',
+    'fields' => array(
+      'cIndex' => array( 'type' => 'serial', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'county' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'mcid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'firstName' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'lastName' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'email' => array( 'type' => 'varchar', 'length' => 60, 'not null' => TRUE, ),
+      'phone' => array( 'type' => 'varchar', 'length' => 20,  ),
+      'scope' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'hd' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, ),
+      'partial' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE,  ),
+    ),
+    'primary key' => array( 'cIndex', ),
+  );
+
+  $schema['nlp_date_ballot_received'] = array(
+    'description' => 'The date strings used in matchbacks.',
+    'fields' => array(
+      'brIndex' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE,  'not null' => TRUE, ),
+      'brDate' => array( 'mysql_type' => 'date', 'length' => 16, 'not null' => TRUE, ),
+    ),
+    'primary key' => array( 'brIndex', ),
+  );
+
+  $schema['nlp_documents'] = array(
+    'description' => 'Keeps track of the NLP documentation.',
+    'fields' => array(
+      'name' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'weight' => array( 'type' => 'int', 'length' => 32,  'unsigned' => TRUE, 'not null' => TRUE, ),
+      'pdfFileName' => array( 'type' => 'varchar', 'length' => 160,  ),
+      'docFileName' => array( 'type' => 'varchar', 'length' => 160,  ),
+      'description' => array( 'type' => 'varchar', 'length' => 256, ),
+      'title' => array( 'type' => 'varchar', 'length' => 20, ),
+      'blurb' => array( 'type' => 'varchar', 'length' => 256, ),
+    ),
+    'primary key' => array( 'name', ),
+  );
+
+  $schema['nlp_export_jobs'] = array(
+    'description' => 'Status of voter.',
+    'fields' => array(
+      'eventId' => array( 'type' => 'serial', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'county' => array( 'type' => 'varchar', 'length' => 32, ),
+      'listId' => array( 'type' => 'int', 'unsigned' => TRUE, ),
+      'startTime' => array( 'type' => 'int', 'unsigned' => TRUE, ),
+      'endTime' => array( 'type' => 'int', 'unsigned' => TRUE, ),
+    ),
+    'primary key' => array( 'eventId', ),
+  );
+  /*
+  $schema['nlp_hd_def'] = array(
+    'description' => 'Identifies the house districts in each county.',
+    'fields' => array(
+      'county' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'number' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, 'not null' => TRUE, ),
+    ),
+    'unique keys' => array( 'hdIndex' => array( 'county', 'number', ),),
+  );
+  */
+  $schema['nlp_instructions'] = array(
+    'description' => 'Keeps track of the instructions for the counties.',
+    'fields' => array(
+      'county' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'type' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'fileName' => array( 'type' => 'varchar', 'length' => 160,  ),
+      'originalFileName' => array( 'type' => 'varchar', 'length' => 160,  ),
+      'title' => array( 'type' => 'varchar', 'length' => 20, ),
+      'blurb' => array( 'type' => 'varchar', 'length' => 256, ),
+    ),
+    'unique keys' => array( 'oIndex' => array( 'county', 'type', ),),
+  );
+
+  $schema['nlp_legislative_fixes'] = array(
+    'description' => 'repairs for damaged legislative districts.',
+    'fields' => array(
+      'county' => array( 'type' => 'varchar', 'length' => 32,'not null' => TRUE, ),
+      'mcid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'firstName' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'lastName' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'hd' => array( 'type' => 'int', 'size' => 'tiny', ),
+      'precinct' => array( 'type' => 'varchar', 'length' => 32,  ),
+    ),
+    'primary key' => array( 'mcid', ),
+  );
+
+  $schema['nlp_magic_word'] = array(
+    'description' => 'Magic word chosen by NL.',
+    'fields' => array(
+      'mcid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'magicWord' => array( 'type' => 'varchar', 'length' => 128,  ),
+      'magicWordEncrypted' => array( 'type' => 'varchar', 'length' => 256, ),
+    ),
+    'primary key' => array( 'mcid', ),
+  );
+  /*
+  $schema['nlp_magic_words'] = array(
+    'description' => 'List of 6-letter scrabble words.',
+    'fields' => array(
+      'mwKey' => array( 'type' => 'serial', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'magicWord' => array( 'type' => 'varchar', 'length' => 8, ),
+    ),
+    'primary key' => array( 'mwKey', ),
+  );
+  */
+  $schema['nlp_matchback'] = array(
+    'description' => 'Records the date ballots are received.',
+    'fields' => array(
+      'vanid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'date' => array( 'mysql_type' => 'date', 'length' => 32, ),
+    ),
+    'primary key' => array( 'vanid', ),
+  );
+
+  $schema['nlp_nls'] = array(
+    'description' => 'Contact information about an NL.',
+    'fields' => array(
+      'mcid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'lastName' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'firstName' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'nickname' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'county' => array( 'type' => 'varchar', 'length' => 32, ),
+      'hd' => array( 'type' => 'int', 'size' => 'tiny', ),
+      'precinct' => array( 'type' => 'varchar', 'length' => 32, ),
+      'address' => array( 'type' => 'varchar', 'length' => 128, ),
+      'email' => array( 'type' => 'varchar', 'length' => 60, ),
+      'phone' => array( 'type' => 'varchar', 'length' => 32, ),
+      'homePhone' => array( 'type' => 'varchar', 'length' => 32, ),
+      'homePhoneId' => array( 'type' => 'int', ),
+      'cellPhone' => array( 'type' => 'varchar', 'length' => 32, ),
+      'cellPhoneId' => array( 'type' => 'int', ),
+      'active' => array( 'type' => 'char', 'length' => 1, ),
+    ),
+    'primary key' => array( 'mcid', ),
+    'indexes' => array(
+      'county' => array( 'county', ),
+    ),
+  );
+
+  $schema['nlp_nls_group'] = array(
+    'description' => 'County that is using this NL.',
+    'fields' => array(
+      'mcid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'county' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+    ),
+    'unique keys' => array( 'nlIndex' => array( 'county', 'mcid', ),),
+    'indexes' => array(
+      'county' => array( 'county', ),
+      'mcid' => array( 'mcid', ),
+    ),
+  );
+
+  $schema['nlp_nls_status'] = array(
+    'description' => 'Status of this NL.',
+    'fields' => array(
+      'mcid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'county' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'loginDate' => array( 'mysql_type' => 'date', 'length' => 32, ),
+      'contact' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'signedUp' => array( 'type' => 'char', 'length' => 1, ),
+      'turfCut' => array( 'type' => 'char', 'length' => 1, ),
+      'turfDelivered' => array( 'type' => 'char', 'length' => 1, ),
+      'resultsReported' => array( 'type' => 'char', 'length' => 1, ),
+      'awardPending' => array( 'type' => 'char', 'length' => 1, ),
+      'preferredContactMethod' => array( 'type' => 'varchar', 'length' => 16, ),
+      'asked' => array( 'type' => 'varchar', 'length' => 32, ),
+      'notes' => array( 'type' => 'varchar', 'length' => 100, ),
+      'userName' => array( 'type' => 'varchar', 'length' => 32, ),
+    ),
+    'unique keys' => array( 'NS_Index' => array( 'county', 'mcid', ),),
+  );
+
+  $schema['nlp_nls_status_history'] = array(
+    'description' => 'Status of this NL.',
+    'fields' => array(
+      'hIndex' => array( 'type' => 'serial', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'date' => array( 'mysql_type' => 'date', 'length' => 32, ),
+      'mcid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'county' => array( 'type' => 'varchar', 'length' => 32,  'not null' => TRUE, ),
+      'cycle' => array( 'type' => 'varchar', 'length' => 10, ),
+      'status' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'nlFirstName' => array( 'type' => 'varchar', 'length' => 32, ),
+      'nlLastName' => array( 'type' => 'varchar', 'length' => 32, ),
+    ),
+    'indexes' => array(
+      'mcid' => array( 'mcid', ),
+    ),
+    'primary key' => array( 'hIndex', ),
+  );
+
+  $schema['nlp_pct_coordinator'] = array(
+    'description' => 'Maps Pct number to coordinator.',
+    'fields' => array(
+      'cIndex' => array( 'type' => 'serial', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'precinct' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+    ),
+    'indexes' => array(
+      'gType' => array( 'cIndex', 'precinct',),
+      'precinct' => array( 'precinct', ),
+    ),
+  );
+  /*
+  $schema['nlp_response_codes'] = array(
+    'description' => 'Response codes available in VoteBuilder.',
+    'fields' => array(
+      'contactType' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'name' => array( 'type' => 'varchar', 'length' => 32, ),
+      'code' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+    ),
+    'indexes' => array(
+      'response' => array( 'contactType', 'name',),
+    ),
+  );
+  */
+  $schema['nlp_results'] = array(
+    'description' => 'Voter contact reports by NL.',
+    'fields' => array(
+      'reportIndex' => array( 'type' => 'serial', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'cycle' => array( 'type' => 'varchar', 'length' => 10, 'not null' => TRUE, ),
+      'county' => array( 'type' => 'varchar', 'length' => 32, ),
+      'active' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, ),
+      'vanid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, ),
+      'mcid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, ),
+      'contactDate' => array( 'mysql_type' => 'date', 'length' => 16, 'not null' => TRUE, ),
+      'contactType' => array( 'type' => 'varchar', 'length' => 16, ),
+      'type' => array( 'type' => 'varchar', 'length' => 16, ),
+      'value' => array( 'type' => 'varchar', 'length' => 64, ),
+      'text' => array( 'type' => 'varchar', 'length' => 1023, ),
+      'qid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, ),
+      'rid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, ),
+      'cid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'description' => 'Contact type code'),
+      'contactId' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'description' => 'Unique code for a VoteBuilder contact report (for MiniVAN)'),
+    ),
+    'indexes' => array(
+      'vanid' => array( 'vanid', ),
+      'mcid' => array( 'mcid', ),
+      'type' => array( 'type', ),
+      'cycle' => array( 'cycle', ),
+      'county' => array( 'county', ),
+    ),
+    'primary key' => array( 'reportIndex', ),
+  );
+  /*
+  $schema['nlp_survey_questions'] = array(
+    'description' => 'Survey questions available in VoteBuilder.',
+    'fields' => array(
+      'qid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'scope' => array( 'type' => 'char', 'length' => 1, ),
+      'county' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE,),
+      'questionName' => array( 'type' => 'varchar', 'length' => 21, 'not null' => TRUE, ),
+      'mediumName' => array( 'type' => 'varchar', 'length' => 10, 'not null' => TRUE, ),
+      'questionType' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'cycle' => array( 'type' => 'varchar', 'length' => 8,  ),
+      'scriptQuestion' => array( 'type' => 'varchar', 'length' => 256, ),
+    ),
+    'primary key' => array( 'qid', 'county',),
+  );
+  */
+  /*
+  $schema['nlp_survey_responses'] = array(
+    'description' => 'Survey questions available in VoteBuilder.',
+    'fields' => array(
+      'rid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'responseName' => array( 'type' => 'varchar', 'length' => 22, 'not null' => TRUE, ),
+      'mediumName' => array( 'type' => 'varchar', 'length' => 4, 'not null' => TRUE, ),
+      'qid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'questionName' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'county' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE,),
+    ),
+    'primary key' => array( 'rid', 'county', ),
+  );
+  */
+  $schema['nlp_turf'] = array(
+    'description' => 'Turf description.',
+    'fields' => array(
+      'turfIndex' => array( 'type' => 'serial', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'county' => array( 'type' => 'varchar', 'length' => 32, 'not null' => TRUE, ),
+      'cycle' => array( 'type' => 'varchar', 'length' => 10, ),
+      'mcid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE,  ),
+      'nlLastName' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'nlFirstName' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'delivered' => array( 'mysql_type' => 'date', ),
+      'lastAccess' => array( 'mysql_type' => 'date',  ),
+      'turfName' => array( 'type' => 'varchar', 'length' => 160, ),
+      'turfPDF' => array( 'type' => 'varchar', 'length' => 160, ),
+      //'turfMail' => array( 'type' => 'varchar', 'length' => 30, ),
+      //'turfCall' => array( 'type' => 'varchar', 'length' => 30, ),
+      'turfPrecinct' => array( 'type' => 'varchar', 'length' => 32, ),
+      'turfHd' => array( 'type' => 'int', 'size' => 'tiny', ),
+      'commitDate' => array( 'mysql_type' => 'date', ),
+      'electionName' => array( 'type' => 'varchar', 'length' => 120, ),
+    ),
+    'indexes' => array(
+      'county' => array( 'county', ),
+    ),
+    'primary key' => array( 'turfIndex', ),
+  );
+  /*
+  $schema['nlp_van_api'] = array(
+    'description' => 'VoterBuilder authorizations for API.',
+    'fields' => array(
+      'committee' => array( 'type' => 'varchar', 'length' => 64, 'not null' => TRUE, ),
+      'url' => array( 'type' => 'varchar', 'length' => 128,  ),
+      'user' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'apiKey' => array( 'type' => 'varchar', 'length' => 128,  ),
+      'apiKeyRef' => array( 'type' => 'char', 'length' => 8,  ),
+      'userEncrypted' => array( 'type' => 'varchar', 'length' => 128,  ),
+      'apiKeyEncrypted' => array( 'type' => 'varchar', 'length' => 256,  ),
+    ),
+    'primary key' => array( 'committee', ),
+  );
+  */
+  $schema['nlp_voter'] = array(
+    'description' => 'Contact information about a voter.',
+    'fields' => array(
+      'vanid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'lastName' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'firstName' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'nickname' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'age' => array( 'type' => 'char', 'length' => 3,  ),
+      'sex' => array( 'type' => 'char', 'length' => 1,  ),
+      'party' => array( 'type' => 'char', 'length' => 2, ),
+      'homePhone' => array( 'type' => 'varchar', 'length' => 32, ),
+      'homePhoneId' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, ),
+      'cellPhone' => array( 'type' => 'varchar', 'length' => 32, ),
+      'cellPhoneId' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, ),
+      'preferredPhoneType' => array( 'type' => 'char', 'length' => 1, ),
+      'votingHistory' => array( 'type' => 'varchar', 'length' => 64, 'description' => 'Voting history - last 4 general/primary.', ),
+    ),
+    'primary key' => array( 'vanid', ),
+  );
+
+  $schema['nlp_voter_address'] = array(
+    'description' => 'Address record for voter assigned to a turf.',
+    'fields' => array(
+      'vanid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'turfIndex' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE,  ),
+      'moved' => array( 'type' => 'char', 'length' => 1, ),
+      'streetNo' => array( 'type' => 'varchar', 'length' => 16, ),
+      'streetPrefix' => array( 'type' => 'varchar', 'length' => 4, ),
+      'streetName' => array( 'type' => 'varchar', 'length' => 32, ),
+      'streetType' => array( 'type' => 'varchar', 'length' => 10, ),
+      'streetSuffix' => array( 'type' => 'varchar', 'length' => 4, ),
+      'aptType' => array( 'type' => 'varchar', 'length' => 10, ),
+      'aptNo' => array( 'type' => 'varchar', 'length' => 10, ),
+      'city' => array( 'type' => 'varchar', 'length' => 20, ),
+      'county' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'cd' => array( 'type' => 'int', 'size' => 'tiny', ),
+      'hd' => array( 'type' => 'int', 'size' => 'tiny', ),
+      'precinct' => array( 'type' => 'varchar', 'length' => 32, ),
+      'mAddress' => array( 'type' => 'varchar', 'length' => 60, ),
+      'mCity' => array( 'type' => 'varchar', 'length' => 20, ),
+      'mState' => array( 'type' => 'char', 'length' => 3, ),
+      'mZip' => array( 'type' => 'char', 'length' => 12, ),
+    ),
+    'unique keys' => array( 'VA_Index' => array( 'vanid', 'turfIndex', ),),
+    'indexes' => array(
+      'turfIndex' => array( 'turfIndex', ),
+      'vanid' => array( 'vanid', ),
+    ),
+  );
+
+  $schema['nlp_voter_turf'] = array(
+    'description' => 'Voter assigned to a turf.',
+    'fields' => array(
+      'vtIndex' => array( 'type' => 'serial', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'vanid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'cycle' => array( 'type' => 'varchar', 'length' => 10,  ),
+      'county' => array( 'type' => 'varchar', 'length' => 32,  ),
+      'mcid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE,  ),
+      'turfIndex' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE,  ),
+      'attemptedContact' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE,  ),
+      'pledgedToVote' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE,  ),
+      'countyQuestion' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE,  ),
+      'reportIndex' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE,  ),
+      'noteId' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE,  ),
+      'note' => array( 'type' => 'varchar', 'length' => 255, ),
+    ),
+    'primary key' => array( 'vtIndex', ),
+    'indexes' => array(
+      'vanid' => array( 'vanid', ),
+      'mcid' => array( 'mcid', ),
+      'turfIndex' => array( 'turfIndex', ),
+    ),
+  );
+
+  $schema['nlp_voter_status'] = array(
+    'description' => 'Status of voter.',
+    'fields' => array(
+      'vanid' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, ),
+      'cycle' => array( 'type' => 'varchar', 'length' => 10, ),
+      'deceased' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, ),
+      'hostile' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, ),
+      'voter' => array( 'type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, ),
+      'voted' => array( 'mysql_type' => 'date', ),
+    ),
+    'primary key' => array( 'vanid', ),
+    'indexes' => array(
+      'cycle' => array( 'cycle', ),
+    ),
+  );
+
+  return $schema;
+}

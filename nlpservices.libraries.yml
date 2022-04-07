@@ -1,0 +1,20 @@
+nlp-grid:
+  version: "1.0.0"
+  css:
+    layout:
+      css/nlpservices-grid.css: {}
+info-boxes:
+  version: "1.0.0"
+  css:
+    layout:
+      css/info-boxes.css: {}
+data-entry-table:
+  version: "1.0.0"
+  css:
+    layout:
+      css/data-entry-table.css: {}
+data-entry-help:
+  version: "1.0.0"
+  css:
+    layout:
+      css/data-entry-help.css: {}
