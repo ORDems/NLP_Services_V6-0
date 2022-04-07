@@ -1,0 +1,12 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - nlpservices
+id: nlp_coordinator
+label: 'NLP Coordinator'
+weight: 4
+is_admin: false
+permissions:
+  - 'nlp tools access'
