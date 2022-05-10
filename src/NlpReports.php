@@ -553,7 +553,11 @@ class NlpReports {
       $query->condition('vanid',$vanid);
       $query->condition('cycle',$cycle);
       $query->condition('type',self::CONTACT);
-      $query->condition('value',self::POSTCARD);
+      //$query->condition('value',self::POSTCARD);
+      $orGroup = $query->orConditionGroup()
+        ->condition('value',self::POSTCARD)
+        ->condition('value','Mailed');
+      $query->condition($orGroup);
       $contactCount = $query->countQuery()->execute()->fetchField();
     }
     catch (Exception $e) {
@@ -597,7 +601,11 @@ class NlpReports {
       $query->condition('cycle',$cycle);
       $query->condition('county',$county);
       $query->condition('type',self::CONTACT);
-      $query->condition('value',self::POSTCARD);
+      //$query->condition('value',self::POSTCARD);
+      $orGroup = $query->orConditionGroup()
+        ->condition('value',self::POSTCARD)
+        ->condition('value','Mailed');
+      $query->condition($orGroup);
       $contactedCount = $query->countQuery()->execute()->fetchField();
     }
     catch (Exception $e) {

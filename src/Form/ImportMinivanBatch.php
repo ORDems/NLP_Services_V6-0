@@ -11,70 +11,31 @@
  */
 function recordMinivanReports($reports,$fileType): array
 {
-  //$nlpReportsObj = new NlpReports();
   $nlpReportsObj = Drupal::getContainer()->get('nlpservices.reports');
-
-  //$nlObj = new NlpNls();
   $nlsObj = Drupal::getContainer()->get('nlpservices.nls');
-
-  //$voterObj = new NlpVoters();
   $votersObj = Drupal::getContainer()->get('nlpservices.voters');
-
-
-  //$activistCodesObj = new NlpActivistCodes();
-  //$nlpHostile = $activistCodesObj->getActivistCode('NLPHostile');
   $config = Drupal::getContainer()->get('config.factory');
   $nlpConfig = $config->get('nlpservices.configuration');
   $electionDates = $nlpConfig->get('nlpservices-election-configuration');
   $cycle = $electionDates['nlp_election_cycle'];
-  $nlpHostile = $nlpConfig->get('nlpservices_hostile_ac');
+  $nlpHostile['activistCodeId'] = $nlpConfig->get('nlpservices_hostile_ac');
+  //nlp_debug_msg('$nlpHostile',$nlpHostile);
   $allowedResponseCodes = $nlpConfig->get('nlpservices_canvass_response_codes');
-/*
-  $contactTypeNames = [];
-  foreach ($allowedResponseCodes as $allowedName=>$allowedCode) {
-    $contactTypeNames[$allowedCode['code']] = $allowedName;
-  }
-*/
-  //$contactTypeNames = array_keys($allowedResponseCodes);
   $surveyQuestions = $nlpConfig->get('nlpservices_survey_questions');
-  //nlp_debug_msg('$surveyQuestions',$surveyQuestions);
-
-
-  //$contextObj = new ApiSurveyContext();
-  //$apiSurveyQuestionObj = new ApiSurveyQuestions($contextObj);
   $apiSurveyQuestionObj = Drupal::getContainer()->get('nlpservices.survey_question');
-
   $cid = $apiSurveyQuestionObj::CONTACT_TYPE_WALK;
 
-  //$canvassResponsesObj = new NlpResponseCodes();
-  //$apiResponsesObj = new ApiResponseCodes();
-  //$expectedResultCodes = $apiResponsesObj->getApiExpectedResultCodes();
-  //$allowedResponseCodes = $canvassResponsesObj->getAllowedResultCodes($expectedResultCodes);
-  //$contactTypeNames = $canvassResponsesObj->getContactTypeNames();
-
-  //$surveyResponseObj = new NlpSurveyResponse();
-  //$surveyQuestionObj = new NlpSurveyQuestion($surveyResponseObj);
-  //$surveyQuestionObj = Drupal::getContainer()->get('nlpservices.survey_question_nlp');
-  //$questions = $surveyQuestionObj->getAllSurveyQuestions();
-
-
-
-  //$minivanObj = new NlpMinivan($nlpReportsObj, $voterObj, $nlsObj);
   $minivanObj = Drupal::getContainer()->get('nlpservices.minivan');
 
   $defaultResult['county'] = NULL;
   $defaultResult['firstName'] = NULL;
   $defaultResult['lastName'] = NULL;
   $defaultResult['cycle'] = $cycle;
-  //$nlpVotersObj = new NlpVoters();
-
   $counts = array('recordCnt' => 0,'processedCnt' => 0, 'duplicateCnt' => 0, 'rejectedCnt' => 0);
-
-  //$transaction = db_transaction();
   $mcid = NULL;
   foreach ($reports as $report) {
     $counts['recordCnt']++;
-    nlp_debug_msg('report', $report);
+    //nlp_debug_msg('report', $report);
     $vanid = $report['vanid'];
     $mcids = $votersObj->getNlId($vanid);
     //nlp_debug_msg('$mcids',$mcids);
@@ -124,7 +85,7 @@ function recordMinivanReports($reports,$fileType): array
         $action = $minivanObj->process_note($report, $defaultResult);
         break;
     }
-    nlp_debug_msg('$action',$action);
+    //nlp_debug_msg('$action',$action);
     foreach ($action['counts'] as $countType => $value) {
       $counts[$countType] += $value;
     }
@@ -134,7 +95,7 @@ function recordMinivanReports($reports,$fileType): array
       } else {
         $nlpReportsObj->mergeReport($action['result']);
         $rIndex = $action['result']['reportIndex'];
-        nlp_debug_msg('$rIndex',$rIndex);
+        //nlp_debug_msg('$rIndex',$rIndex);
       }
       // Mark Contact attempt for this voter.
       $turfVoter = array();
@@ -149,7 +110,7 @@ function recordMinivanReports($reports,$fileType): array
         $turfVoter['county'] = $nl['county'];
         foreach ($turfIndexes as $turfIndex) {
           $turfVoter['turfIndex'] = $turfIndex;
-          nlp_debug_msg('$turfVoter',$turfVoter);
+          //nlp_debug_msg('$turfVoter',$turfVoter);
           $votersObj->updateTurfVoter($turfVoter);
         }
         // This NL has reported results.

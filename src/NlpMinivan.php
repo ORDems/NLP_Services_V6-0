@@ -3,17 +3,14 @@
 namespace Drupal\nlpservices;
 
 use Drupal;
-
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-//use Drupal\nlpservices\NlpReports;
-//use Drupal\nlpservices\NlpVoters;
-//use Drupal\nlpservices\NlpNls;
 
 
 class NlpMinivan {
 
   const MINIVAN_MAX_QUEUE = 200;
+  const CANVASSED = 14;
 
   private array $minivanSurveyHdr = array(
     'vanid' => array('name'=>'myv_van_id','err'=>'myv_van_id'),
@@ -30,9 +27,9 @@ class NlpMinivan {
     'dateCanvassed' => array('name'=>'date_canvassed','err'=>'date_canvassed'),
     'dateCreated' => array('name'=>'date_created','err'=>'date_created'),
     'inputTypeId' => array('name'=>'input_type_id','err'=>'input_type_id'),
-    'contactId' => array('name'=>'contacts_contact_id','err'=>'contacts_contact_id'),
     'contactTypeId' => array('name'=>'contact_type_id','err'=>'contact_type_id'),
     'resultId' => array('name'=>'result_id','err'=>'result_id'),
+    'contactId' => array('name'=>'contacts_contact_id','err'=>'contacts_contact_id'),
   );
 
   private array $minivanActivistHdr = array(
@@ -49,6 +46,7 @@ class NlpMinivan {
     'noteId' => array('name'=>'contacts_note_id','err'=>'contacts_note_id'),
     'contactId' => array('name'=>'contacts_contact_id','err'=>'contacts_contact_id'),
   );
+
 
   private NlpReports $nlpReportsObj;
   private NlpVoters $voterObj;
@@ -135,7 +133,7 @@ class NlpMinivan {
     if($this->nlpReportsObj->reportExists($contactId)) {
       $action['processReport'] = FALSE;
       $action['counts']['duplicateCnt'] = 1;
-      nlp_debug_msg('$contactId',$contactId);
+      //nlp_debug_msg('$contactId',$contactId);
       return $action;
     }
     $qid = $report['surveyQuestionId'];
@@ -143,7 +141,7 @@ class NlpMinivan {
     if(empty($questions)) {
       $action['processReport'] = FALSE;
       $action['counts']['rejectedCnt'] = 1;
-      nlp_debug_msg('$questions',$questions);
+      //nlp_debug_msg('$questions',$questions);
       return $action;
     }
     if($questions['state']['surveyQuestionId'] == $qid) {
@@ -198,9 +196,6 @@ class NlpMinivan {
     $vanid = $report['vanid'];
     $rid = $report['resultId'];
     $contactTypeId = $report['contactTypeId'];
-    //$contactTypeName = $contactTypeNames[$contactTypeId];
-    //nlp_debug_msg('$contactTypeNames',$contactTypeNames);
-    //nlp_debug_msg('$allowedResponseCodes',$allowedResponseCodes);
 
     $knownContactTypeName = $knownResponse = '';
     foreach ($allowedResponseCodes as $contactTypeName=>$responseCode) {
@@ -215,16 +210,12 @@ class NlpMinivan {
       }
     }
 
-
-    //if(empty($allowedResponseCodes) OR !in_array($rid,$allowedResponseCodes[$contactTypeName]['responses']) ) {
     if(empty($knownContactTypeName)) {
       $action['processReport'] = FALSE;
       $action['counts']['rejectedCnt'] = 1;
-      nlp_debug_msg('$action',$action);
+      //nlp_debug_msg('$action',$action);
       return $action;
     }
-    //$knownResponses = array_flip($allowedResponseCodes[$contactTypeName]['responses']);
-    //$response = $knownResponses[$rid];
 
     $result['active'] = TRUE;
     $result['contactType'] = 'Walk';
@@ -253,11 +244,6 @@ class NlpMinivan {
         //nlp_debug_msg('$report',$report);
         $existingRIndex = (!empty($report['reportIndex']))?$report['reportIndex']:NULL;  // An entry for the Moved status exists.
         if(!empty($existingRIndex)) {
-          /*
-          $resultInactive['reportIndex'] = $existingRIndex;
-          $resultInactive['active'] = 0;
-          $this->nlpReportsObj->updateReport($resultInactive);
-          */
           $action['processReport'] = FALSE;
           return $action;
         }
@@ -357,10 +343,6 @@ class NlpMinivan {
 
     $rIndex = $this->nlpReportsObj->getAcReportIndex($vanid, $cycle,'NLPHostile');
     if(!empty($rIndex)) {
-      //$resultInactive['cycle'] = $result['cycle'];
-      //$resultInactive['reportIndex'] = $rIndex;
-      //$resultInactive['active'] = 0;
-      //$this->nlpReportsObj->updateReport($resultInactive);
       $action['processReport'] = FALSE;
       $action['counts']['processedCnt'] = 1;
     }
@@ -373,9 +355,10 @@ class NlpMinivan {
     $result['value'] = 1;
     $result['text'] = 'NLPHostile';
     $result['cid'] = $cid;
+    $result['qid'] = NULL;
     $result['contactId'] = $contactId;
-    nlp_debug_msg('result', $result);
-    $this->nlpReportsObj->setNlReport($result);
+    //nlp_debug_msg('result', $result);
+    //$this->nlpReportsObj->setNlReport($result);
 
     // Results reported by this NL.
     $this->nlsObj->resultsReported($mcid,$nl['county']);
@@ -399,7 +382,7 @@ class NlpMinivan {
       $action['counts']['duplicateCnt'] = 1;
       return $action;
     }
-    nlp_debug_msg('report',$report);
+    //nlp_debug_msg('report',$report);
     $vanid = $report['vanid'];
 
     $noteString = $report['noteText'];
@@ -414,7 +397,7 @@ class NlpMinivan {
     // Find all the NLs with turf that includes this voter.  Catches duplicate
     // turfs and voters who move.
     $voterAddresses = $this->voterObj->getVoterAddresses($vanid);
-    nlp_debug_msg('addresses',$voterAddresses);
+    //nlp_debug_msg('addresses',$voterAddresses);
     $nlList = array();
     $mcid = 0;
     foreach ($voterAddresses as $voterAddress) {
@@ -450,7 +433,7 @@ class NlpMinivan {
     }
 
     // Record the new note.
-    nlp_debug_msg('result',$result);
+    //nlp_debug_msg('result',$result);
     $rIndex = $this->nlpReportsObj->setNlReport($result);
 
     foreach ($nlList as $nlTurfs) {
@@ -467,13 +450,9 @@ class NlpMinivan {
   public function header_validate($fileType,$headerRaw): array
   {
     $messenger = Drupal::messenger();
-
-    //$headerRecord = nlp_sanitize_string($headerRaw);
     $headerRecord = trim(strip_tags(htmlentities(stripslashes($headerRaw),ENT_QUOTES)));
     // Extract the column headers.
     $columnHeader = str_getcsv($headerRecord);
-    //$minivanObj = new NlpMinivan();
-    //nlp_debug_msg('nlsObj', $nlsObj);
     $fieldPos['ok'] = FALSE;
 
     switch ($fileType) {

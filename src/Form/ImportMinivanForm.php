@@ -68,20 +68,13 @@ class ImportMinivanForm extends FormBase
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
     //$messenger = Drupal::messenger();
-
     $connection = $this->imapObj->getImapConnection('minivan');
     if (empty($connection)) {
       return;
     }
 
-    //$minivanObj = new NlpMinivan(NULL, NULL, NULL);
-    //$activistCodesObj = new NlpActivistCodes();
-    //$activistCode = $this->activistCodesObj->getActivistCode('NLPHostile');
-
     $nlpConfig = $this->config->get('nlpservices.configuration');
     $nlpHostileCode = $nlpConfig->get('nlpservices_hostile_ac');
-    //$currentNlpVoterCode = $nlpConfig->get('nlpservices_voter_ac');
-
     $emailsToProcess = $this->imapObj->getNewEmailsToProcess($connection, 'minivan');
     //nlp_debug_msg('emailsToProcess', $emailsToProcess);
     foreach ($emailsToProcess as $emailNumber => $emailToProcess) {
@@ -104,29 +97,19 @@ class ImportMinivanForm extends FormBase
             continue;
           }
           if (count($reports) <= 1) {
-            //nlp_debug_msg('delete empty email', '');
-            /*
-            $moveMessage[] = $attachment['emailNumber'];
-            $messenger->addStatus('MiniVAN email with empty attachment moved to Trash.  '
-              . 'Subject: ' . $subject . ' Date: ' . $month . ' ' . $day);
-            */
             continue;
           }
 
           $pos = $headerResult['pos'];
           unset($reports[0]);
-          //$reportBatch = nlp_fetch_cmd_reports($reports,$fileType,$pos);
           $reportBatch = $this->minivanObj->fetch_reports($reports, $fileType, $nlpHostileCode, $pos);
           //nlp_debug_msg('reportBatch', $reportBatch);
           if (empty($reportBatch)) {
-            /*
-            $moveMessage[] = $attachment['emailNumber'];
-            $messenger->addStatus('MiniVAN email with empty attachment moved to Trash.  '
-              . 'Subject: ' . $subject . ' Date: ' . $month . ' ' . $day);
-            */
             continue;
           }
-          foreach ($reportBatch as $reportBlock) {
+          foreach ($reportBatch as $blockNo => $reportBlock) {
+            //nlp_debug_msg('$reportBlock: '.$blockNo, $reportBlock);
+
             $modulePath = drupal_get_path('module', 'nlpservices');
             // Set up the call to start a batch operation.
             $args = array(
@@ -148,7 +131,7 @@ class ImportMinivanForm extends FormBase
               'progress_message' => t('Processed @percentage % of minivan reports file.'),
               'error_message' => t('import_minivan has encountered an error.'),
             );
-            //nlp_debug_msg('batch', $batch);
+            //nlp_debug_msg('batch: '.$blockNo, $batch);
             batch_set($batch);
           }
         }
@@ -157,12 +140,10 @@ class ImportMinivanForm extends FormBase
     if (!empty($moveMessage)) {
       sort($moveMessage);
       $sorted = implode(',', $moveMessage);
-      //nlp_debug_msg('messages', $sorted);
       imap_mail_move($connection, $sorted, '[Gmail]/Trash');
       imap_expunge($connection);
     }
     imap_close($connection);
-    //nlp_set_msg("MiniVAN update complete",'status' );
   }
 
 }
