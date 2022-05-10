@@ -388,6 +388,7 @@ function nlpservices_schema(): array
       'type' => array( 'type', ),
       'cycle' => array( 'cycle', ),
       'county' => array( 'county', ),
+      'contactId' => array( 'contactId', ),
     ),
     'primary key' => array( 'reportIndex', ),
   );
