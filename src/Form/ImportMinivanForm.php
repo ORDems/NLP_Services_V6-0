@@ -2,18 +2,14 @@
 
 namespace Drupal\nlpservices\Form;
 
-use Drupal;
+//use Drupal;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormBase;
 
 use Drupal\Core\Form\FormStateInterface;
-//use Drupal\nlpservices\ApiExportJobs;
-//use Drupal\nlpservices\ApiFolders;
-//use Drupal\nlpservices\ApiSavedLists;
 use Drupal\nlpservices\NlpEncryption;
 use Drupal\nlpservices\NlpImap;
 use Drupal\nlpservices\NlpMinivan;
-//use Drupal\nlpservices\NlpActivistCodes;
 use Drupal\nlpservices\NlpNls;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -45,7 +41,6 @@ class ImportMinivanForm extends FormBase
       $container->get('nlpservices.nls'),
       $container->get('nlpservices.encryption'),
       $container->get('nlpservices.minivan'),
-
     );
   }
 
@@ -53,7 +48,6 @@ class ImportMinivanForm extends FormBase
   {
     return 'nlpservices_import_minivan_form';
   }
-
 
   public function buildForm(array $form, FormStateInterface $form_state): array
   {
@@ -63,7 +57,6 @@ class ImportMinivanForm extends FormBase
     );
     return $form;
   }
-
 
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
@@ -107,10 +100,12 @@ class ImportMinivanForm extends FormBase
           if (empty($reportBatch)) {
             continue;
           }
-          foreach ($reportBatch as $blockNo => $reportBlock) {
+          foreach ($reportBatch as $reportBlock) {
             //nlp_debug_msg('$reportBlock: '.$blockNo, $reportBlock);
 
             $modulePath = drupal_get_path('module', 'nlpservices');
+
+            //$modulePath = Drupal\Core\Extension\ExtensionPathResolver::getPath('module', 'nlpservices');
             // Set up the call to start a batch operation.
             $args = array(
               //'uri' => $fileUri,

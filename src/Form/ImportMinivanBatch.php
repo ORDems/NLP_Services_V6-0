@@ -153,6 +153,7 @@ function importMinivanBatch($arg,&$context) {
  * @param $results
  * @param $unused
  * @noinspection PhpUnusedParameterInspection
+ * @noinspection PhpUnused
  */
 function importMinivanFinished($success, $results, $unused) {
   $messenger = Drupal::messenger();

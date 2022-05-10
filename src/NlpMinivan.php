@@ -10,7 +10,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class NlpMinivan {
 
   const MINIVAN_MAX_QUEUE = 200;
-  const CANVASSED = 14;
 
   private array $minivanSurveyHdr = array(
     'vanid' => array('name'=>'myv_van_id','err'=>'myv_van_id'),
@@ -358,7 +357,7 @@ class NlpMinivan {
     $result['qid'] = NULL;
     $result['contactId'] = $contactId;
     //nlp_debug_msg('result', $result);
-    //$this->nlpReportsObj->setNlReport($result);
+    $this->nlpReportsObj->setNlReport($result);
 
     // Results reported by this NL.
     $this->nlsObj->resultsReported($mcid,$nl['county']);
