@@ -65,9 +65,14 @@ class DeleteTurfForm extends FormBase
     $messenger = Drupal::messenger();
   
     if (empty($form_state->get('reenter'))) {
+      /*
       $factory = Drupal::service('tempstore.private');
       $store = $factory->get('nlpservices.session_data');
       $county = $store->get('County');
+      */
+      $sessionObj = Drupal::getContainer()->get('nlpservices.session_data');
+      $county = $sessionObj->getCounty();
+
       $form_state->set('county',$county);
   
       $config = $this->config('nlpservices.configuration');

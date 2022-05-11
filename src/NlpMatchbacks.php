@@ -47,7 +47,7 @@ class NlpMatchbacks
     $hdrPos = array();
     foreach ($this->matchbackVanHdr as $nlpKey => $vanField) {
       foreach ($fileHdr as $fileCol=>$fileColName) {
-        nlp_debug_msg('$fileColName',strToHex($fileColName));
+        //nlp_debug_msg('$fileColName',strToHex($fileColName));
         $fileColName = preg_replace('/[^A-Za-z0-9\-]/', '', $fileColName);
         //nlp_debug_msg('$fileColName',strToHex($fileColName));
         //nlp_debug_msg('name',strToHex($vanField['name']));

@@ -76,10 +76,13 @@ class SyncActiveNlsForm extends FormBase {
     
     $countyNames = $config->get('nlpservices-county-names');
     $form_state->set('state',$countyNames['State']);
-    
+    /*
     $factory = Drupal::service('tempstore.private');
     $store = $factory->get('nlpservices.session_data');
     $county = $store->get('County');
+*/
+    $sessionObj = Drupal::getContainer()->get('nlpservices.session_data');
+    $county = $sessionObj->getCounty();
     $form_state->set('county',$county);
   
     $form['county-name'] = [
