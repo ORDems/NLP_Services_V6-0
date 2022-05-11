@@ -10,6 +10,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class NlpMinivan {
 
   const MINIVAN_MAX_QUEUE = 200;
+  const CANVASSED = 11;  // Report from VAN that voters was canvassed - redundant.
 
   private array $minivanSurveyHdr = array(
     'vanid' => array('name'=>'myv_van_id','err'=>'myv_van_id'),
@@ -183,7 +184,13 @@ class NlpMinivan {
     $electionDates = $nlpConfig->get('nlpservices-election-configuration');
     $cycle = $electionDates['nlp_election_cycle'];
 
+    if($report['resultId'] == $this::CANVASSED) { // Remove redundant report.
+      $action['processReport'] = FALSE;
+      $action['counts']['duplicateCnt'] = 1;
+      return $action;
+    }
     $contactId = $report['contactId'];
+    //nlp_debug_msg('$contactId',$contactId);
     $reportExists = $this->nlpReportsObj->reportExists($contactId);
     //nlp_debug_msg('$reportExists',$reportExists);
     if($reportExists) {
@@ -243,6 +250,7 @@ class NlpMinivan {
         //nlp_debug_msg('$report',$report);
         $existingRIndex = (!empty($report['reportIndex']))?$report['reportIndex']:NULL;  // An entry for the Moved status exists.
         if(!empty($existingRIndex)) {
+          $action['counts']['processedCnt'] = 1;
           $action['processReport'] = FALSE;
           return $action;
         }

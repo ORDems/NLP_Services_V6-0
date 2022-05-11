@@ -136,12 +136,13 @@ function importMinivanBatch($arg,&$context) {
   $subject = $arg['subject'];
   $month = $arg['month'];
   $day = $arg['day'];
-  $result = recordMinivanReports($arg['records'],$fileType);
+  $counts = recordMinivanReports($arg['records'],$fileType);
+  //nlp_debug_msg('$counts',$counts);
   $context['finished'] = 1;
   $context['results']['subject'] = $subject;
   $context['results']['month'] = $month;
   $context['results']['day'] = $day;
-  $context['results']['counts'] = $result;
+  $context['results']['counts'] = $counts;
 }
 
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -166,7 +167,7 @@ function importMinivanFinished($success, $results, $unused) {
     $day = $results['day'];
     $counts = $results['counts'];
     $messenger->addStatus($counts['recordCnt'].' records processed from email, processed: '.
-      $counts['processedCnt'].', duplicates: '.$counts['duplicateCnt'].
+      $counts['processedCnt'].', duplicates: '.$counts['duplicateCnt'].', rejected: '.$counts['rejectedCnt'].
       ' - subject: '.$subject.'  Date: '.$month.''. $day);
     $messenger->addStatus('The MiniVAN reports successfully updated.');
   }

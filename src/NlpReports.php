@@ -188,7 +188,7 @@ class NlpReports {
     $report = $result->fetchAssoc();
     //nlp_debug_msg('$report',$report);
     if(empty($report)) {return FALSE;}
-    return empty($report['contactId']);
+    return TRUE;
   }
   
   public function displayNlReports($voterReports): array
