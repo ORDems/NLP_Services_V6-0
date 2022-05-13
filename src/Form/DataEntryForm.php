@@ -198,10 +198,14 @@ class DataEntryForm extends FormBase
     $canvassDate = $form_state->get('canvassDate');
     //nlp_debug_msg('$canvassDate',$canvassDate);
     //$cycle = $form_state->get('cycle');
-  
-  
+
     //nlp_debug_msg('$county',$county);
     $sessionData = $form_state->get('sessionData');
+
+    if(empty($sessionData['mcid'])) {  // Refresh session if expired.
+      $sessionData = $this->sessionData->getUserSession();
+      $form_state->set('sessionData',$sessionData);
+    }
     //nlp_debug_msg('$sessionData',$sessionData);
     $defaultVoterContactMethod = $form_state->get('defaultVoterContactMethod');
   
@@ -457,8 +461,8 @@ class DataEntryForm extends FormBase
             //nlp_debug_msg('$value'.' '.$vanid,$value);
             
             if($reportType == 'deceased' OR $reportType == 'moved') {
-              if($defaultValue) {
-                return;  // Deceased can't be undone this way.
+              if(!empty($defaultValue)) {
+                return;  // Deceased and moved can't be undone this way.
               }
             }
   
@@ -468,11 +472,9 @@ class DataEntryForm extends FormBase
               $contactMethod = 'Walk';
               $actions[$vanid]['vanid'] = $vanid;
               $actions[$vanid]['contact_method'] = $contactMethod;
-            } else {
-              $contactMethod = $actions[$vanid]['contact_method'];
             }
-            $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
             $contactMethod = $actions[$vanid]['contact_method'];
+            $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
             $actions[$vanid][$reportType]['name'] = 'Moved';
             $actions[$vanid][$reportType]['value'] = $value;
             if($reportType == 'hostile') {
@@ -494,8 +496,15 @@ class DataEntryForm extends FormBase
           break;
         case 'note':
           if(empty($value)) {break;}
-  
           $vanid = $valueIdParts[1];
+          if(empty($actions[$vanid]['contact_method'])) {
+            $contactMethod = 'Walk';
+            $actions[$vanid]['vanid'] = $vanid;
+            $actions[$vanid]['contact_method'] = $contactMethod;
+            $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
+          }
+          //nlp_debug_msg('$actions',$actions);
+
           // Report a new note or a changed note.
           if(empty($defaultValues[$vanid]['note']) OR $defaultValues[$vanid]['note'] != $value) {
             $actions[$vanid][$reportType]['text'] = $value;
@@ -503,6 +512,8 @@ class DataEntryForm extends FormBase
               $actions[$vanid][$reportType]['reportIndex'] = $defaultValues[$vanid]['reportIndex'];
             }
           }
+          //nlp_debug_msg('$actions',$actions);
+
           $form_state->setValue($valueId,0);
           $form_state->setUserInput([$valueId=>NULL,]);
           break;
@@ -612,7 +623,7 @@ class DataEntryForm extends FormBase
   {
     $messenger = Drupal::messenger();
     $common = $actions[0];
-    $contactType = $common['contactType'];
+    //$contactType = $common['contact_method'];
     //nlp_debug_msg('$actions',$actions);
     foreach ($actions as $vanid=>$action) {
       if(empty($vanid)) {continue;}
@@ -624,7 +635,7 @@ class DataEntryForm extends FormBase
          */
           case 'pledge2vote':
             // Save the survey question response in NLP Services.
-
+            $contactType = $action['contact_method'];
             $turfIndex = $common['turfIndex'];
             $voter = $this->voters->getVoterById($vanid, $turfIndex);
             //nlp_debug_msg('$voter',$voter);
@@ -636,7 +647,7 @@ class DataEntryForm extends FormBase
             }
 
             $rid = $value;
-            $contactType = $action['contact_method'];
+            //$contactType = $action['contact_method'];
             $county = $common['county'];
             $mcid = $common['mcid'];
             //$cid = $this->responseCodesObj->getCid($contactType);
@@ -873,9 +884,9 @@ class DataEntryForm extends FormBase
               $result['type'] = 'Comment';
               $result['value'] = '';
               $result['text'] = $note;
-              $result['noteId'] = $value['noteId'];
+              $result['noteId'] = (empty($value['noteId']))?NULL:$value['noteId'];
               //$result['active'] = TRUE;
-              $result['contactType'] = $action['contactMethod'];
+              $result['contactType'] = $action['contact_method'];
               $result['qid'] = NULL;
               $result['cid'] = NULL;
               $result['rid'] = NULL;
@@ -887,7 +898,7 @@ class DataEntryForm extends FormBase
             }
             //nlp_debug_msg('$result',$result);
   
-            $noteId = $value['noteId'];
+            $noteId = (empty($value['noteId']))?NULL:$value['noteId'];
             $turfIndex = $common['turfIndex'];
             $this->voters->updateTurfNote($turfIndex,$vanid,$note,$responseIndex,$noteId);
             break;

@@ -420,15 +420,17 @@ class NlpReports {
   
   public function mergeReport($canvassResult): bool
   {
+    //nlp_debug_msg('$canvassResult',$canvassResult);
     $reportIndex = $canvassResult['reportIndex'];
     $fields = array();
     $reportFields = array_keys($this->reportFieldType);
-    unset($reportFields[0]);
+    //unset($reportFields[0]);
     foreach ($reportFields as $key) {
       if(isset($canvassResult[$key])) {
         $fields[$key] = $canvassResult[$key];
       }
     }
+    //('$fields',$fields);
     try {
       $this->connection->merge(self::NLP_RESULTS_TBL)
         ->keys(array('reportIndex' => $reportIndex))

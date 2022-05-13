@@ -28,6 +28,7 @@ class NlpAwards
   public function mergeAward($award): bool
   {
     $award['participation'] = json_encode($award['participation']);
+    if(empty($award['mcid'])) {return FALSE;}
     try {
       $this->connection->merge(self::AWARDS_TBL)
         ->keys(array('mcid' => $award['mcid']))

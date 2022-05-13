@@ -279,19 +279,6 @@ class ActiveNlsDisplayForm extends FormBase
     //nlp_debug_msg('$reports',$reports);
     // Flag the voters with whom the NL asked the survey question.  (There
     // could have been more than one.)
-    if($mcid == 102391461) {
-      $unique = [];
-      foreach ($reports as $voterReports) {
-        foreach ($voterReports as $report) {
-          $vanid = $report['vanid'];
-          $unique[$vanid] = $vanid;
-        }
-        //nlp_debug_msg('unique count',count($unique));
-        //nlp_debug_msg('$unique',$unique);
-      }
-      //nlp_debug_msg('report count',count($reports));
-      //nlp_debug_msg('$reports',$reports);
-    }
 
     $voters = array();
     foreach ($reports as $voterReports) {

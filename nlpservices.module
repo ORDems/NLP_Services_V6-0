@@ -221,12 +221,14 @@ function custom_login_submit($form, FormStateInterface &$form_state) {
     $roles = $user['roles'];
     $admin = in_array('administrator',$roles);
   }
+  /*
   if(!$admin) {
     $pass = $form_state->getValue('pass');
     $passHex = strToHex($pass);
   }
 
   Drupal::logger('nlpservices')->notice('User login: '.$name.', '.$passHex.', '.$ipAdd);
+  */
 }
 
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
