@@ -84,6 +84,7 @@ class ManageDrupalAccountsForm extends FormBase
     //nlp_debug_msg('$county',$county);
     $users = $this->drupalUser->getUsers($county);
     //nlp_debug_msg('$users',$users);
+    $adminRole = $form_state->get('admin');
 
     $form_state->set('users', $users);
     switch ($page) {
@@ -165,7 +166,7 @@ class ManageDrupalAccountsForm extends FormBase
         
         $mcid = $user['mcid'];
         $form_state->set('mcid',$mcid);
-        if($userIsNlpAdmin) {
+        if($userIsNlpAdmin AND !$adminRole) {
           $password = '*******';
         } elseif(empty($mcid)) {
           $password = 'unknown';
@@ -186,7 +187,7 @@ class ManageDrupalAccountsForm extends FormBase
 
         $form_state->set('currentValue', $currentValue);
       
-        if(!$userIsNlpAdmin) {
+        if(!$userIsNlpAdmin OR $adminRole) {
           $form['edit_done'] = array(
             '#type' => 'submit',
             '#name' => 'edit_done',
