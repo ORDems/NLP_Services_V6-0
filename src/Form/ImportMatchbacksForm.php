@@ -135,9 +135,7 @@ class ImportMatchbacksForm extends FormBase
       $messenger->addError('matchback_file', 'Fix the problem before resubmit.');
       return;
     }
-
-    $modulePath = drupal_get_path('module',NLP_MODULE);
-
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
     // Set up the call to start a batch operation.
     $args = array (
       'fileUri' => $fileUri,

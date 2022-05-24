@@ -129,7 +129,7 @@ class ExportVoterContactReportsForm extends FormBase
     fwrite($file_fh,$string);
     fclose($file_fh);
     $rowCount = $this->reports->getReportCount();
-    $modulePath = drupal_get_path('module','nlpservices');
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
     $args = array (
       'uri' => $tempUri,
       'columnNames' => $columnNames,

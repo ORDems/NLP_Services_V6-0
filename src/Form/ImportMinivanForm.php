@@ -102,10 +102,7 @@ class ImportMinivanForm extends FormBase
           }
           foreach ($reportBatch as $reportBlock) {
             //nlp_debug_msg('$reportBlock: '.$blockNo, $reportBlock);
-
-            $modulePath = drupal_get_path('module', 'nlpservices');
-
-            //$modulePath = Drupal\Core\Extension\ExtensionPathResolver::getPath('module', 'nlpservices');
+            $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
             // Set up the call to start a batch operation.
             $args = array(
               //'uri' => $fileUri,

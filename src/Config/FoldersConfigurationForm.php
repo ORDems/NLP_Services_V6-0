@@ -87,7 +87,7 @@ class FoldersConfigurationForm extends ConfigFormBase {
   {
     $messenger = Drupal::messenger();
     $documentPath = $this->nlpPaths->getPath('DOCS', NULL);
-    $modulePath = drupal_get_path('module','nlpservices');
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
     $defaultDocuments = $this->nlpDocuments->nameList;
     $currentDocuments = $this->nlpDocuments->getDocuments();
     foreach ($currentDocuments as $currentDocument) {
@@ -162,8 +162,7 @@ class FoldersConfigurationForm extends ConfigFormBase {
       }
     }
     $this->prepareDocuments();
-  
-    $modulePath = drupal_get_path('module','nlpservices');
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
     $magicWordsFile = $modulePath.'/src/Config/magic_words.yml';
     $magicWords = yaml_parse_file($magicWordsFile);
     $this->config('nlpservices.configuration')

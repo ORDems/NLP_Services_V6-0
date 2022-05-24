@@ -2,18 +2,17 @@
 
 namespace Drupal\nlpservices\Controller;
 
+use Drupal;
 use Drupal\Core\Controller\ControllerBase;
-//use Drupal\nlpservices\AwakeSalutation;
 use Drupal\nlpservices\NlpCreateFrontPage;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class ConfigurationController extends ControllerBase {
 
 
   public function site_configuration(): array
   {
-    $template_path = drupal_get_path('module', 'nlpservices') .
-      "/src/Templates/nlp-config.html.twig";
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
+    $template_path = $modulePath . "/src/Templates/nlp-config.html.twig";
     $template = file_get_contents($template_path);
     $variables = [
       'module' => 'blocker',
@@ -30,8 +29,8 @@ class ConfigurationController extends ControllerBase {
 
   public function manage_nls(): array
   {
-    $template_path = drupal_get_path('module', 'nlpservices') .
-      "/src/Templates/manageNls.html.twig";
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
+    $template_path = $modulePath . "/src/Templates/manageNls.html.twig";
     $template = file_get_contents($template_path);
     $variables = [
       'module' => 'blocker',
@@ -48,8 +47,8 @@ class ConfigurationController extends ControllerBase {
 
   public function manage_turfs(): array
   {
-    $template_path = drupal_get_path('module', 'nlpservices') .
-      "/src/Templates/manageTurfs.html.twig";
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
+    $template_path = $modulePath . "/src/Templates/manageTurfs.html.twig";
     $template = file_get_contents($template_path);
     $variables = [
       'module' => 'nlpservices',
@@ -66,8 +65,8 @@ class ConfigurationController extends ControllerBase {
 
   public function manage_nlp_users(): array
   {
-    $template_path = drupal_get_path('module', 'nlpservices') .
-      "/src/Templates/manageDrupalAccounts.html.twig";
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
+    $template_path = $modulePath . "/src/Templates/manageDrupalAccounts.html.twig";
     $template = file_get_contents($template_path);
     $variables = [
       'module' => 'nlpservices',

@@ -183,8 +183,7 @@ class SyncActiveNlsForm extends FormBase {
     }
   
     copy($remoteUrl, $localFileUrl);
-    
-    $modulePath = drupal_get_path('module','nlpservices');
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
     $args = array (
       'uri' => $localFileUrl,
       'state' => $state,

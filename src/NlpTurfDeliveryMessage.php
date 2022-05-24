@@ -2,10 +2,9 @@
 
 namespace Drupal\nlpservices;
 
+use Drupal;
 use Drupal\Core\File\FileSystemInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-//use Drupal\nlpservices\NlpPaths;
-
 
 class NlpTurfDeliveryMessage
 {
@@ -50,7 +49,7 @@ class NlpTurfDeliveryMessage
       }
     }
     if(!file_exists($fileName)) {
-      $modulePath = drupal_get_path('module',NLP_MODULE);
+      $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
       $fileName = $modulePath.'/src/Templates/'.self::TURF_DEFAULT_TEMPLATE;
       //nlp_debug_msg('filename', $fileName);
       if(!file_exists($fileName)) {

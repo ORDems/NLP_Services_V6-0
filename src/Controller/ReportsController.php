@@ -29,7 +29,8 @@ class ReportsController extends ControllerBase
 
   public function reports(): array
   {
-    $template_path = drupal_get_path('module', 'nlpservices') . "/src/Templates/reports.html.twig";
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
+    $template_path = $modulePath . "/src/Templates/reports.html.twig";
     $template = file_get_contents($template_path);
     $variables = ['module' => 'nlpservices',];
     Drupal::service("page_cache_kill_switch")->trigger();
