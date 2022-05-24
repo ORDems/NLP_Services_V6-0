@@ -197,8 +197,6 @@ class DataEntryForm extends FormBase
     $state = $form_state->get('state');
     $canvassDate = $form_state->get('canvassDate');
     //nlp_debug_msg('$canvassDate',$canvassDate);
-    //$cycle = $form_state->get('cycle');
-
     //nlp_debug_msg('$county',$county);
     $sessionData = $form_state->get('sessionData');
 
@@ -364,7 +362,7 @@ class DataEntryForm extends FormBase
    */
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
-    //$messenger = Drupal::messenger();
+    $messenger = Drupal::messenger();
 
     //$form_state->setRebuild();
     //$form_state->set('reenter',TRUE);
@@ -389,6 +387,11 @@ class DataEntryForm extends FormBase
     $defaultValues = $form_state->get('defaultValues');
     //nlp_debug_msg('$defaultValues',$defaultValues);
     $nlsInfo = $form_state->get('nlsInfo');
+    if(empty($nlsInfo)) {
+      $mcid = $form_state->get('mcid');
+      $nlsInfo = $this->nls->getNlById($mcid);
+      //Drupal::logger('nlpservices')->notice('Lost nlsInfo 395. '.$mcid);
+    }
   
     $stateCommitteeKey = $form_state->get('stateCommitteeKey');
     
@@ -484,7 +487,15 @@ class DataEntryForm extends FormBase
               //nlp_debug_msg('$canvassResponseCodes',$canvassResponseCodes);
               $actions[$vanid][$reportType]['rid'] = $canvassResponseCodes[$contactMethod]['responses']['Deceased'];
             } else {
-              $actions[$vanid][$reportType]['rid'] = $canvassResponseCodes[$contactMethod]['responses']['Moved'];
+              if(empty($canvassResponseCodes[$contactMethod]['responses']['Moved'])) {
+                $nice = highlight_string("<?php\n\$canvassResponseCodes 493 =\n" . var_export($actions, true) . ";\n?>", TRUE);
+                Drupal::logger('nlpservices')->notice($nice);
+                Drupal::logger('nlpservices')->notice($contactMethod);
+                $rid = 0;
+              } else {
+                $rid = $canvassResponseCodes[$contactMethod]['responses']['Moved'];
+              }
+              $actions[$vanid][$reportType]['rid'] = $rid;
               //$actions[$vanid][$reportType]['addressInNlp'] = '';
             }
             
@@ -522,30 +533,104 @@ class DataEntryForm extends FormBase
           //nlp_debug_msg('$actions',$actions);
           $vanid = $valueIdParts[1];
           $field = $valueIdParts[2];
-  
-          if(empty($actions[$vanid]['contact_method'] AND $field != 'type')) {
-            $actions[$vanid]['vanid'] = $vanid;
-            $contactMethod = 'Walk';
-            $actions[$vanid]['contact_method'] = $contactMethod;
-            //$actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
-          }
-          $actions[$vanid][$reportType][$field] = $value;
-  
-          $wrongNumber = $canvassResponseCodes['Phone']['responses']['Wrong Number'];
-          $actions[$vanid][$reportType]['wrongNumberCode'] = $wrongNumber;
-          $actions[$vanid][$reportType]['cid'] = $canvassResponseCodes['Phone']['code'];
-          
-          //nlp_debug_msg('$turfIndex',$turfIndex);
+
           $voter = $this->voters->getVoterById($vanid,$turfIndex);
-          //nlp_debug_msg('$voter',$voter);
-          if(!empty($voter['homePhoneId'])) {
-            $actions[$vanid][$reportType]['homePhoneId'] = $voter['homePhoneId'];
-            $actions[$vanid][$reportType]['homePhone'] = $voter['homePhone'];
+          $voterName = $voter['lastName'].', '.$voter['firstName'];
+
+          switch ($field)
+          {
+            case 'type':  // A change in contact info.
+              switch ($value)
+              {
+                case 'NE':  // New email.
+                  $newContactParts = $valueIdParts;
+                  $newContactParts[2] = 'value';
+                  $newContact = implode('-',$newContactParts);
+                  nlp_debug_msg('$newContact',$newContact);
+                  if(empty($values[$newContact]))  {
+                    $messenger->addWarning('You must enter a new email, Voter is '.$voterName);
+                    break;
+                  }
+                  $actions[$vanid][$reportType][$field] = $value;
+                  break;
+                case 'NC':  // New cell.
+                  $newContactParts = $valueIdParts;
+                  $newContactParts[2] = 'value';
+                  $newContact = implode('-',$newContactParts);
+                  if(empty($values[$newContact]))  {
+                    $messenger->addWarning('You must enter a new cell number, Voter is '.$voterName);
+                    break;
+                  }
+                  $actions[$vanid][$reportType][$field] = $value;
+                  break;
+                case 'NH':  // New home phone.
+                  $newContactParts = $valueIdParts;
+                  $newContactParts[2] = 'value';
+                  $newContact = implode('-',$newContactParts);
+                  if(empty($values[$newContact]))  {
+                    $messenger->addWarning('You must enter a new phone number, Voter is '.$voterName);
+                    break;
+                  }
+                  $actions[$vanid][$reportType][$field] = $value;
+                  break;
+                case 'BC':  // Bad cell.
+                  $voter = $this->voters->getVoterById($vanid,$turfIndex);
+                  $actions[$vanid][$reportType]['homePhoneId'] = NULL;
+                  if(!empty($voter['homePhoneId'])) {
+                    $actions[$vanid][$reportType]['homePhoneId'] = $voter['homePhoneId'];
+                  }
+                  $wrongNumber = $canvassResponseCodes['Phone']['responses']['Wrong Number'];
+                  $actions[$vanid][$reportType]['wrongNumberCode'] = $wrongNumber;
+                  $actions[$vanid][$reportType]['homePhone'] = $voter['homePhone'];
+                  $actions[$vanid][$reportType][$field] = $value;
+                  break;
+                case 'BH':  // Bad home phone.
+                  $voter = $this->voters->getVoterById($vanid,$turfIndex);
+                  $actions[$vanid][$reportType]['cellPhoneId'] = NULL;
+                  if(empty($voter['cellPhoneId'])) {
+                    $actions[$vanid][$reportType]['cellPhoneId'] = $voter['cellPhoneId'];
+                  }
+                  $wrongNumber = $canvassResponseCodes['Phone']['responses']['Wrong Number'];
+                  $actions[$vanid][$reportType]['wrongNumberCode'] = $wrongNumber;
+                  $actions[$vanid][$reportType]['cellPhone'] = $voter['cellPhone'];
+                  $actions[$vanid][$reportType][$field] = $value;
+                  break;
+              }
+              break;
+            case 'value':    // New phone # or email, but may be a comment.
+
+              if(empty($actions[$vanid][$reportType]['type'])) {
+                $messenger->addWarning('A comment is not permitted in the Update Contact Info text box, Voter is '.$voterName);
+                break;
+              }
+              switch ($actions[$vanid][$reportType]['type']) {
+                case 'BC':
+                case 'BH':
+                  $messenger->addWarning('A comment for bad phone numbers is not permitted, Voter is '.$voterName);
+                  break;
+                case 'NE':
+                  if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                    $messenger->addWarning('Invalid email format, Voter is '.$voterName);
+                    break;
+                  }
+                  $actions[$vanid][$reportType]['new_email'] = $value; // New email.
+                  break;
+                case 'NC':
+                case 'NH':
+                  // Allow +, - and . in phone number
+                  $filteredPhoneNumber = filter_var($value, FILTER_SANITIZE_NUMBER_INT);
+                  $phoneToCheck = str_replace("-", "", $filteredPhoneNumber);
+                  if (strlen($phoneToCheck) < 10 || strlen($phoneToCheck) > 14) {
+                    $messenger->addWarning('Invalid phone format, Voter is '.$voterName);
+                    break;
+                  }
+                  $actions[$vanid][$reportType]['new_phone_number'] = $value; // New cell/phone.
+                  break;
+                }
+
+              break;
           }
-          if(!empty($voter['cellPhoneId'])) {
-            $actions[$vanid][$reportType]['cellPhoneId'] = $voter['cellPhoneId'];
-            $actions[$vanid][$reportType]['cellPhone'] = $voter['cellPhone'];
-          }
+
           //nlp_debug_msg('$actions',$actions);
           $form_state->setValue($valueId,0);
           $form_state->setUserInput([$valueId=>0,]);
@@ -563,6 +648,19 @@ class DataEntryForm extends FormBase
 
     if(!empty($actions)) {
       // Something was reported that needs to be recorded.
+
+      /*
+      $mcid = $form_state->get('mcid');
+      if(empty($mcid)) {
+        Drupal::logger('nlpservices')->notice('Missing mcid.');
+        $nlsInfo['firstName'] = $nlsInfo['lastName'] = '???';
+      } elseif(empty($nlsInfo['firstName'])) {
+        Drupal::logger('nlpservices')->notice('Missing nlsInfo. '.$mcid);
+        $nice = highlight_string("<?php\n\$actions 578 =\n" . var_export($actions, true) . ";\n?>", TRUE);
+        Drupal::logger('nlpservices')->notice($nice);
+        $nlsInfo['firstName'] = $nlsInfo['lastName'] = '???';
+      }
+*/
       $actions[0]['mcid'] = $form_state->get('mcid');
       $actions[0]['county'] = $form_state->get('county');
       $actions[0]['turfIndex'] = $form_state->get('turfIndex');
@@ -750,6 +848,7 @@ class DataEntryForm extends FormBase
             $cid = $action['cid'];
             $resp['contactType'] = $contactType;
             $resp['contactDate'] = $common['contactDate'];
+            $resp['qid'] = NULL;
             $resp['cid'] = $cid;
             $resp['rid'] = $rid;
             $resp['vanid'] = $vanid;
@@ -907,13 +1006,7 @@ class DataEntryForm extends FormBase
           * Contact update  ---------------------------------------------------
           */
           case 'contact_update':
-            $newContactInfo = '';  // New phone number of new email.
-            if(!empty($value['value'])) {
-              $textField = trim(strip_tags(htmlentities(stripslashes($value['value']),ENT_QUOTES)));
-              $newContactInfo = '_'.$value['type'].':';
-              $newContactInfo .= substr($textField,0,60);  // Truncate the comment.
-              $newContactInfo = str_replace("\r\n", "<br>", $newContactInfo);
-            }
+
             $result['contactType'] = $action['contact_method'];
             $result['vanid'] = $vanid;
             $result['mcid'] = $common['mcid'];
@@ -924,28 +1017,28 @@ class DataEntryForm extends FormBase
             $result['active'] = TRUE;
             $result['qid'] = $result['rid'] = $result['cid'] = NULL;
             $result['type'] = 'contact';
-            
+
             $surveyResponse = [];
             $surveyResponse['vanid'] = $vanid;
             $surveyResponse['type'] = 'contact';
             $surveyResponse['dateCanvassed'] = $common['contactDate'];
-            
+
             switch ($value['type']) {
               case 'BC':
                 $result['contactType'] = 'phone';
                 $result['text'] = $value['cellPhone'];
-                $result['value'] = 'Wrong number';
+                $result['value'] = 'Wrong number: '.$value['cellPhone'];
                 $result['rid'] = $value['wrongNumberCode'];
                 $result['cid'] = $value['cid'];
                 //nlp_debug_msg('result',$result);
                 $this->reports->setNlReport($result);
-  
+
                 $newPhoneNumber = [
                   'cellPhone' => NULL,
                   'cellPhoneId' => NULL
                 ];
                 $this->voters->updateVoterPhone($vanid,$newPhoneNumber);
-                
+
                 $surveyResponse['rid'] = $value['wrongNumberCode'];
                 $surveyResponse['ContactTypeCode'] = $value['cid'];
                 $surveyResponse['phoneId'] = $value['cellPhoneId'];
@@ -957,12 +1050,12 @@ class DataEntryForm extends FormBase
               case 'BH':
                 $result['contactType'] = 'phone';
                 $result['text'] = $value['homePhone'];
-                $result['value'] = 'Wrong number';
+                $result['value'] = 'Wrong number: '.$value['homePhone'];
                 $result['rid'] = $value['wrongNumberCode'];
                 $result['cid'] = $value['cid'];
                 //nlp_debug_msg('result',$result);
                 $this->reports->setNlReport($result);
-  
+
                 $newPhoneNumber = [
                   'homePhone' => NULL,
                   'homePhoneId' => NULL
@@ -970,7 +1063,7 @@ class DataEntryForm extends FormBase
                 $this->voters->updateVoterPhone($vanid,$newPhoneNumber);
                 $surveyResponse['rid'] = $value['wrongNumberCode'];
                 $surveyResponse['ContactTypeCode'] = $value['cid'];
-                $surveyResponse['phoneId'] = $action['homePhoneId'];
+                $surveyResponse['phoneId'] = $action['contact_update']['homePhoneId'];
                 //nlp_debug_msg('surveyResponse', $surveyResponse);
                 if(!empty($value['homePhoneId'])) {
                   $this->apiSurveyQuestionObj->setApiSurveyResponse($common['stateCommitteeKey'],$surveyResponse);
@@ -978,31 +1071,29 @@ class DataEntryForm extends FormBase
                 break;
               case 'NC':
                 $result['value'] = 'New cell number';
-                $result['text'] = $value['value'];
+                $result['text'] = $value['new_phone_number'];
                 //nlp_debug_msg('result',$result);
                 $this->reports->setNlReport($result);
-                $filteredPhoneNumber = filter_var($newContactInfo, FILTER_SANITIZE_NUMBER_INT);
                 $newPhoneNumber = [
-                  'cellPhone' => str_replace("-", "", $filteredPhoneNumber),
+                  'cellPhone' => $value['new_phone_number'],
                   'cellPhoneId' => NULL
                 ];
                 $this->voters->updateVoterPhone($vanid,$newPhoneNumber);
                 break;
               case 'NH':
                 $result['value'] = 'New home number';
-                $result['text'] = $value['value'];
+                $result['text'] = $value['new_phone_number'];
                 //nlp_debug_msg('result',$result);
                 $this->reports->setNlReport($result);
-                $filteredPhoneNumber = filter_var($newContactInfo, FILTER_SANITIZE_NUMBER_INT);
                 $newPhoneNumber = [
-                  'homePhone' => str_replace("-", "", $filteredPhoneNumber),
+                  'homePhone' => $value['new_phone_number'],
                   'homePhoneId' => NULL
                 ];
                 $this->voters->updateVoterPhone($vanid,$newPhoneNumber);
                 break;
               case 'NE':  // New email for voter.$result['type'] = 'New number';
                 $result['value'] = 'New email';
-                $result['text'] = $value['value'];
+                $result['text'] = $value['new_email'];
                 //nlp_debug_msg('result',$result);
                 $this->reports->setNlReport($result);
                 break;
@@ -1067,7 +1158,6 @@ class DataEntryForm extends FormBase
     // This NL has reported results.
     $this->nls->resultsReported($resp['mcid'],$resp['county']);
   }
-  
   
   /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
    * hostileVoter
@@ -1208,7 +1298,7 @@ class DataEntryForm extends FormBase
   function awardDisplay($awards): array
   {
     if(empty($awards['electionCount'])) { return [];}
-    $modulePath = drupal_get_path('module',NLP_MODULE);
+    $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
     $electionCount = $awards['electionCount'];
     $countPosition = ($electionCount > 9)?'double-digit':'single-digit';
     $badge = "/".$modulePath."/img/nlp_award_seal_2.jpg";
@@ -1882,7 +1972,7 @@ class DataEntryForm extends FormBase
     if(!empty($voter['status']['voted'])) {
       $votedMsg = ' Success! </br>'.$voter['nickname'].' voted on '.$voter['status']['voted'];
       $color = 'green';
-      $modulePath = drupal_get_path('module',NLP_MODULE);
+      $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
       //$goldStar = "/sandbox/web/".$modulePath."/img/nlp-gold-star_rotator-50.gif";
       $goldStar = $modulePath."/img/nlp-gold-star_rotator-50.gif";
 
