@@ -42,10 +42,14 @@ function exportVoterContactReportsBatch($arg,&$context)
     if (!$rawRecord) {break;}  // Last record processed.
     $recordCount++;
     $record = $reportsObj->prepareExportRecord($rawRecord);
+    //nlp_debug_msg('$record',$record);
     // Get the name of the NL who recorded this report, if we have it.
     $nl = $nlsObj->getNlById($record['mcid']);
-    $record['nickname'] = html_entity_decode($nl['nickname']);
-    $record['lastName'] = html_entity_decode($nl['lastName']);
+    $record['nickname'] = $record['lastName'] = '';
+    if(!empty($nl['lastName'])) {
+      $record['nickname'] = html_entity_decode($nl['nickname']);
+      $record['lastName'] = html_entity_decode($nl['lastName']);
+    }
     $record['EOR'] = "EOR";
     fputcsv($fh, $record);
 

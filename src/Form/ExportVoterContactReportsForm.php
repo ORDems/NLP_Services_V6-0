@@ -52,12 +52,11 @@ class ExportVoterContactReportsForm extends FormBase
       $form['count'] = [
         '#markup' => 'Record count: '.$args['rowCount'],
       ];
-      $url = file_create_url($args['uri']);
+      $url = Drupal::service('file_url_generator')->generateAbsoluteString($args['uri']);
       $form['file'] = [
         '#markup' =>  '<p><a  href='.$url.'>Right-click here</a> to download the NLs reports. </p>',
       ];
     } else {
-
       $form['upload_file'] = [
         '#type' => 'submit',
         '#id' => 'export-file',
@@ -105,10 +104,13 @@ class ExportVoterContactReportsForm extends FormBase
     // are doing an export at the same time.
     $createDate = date('Y-m-d-H-i-s',time());
     // Open a temp file for receiving the records.
-    $firstName = self::NR_NLS_REPORTS.'-'.$createDate.'.csv';
-    $tempUri = $tempDir.'/'.$firstName;
+    $fileName = self::NR_NLS_REPORTS.'-'.$createDate.'.csv';
+    $tempUri = $tempDir.'/'.$fileName;
+    //nlp_debug_msg('$tempUri',$tempUri);
     // Create a managed file for temporary use.  Drupal will delete after 6 hours.
-    $file = file_save_data('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
+    //$file = file_save_data('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
+    //$file = Drupal::service('file_system')->saveData('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
+    $file = Drupal::service('file.repository')->writeData('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
     $file->setTemporary();
     try{
       $file->save();
@@ -118,7 +120,7 @@ class ExportVoterContactReportsForm extends FormBase
       return [];
     }
     // Open the new temp file for writing by PHP functions.
-    $file_fh = fopen($tempUri,"w");
+    $fh = fopen($tempUri,"w");
     // Get the column names for the export and add the NL name to ease editing.
     $columnNames = $this->reports->getColumnNames();
     $columnNames[] = 'nickname';
@@ -126,8 +128,8 @@ class ExportVoterContactReportsForm extends FormBase
     $columnNames[] = 'EOR';
     // Write the header as the first record in this tab delimited file.
     $string = implode(",", $columnNames)."\n";
-    fwrite($file_fh,$string);
-    fclose($file_fh);
+    fwrite($fh,$string);
+    fclose($fh);
     $rowCount = $this->reports->getReportCount();
     $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
     $args = array (
