@@ -2,7 +2,7 @@
 
 namespace Drupal\nlpservices;
 
-//use Drupal;
+use Drupal;
 use Drupal\Core\File\FileSystemInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 //use Drupal\nlpservices\NlpAwards;
@@ -66,7 +66,9 @@ class NlpExportAwardStatus
     $baseUri = $tempDir.'/'.self::NL_AWARD_FILE.'-'.$contactDate;
     $tempUri = $baseUri.'.csv';
     // Create a managed file for temporary use.  Drupal will delete after 6 hours.
-    $file = file_save_data('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
+
+    $file = Drupal::service('file.repository')->writeData('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
+    //$file = file_save_data('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
     $file->setTemporary();
     try{
       $file->save();

@@ -144,7 +144,8 @@ class NlpExportTurfStatus
     $baseUri = $tempDir.'/'.self::DD_TURF_CANVASSING_STATUS_FILE.'-'.strtolower($county).'-'.$contactDate;
     $tempUri = $baseUri.'.csv';
     // Create a managed file for temporary use.  Drupal will delete after 6 hours.
-    $file = file_save_data('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
+    //$file = file_save_data('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
+    $file = Drupal::service('file.repository')->writeData('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
     $file->setTemporary();
     try{
       $file->save();

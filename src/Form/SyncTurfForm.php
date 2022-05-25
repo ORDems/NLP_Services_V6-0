@@ -892,7 +892,9 @@ class SyncTurfForm extends FormBase {
     $call_path = $this->paths->getPath('MAIL',$county);
     $mail_file_name = $call_path . $mail_file;
     //nlp_debug_msg('$mail_file_name',$mail_file_name);
-    file_save_data('', $mail_file_name, FileSystemInterface::EXISTS_REPLACE);
+    //file_save_data('', $mail_file_name, FileSystemInterface::EXISTS_REPLACE);
+    Drupal::service('file.repository')->writeData('', $mail_file_name, FileSystemInterface::EXISTS_REPLACE);
+
     $mail_fh = fopen($mail_file_name,"w");
     if (empty($mail_fh)) {
       $messenger->addError(t('Failed to open Mail file'));

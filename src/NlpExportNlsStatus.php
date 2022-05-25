@@ -133,7 +133,8 @@ const DD_NL_STATUS_FILE = 'nl_status_report';
     $createDate = date('Y-m-d-H-i-s', time());
     // Create the status file.
     $listUri = $temp_dir . '/' . self::DD_NL_STATUS_FILE . '-' . strtolower($county) . '-' . $createDate . '.csv';
-    $file = file_save_data('', $listUri, FileSystemInterface::EXISTS_REPLACE);
+    //$file = file_save_data('', $listUri, FileSystemInterface::EXISTS_REPLACE);
+    $file = Drupal::service('file.repository')->writeData('', $listUri, FileSystemInterface::EXISTS_REPLACE);
     $file->setTemporary();
     try {
       $file->save();
