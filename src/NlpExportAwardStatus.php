@@ -81,7 +81,8 @@ class NlpExportAwardStatus
     // Create the display with the link to the file.
     $output = '';
     if($results) {
-      $url = file_create_url($tempUri);
+      //$url = file_create_url($tempUri);
+      $url = Drupal::service('file_url_generator')->generateAbsoluteString($tempUri);
       $output .= "<h2>A list of turfs with NL activity and voting results.</h2>";
       $output .= '<a href="'.$url.'">Right-click to download canvassing and voting results for each turf.  </a>';
     } else {

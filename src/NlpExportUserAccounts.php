@@ -96,7 +96,8 @@ class NlpExportUserAccounts
     }
     fclose($fh);
     
-    $userUrl = file_create_url($userUri);
+    //$userUrl = file_create_url($userUri);
+    $userUrl = Drupal::service('file_url_generator')->generateAbsoluteString($userUri);
     //nlp_debug_msg('$userUrl',$userUrl);
     $output .= "<p>The file is a list of NLP users in CSV format.  It is used to move user accounts and passwords 
 to a new site.</p>";

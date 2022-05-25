@@ -79,13 +79,15 @@ be provided and are not shown. </p>';
     $path = $this->pathsObj->getPath('INST',$county);
     $canvass = $instructions['canvass']['fileName'];
     if(!empty($canvass)) {
-      $canvassUrl = file_create_url($path . $instructions['canvass']['fileName']);
+      //$canvassUrl = file_create_url($path . $instructions['canvass']['fileName']);
+      $canvassUrl = Drupal::service('file_url_generator')->generateAbsoluteString($path . $instructions['canvass']['fileName']);
       $page .= 'Instructions for NL: <a href="' . $canvassUrl . '" target="_blank">Click here</a> ';
     }
   
     $postcard = $instructions['postcard']['fileName'];
     if(!empty($postcard)) {
-      $postcardUrl = file_create_url($path . $instructions['postcard']['fileName']);
+      //$postcardUrl = file_create_url($path . $instructions['postcard']['fileName']);
+      $postcardUrl = Drupal::service('file_url_generator')->generateAbsoluteString($path . $instructions['postcard']['fileName']);
       $page .= '<br>Instructions for postcards: <a href="' . $postcardUrl . '" target="_blank">Click here</a> ';
     }
     
@@ -107,7 +109,8 @@ be provided and are not shown. </p>';
     if(!empty($turfPDF)) {
       $pdfPath = $this->pathsObj->getPath('PDF',$county);
       $pdfUri = $pdfPath . $turfPDF;
-      $url = file_create_url($pdfUri);
+      //$url = file_create_url($pdfUri);
+      $url = Drupal::service('file_url_generator')->generateAbsoluteString($pdfUri);
       $page .=  '<br><span style="font-weight:bold; color: blue;">Get your walk sheet: </span><a href="'.$url.
         '" target="_blank"> Click Here</a>';
     }

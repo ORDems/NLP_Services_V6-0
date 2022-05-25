@@ -146,13 +146,13 @@ const DD_NL_STATUS_FILE = 'nl_status_report';
     // Now fill them with information.
     $this->createStatus($all, $county, $listUri);
     // Provide the external link to the user so the file can be downloaded.
-    $list_url = file_create_url($listUri);
-
+    //$list_url = file_create_url($listUri);
+    $url = Drupal::service('file_url_generator')->generateAbsoluteString($listUri);
     $output = '<fieldset><legend>NL status report</legend>';
     $output .= "<p>This file contains a list of NLs for your county. It contains the current status of activity by the 
 NL for this election cycle and voting results if available.</p>";
     
-    $output .= '<a href="'.$list_url.'">Right-click to download canvassing and voting results for your NLs.  </a>';
+    $output .= '<a href="'.$url.'">Right-click to download canvassing and voting results for your NLs.  </a>';
     
     $output .= '</fieldset>';
     return $output;

@@ -167,7 +167,8 @@ class DocumentsForm extends FormBase
   
       if(!empty($document['docFileName'])) {
         $docxUri = $docPath . $document['docFileName'];
-        $docUrl = file_create_url($docxUri);
+        //$docUrl = file_create_url($docxUri);
+        $docUrl = Drupal::service('file_url_generator')->generateAbsoluteString($docxUri);
         $doc = '(<a href="'.$docUrl.'">'.$document['docFileName'].'</a>) ';
       } else {
         $doc = '-';
@@ -175,7 +176,8 @@ class DocumentsForm extends FormBase
   
       if(!empty($document['pdfFileName'])) {
         $pdfUri = $docPath . $document['pdfFileName'];
-        $pdfUrl = file_create_url($pdfUri);
+        //$pdfUrl = file_create_url($pdfUri);
+        $pdfUrl = Drupal::service('file_url_generator')->generateAbsoluteString($pdfUri);
         $pdf = '(<a href="'.$pdfUrl.'">'.$document['pdfFileName'].'</a>) ';
       } else {
         $pdf = '-';
