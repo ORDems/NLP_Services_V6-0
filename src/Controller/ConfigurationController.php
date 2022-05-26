@@ -4,7 +4,6 @@ namespace Drupal\nlpservices\Controller;
 
 use Drupal;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\nlpservices\NlpCreateFrontPage;
 
 class ConfigurationController extends ControllerBase {
 
@@ -27,6 +26,7 @@ class ConfigurationController extends ControllerBase {
       ];
   }
 
+  /** @noinspection PhpUnused */
   public function manage_nls(): array
   {
     $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
@@ -45,6 +45,7 @@ class ConfigurationController extends ControllerBase {
       ];
   }
 
+  /** @noinspection PhpUnused */
   public function manage_turfs(): array
   {
     $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
@@ -63,6 +64,7 @@ class ConfigurationController extends ControllerBase {
       ];
   }
 
+  /** @noinspection PhpUnused */
   public function manage_nlp_users(): array
   {
     $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);

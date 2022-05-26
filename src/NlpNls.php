@@ -414,7 +414,8 @@ class NlpNls {
       ->execute();
   }
 
-  public function searchNls($county,$needle) {
+  public function searchNls($county,$needle): array
+  {
     //nlp_debug_msg('$county',strToHex($county));
     //nlp_debug_msg('$needle',strToHex($needle));
     try {

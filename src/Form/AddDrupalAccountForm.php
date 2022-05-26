@@ -55,7 +55,7 @@ class AddDrupalAccountForm extends FormBase
    */
   public function buildForm(array $form, FormStateInterface $form_state): array
   {
-    $messenger = Drupal::messenger();
+    //$messenger = Drupal::messenger();
     //$messenger->addStatus('time:  '.time());
     if (empty($form_state->get('reenter'))) {
       $form_state->set('reenter', TRUE);
@@ -403,10 +403,10 @@ class AddDrupalAccountForm extends FormBase
     $messenger = Drupal::messenger();
     // Get the list of HDs with existing turfs.
     $optionsHd = $this->nls->getHdList($county);
-    nlp_debug_msg('$optionsHd',$optionsHd);
-    $hdKeys = array_keys($optionsHd);
-    $hd = $hdKeys[0];  // first HD.
-    nlp_debug_msg('$defaultHd',$defaultHd);
+    //nlp_debug_msg('$optionsHd',$optionsHd);
+    //$hdKeys = array_keys($optionsHd);
+    //$hd = $hdKeys[0];  // first HD.
+    //nlp_debug_msg('$defaultHd',$defaultHd);
     if(empty($optionsHd)) {
       $messenger->addWarning('No house districts are known.');
       $form_element['msg'] = ['#markup' => 'No house districts are known.',];
@@ -435,7 +435,7 @@ class AddDrupalAccountForm extends FormBase
     
     $defaultHdName = $optionsHd[$defaultHd];
     $pctOptions = $this->nls->getPctList($county,$defaultHdName);
-    nlp_debug_msg('$pctOptions', $pctOptions);
+    //nlp_debug_msg('$pctOptions', $pctOptions);
     
     $save['pctOptions'] = $pctOptions;
     if (!$pctOptions) {
@@ -463,7 +463,7 @@ class AddDrupalAccountForm extends FormBase
         $userOptions['options'][$mcid] = $userDisplay.' *';
       }
     }
-    nlp_debug_msg('$userOptions',$userOptions);
+    //nlp_debug_msg('$userOptions',$userOptions);
 
     $save['mcid_array'] = $userOptions['mcidArray'];
     $save['nls_choices'] = $userOptions['options'];

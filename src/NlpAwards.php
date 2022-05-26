@@ -140,7 +140,7 @@ class NlpAwards
       nlp_debug_msg('e', $e->getMessage() );
       return [];
     }
-    if(!$awardList = $result->fetchAssoc()) {return [];}
+    if(!$result->fetchAssoc()) {return [];}
     $list =[];
     do {
       $nl = $result->fetchAssoc();

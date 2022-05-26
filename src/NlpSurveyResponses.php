@@ -2,6 +2,7 @@
 
 namespace Drupal\nlpservices;
 
+use Drupal;
 use Drupal\Core\Database\Connection;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Exception;
@@ -9,14 +10,15 @@ use Exception;
 class NlpSurveyResponses
 {
   const RESPONSES_TBL = 'nlp_survey_responses';
-  
-  protected $connection;
-  
-  public function __construct(Connection $connection) {
+
+  protected Connection $connection;
+
+  public function __construct($connection) {
     $this->connection = $connection;
   }
-  
-  public static function create(ContainerInterface $container) {
+
+  public static function create(ContainerInterface $container): NlpSurveyResponses
+  {
     return new static(
       $container->get('database'),
     );
@@ -29,7 +31,7 @@ class NlpSurveyResponses
   }
   
   public function insertResponse($responseFields) {
-    $messenger = \Drupal::messenger();
+    $messenger = Drupal::messenger();
     try {
       $this->connection->insert(self::RESPONSES_TBL)
         ->fields($responseFields)
@@ -43,7 +45,7 @@ class NlpSurveyResponses
   
   public function fetchResponses($committee): ?array
   {
-    $messenger = \Drupal::messenger();
+    $messenger = Drupal::messenger();
     try{
       $query = $this->connection->select(self::RESPONSES_TBL, 'c');
       $query->fields('c');
@@ -63,7 +65,8 @@ class NlpSurveyResponses
     } while (TRUE);
     return $responses;
   }
-  
+
+  /** @noinspection PhpUnused */
   public function getSurveyResponseList($committee): array
   {
     $responseList[0] = 'Select Response';

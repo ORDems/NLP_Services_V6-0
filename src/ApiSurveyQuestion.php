@@ -70,22 +70,11 @@ class ApiSurveyQuestion
     $apiKey = $stateKey['API Key'];
     $apiURL = $stateKey['Url'];
     $user = $stateKey['App Name'];
-    
-    $canvassResponseObj = new stdClass();
-    $responsesObj = new stdClass();
-
     $post_url = 'https://'.$user.':'.$apiKey.'|0@'.$apiURL.'/people/'.$surveyResponse['vanid'].'/canvassResponses';
     //nlp_debug_msg('$post_url',$post_url);
     $canvassResponse = [];
     switch ($surveyResponse['type']) {
       case 'Survey':
-        //$responsesObj->type = self::SURVEY_RESPONSE;
-        //$responsesObj->surveyQuestionId = $surveyResponse['qid'];
-        //$responsesObj->surveyResponseId = $surveyResponse['rid'];
-        //$responsesObj->action = NULL;
-        //$canvassResponseObj->canvassContext->dateCanvassed = $surveyResponse['dateCanvassed'];
-        //$canvassResponseObj->responses[0] = $responsesObj;
-        //$canvassResponseObj->resultCodeId = NULL;
 
         $response = [
           'type' => self::SURVEY_RESPONSE,

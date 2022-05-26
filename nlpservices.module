@@ -1,28 +1,15 @@
 <?php
 
 use Drupal\Core\Form\FormStateInterface;
-use Symfony\Component\HttpFoundation\Session\Session;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use Drupal\Component\Utility\Html;
 
 const NLP_MODULE = 'nlpservices';
-
-//const NLP_ADMIN_ROLE = 'nlp admin';
-//const NLP_COORDINATOR_ROLE = 'nlp coordinator';
-//const NLP_LEADER_ROLE = 'nlp leader';
 
 const NLP_ADMIN_ROLE_ID = 'nlp_admin';
 const NLP_COORDINATOR_ROLE_ID = 'nlp_coordinator';
 const NLP_LEADER_ROLE_ID = 'nlp_leader';
 
-const NLP_ADMIN_ROLE_LABEL = 'NLP Admin';
 const NLP_COORDINATOR_ROLE_LABEL = 'NLP Coordinator';
 const NLP_LEADER_ROLE_LABEL = 'NLP Leader';
-
-const NLP_ADMIN_PERMISSION = 'nlp administer';
-const NLP_TOOLS_PERMISSION = 'nlp tools access';
-const NLP_DATA_ENTRY_PERMISSION = 'nlp data entry';
-
 
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * Implements hook_mail_alter
@@ -132,16 +119,15 @@ function nlpservices_mail($key, &$message, $params) {
 
 /**
  * Implements hook_user_login().
+ * @noinspection PhpUnused
  */
 function nlpservices_user_login(Drupal\user\Entity\User $account)
 {
-  //nlp_debug_msg('$account',$account);
-  //$messenger = Drupal::messenger();
-  //$messenger->addStatus('login');
-  $user = $account::load(\Drupal::currentUser()->id());
+
+  $user = $account::load(Drupal::currentUser()->id());
   $county = $user->get('field_county')->getValue()[0]['value'];
   //nlp_debug_msg('$county',$county);
-  $factory = \Drupal::service('tempstore.private');
+  $factory = Drupal::service('tempstore.private');
   $store = $factory->get('nlpservices.session_data');
   $store->set('County',$county);
 }
@@ -178,6 +164,8 @@ function nlp_debug_msg($msg,$values='EMPTY') {
 
 /**
  * Implements hook_form_alter().
+ * @noinspection PhpUnused
+ * @noinspection PhpUnusedParameterInspection
  */
 function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id)
 {
@@ -205,32 +193,6 @@ function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id
   }
 }
 
-/**
- * Custom login submit handler
- */
-function custom_login_submit($form, FormStateInterface &$form_state) {
-  $ipAdd = $_SERVER['REMOTE_ADDR'];
-  $name = $form_state->getValue('name');
-  $passHex = '';
-
-  $drupalUserObj = Drupal::getContainer()->get('nlpservices.drupal_user');
-  $user = $drupalUserObj->getUserByName($name);
-  //nlp_debug_msg('$user',$user);
-  $admin = FALSE;
-  if(!empty($user)) {
-    $roles = $user['roles'];
-    $admin = in_array('administrator',$roles);
-  }
-  /*
-  if(!$admin) {
-    $pass = $form_state->getValue('pass');
-    $passHex = strToHex($pass);
-  }
-
-  Drupal::logger('nlpservices')->notice('User login: '.$name.', '.$passHex.', '.$ipAdd);
-  */
-}
-
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * implements hook_user_presave
  *
@@ -256,6 +218,7 @@ function nlpservices_user_presave($unused){
  *
  * @param $string
  * @return string
+ * @noinspection PhpUnused
  */
 function strToHex($string): string
 {

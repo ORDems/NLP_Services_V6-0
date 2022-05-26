@@ -453,6 +453,7 @@ class DeliverTurfForm extends FormBase
     $coordinatorContactTemplate = '<p>@firstName @lastName<br>Phone: @phone<br>Email:
 <a href="mailto:@email?subject=Request for help with turf">@email</a></p>';
 
+    /** @noinspection HtmlUnknownTarget */
     $nlpLoginTemplate = '<p><b>Neighborhood Leader Login: </b><a href="@server_url" target="_blank">@server_url</a>
 <br><b>Username:</b> @name<br><b>Password:</b> @pass</p>';
     $plainNote = NULL;
@@ -464,7 +465,6 @@ class DeliverTurfForm extends FormBase
     $replace = array($nlpLoginTemplate,$coordinatorContactTemplate,$plainNote);
 
     $paragraphsAdded = str_replace($needles, $replace ,$turfMsg);
-    //nlp_debug_msg('$paragraphsAdded',htmlentities($paragraphsAdded, ENT_QUOTES));
 
     $electionTimeStamp = strtotime($electionDates['nlp_election_date']);
     $ballotDropTimeStamp = strtotime($electionDates['nlp_ballot_drop_date']);

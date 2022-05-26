@@ -4,7 +4,6 @@ namespace Drupal\nlpservices\Config;
 
 use Drupal;
 use Drupal\Core\Form\ConfigFormBase;
-//use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\nlpservices\ApiSurveyQuestion;

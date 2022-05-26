@@ -18,7 +18,7 @@ function importUsersBatch($arg,&$context) {
   $context['finished'] = TRUE;
   $uri = $arg['uri'];
 
-  $allRoles = \Drupal\user\Entity\Role::loadMultiple();
+  //$allRoles = \Drupal\user\Entity\Role::loadMultiple();
   //nlp_debug_msg('$allRoles',$allRoles);
   $oldRoles = [
     'nlp leader' => 'nlp_leader',

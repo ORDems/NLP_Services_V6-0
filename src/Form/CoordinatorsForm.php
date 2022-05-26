@@ -446,7 +446,7 @@ class CoordinatorsForm extends FormBase
 
   function removeCoordinatorRole($coordinator) {
     $messenger = Drupal::messenger();
-    $mcid = $coordinator['mcid'];
+    //$mcid = $coordinator['mcid'];
     $email = $coordinator['email'];
     $userAccount = $this->drupalUser->getUserByEmail($email);
     if(!empty($userAccount)) {
@@ -456,7 +456,7 @@ class CoordinatorsForm extends FormBase
         $update['uid'] = $userAccount['uid'];
         $update['roles'] = [NLP_COORDINATOR_ROLE_ID=>NULL,];
         $update['mcid'] = $userAccount['mcid'];
-        nlp_debug_msg('$update',$update);
+        //nlp_debug_msg('$update',$update);
         $this->drupalUser->updateUser($update);
       }
     }

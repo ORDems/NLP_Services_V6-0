@@ -2,6 +2,7 @@
 
 namespace Drupal\nlpservices;
 
+use Drupal;
 use Drupal\Core\Database\Connection;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Exception;
@@ -9,14 +10,15 @@ use Exception;
 class NlpSurveyQuestion
 {
   protected Connection $connection;
-  protected $surveyResponses;
+  protected NlpSurveyResponses $surveyResponses;
   
   public function __construct($connection, $surveyResponses) {
     $this->connection = $connection;
     $this->surveyResponses = $surveyResponses;
   }
   
-  public static function create(ContainerInterface $container) {
+  public static function create(ContainerInterface $container): NlpSurveyQuestion
+  {
     return new static(
       $container->get('database'),
       $container->get('nlpservices.survey_responses_nlp'),
@@ -24,19 +26,6 @@ class NlpSurveyQuestion
   }
   
   const QUESTIONS_TBL = 'nlp_survey_questions';
-  const CONTACT_TYPE_WALK = 'Walk';
-
-  private $questionList = array(
-    'qid'=>'qid',
-    'scope' => 'scope',
-    'county' => 'county',
-    'questionName'=>'questionName',
-    'mediumName' => 'mediumName',
-    'questionType'=>'questionType',
-    'cycle'=>'cycle',
-    'scriptQuestion'=>'scriptQuestion'
-  );
-  
   
   private function deleteQuestion($county) {
     $this->connection->delete(self::QUESTIONS_TBL)
@@ -45,7 +34,7 @@ class NlpSurveyQuestion
   }
   
   private function insertQuestion($surveyFields) {
-    $messenger = \Drupal::messenger();
+    $messenger = Drupal::messenger();
     try {
       $this->connection->insert(self::QUESTIONS_TBL)
         ->fields($surveyFields)
@@ -56,12 +45,13 @@ class NlpSurveyQuestion
       return;
     }
   }
-  
-  public function getSurveyQuestions($function,$committee): ?array
+
+  /** @noinspection PhpUnused */
+  public function getSurveyQuestions($function, $committee): ?array
   {
     //nlp_debug_msg('$function',$function);
     //nlp_debug_msg('$committee',$committee);
-    $messenger = \Drupal::messenger();
+    $messenger = Drupal::messenger();
     try{
       $query = $this->connection->select(self::QUESTIONS_TBL, 'q');
       $query->fields('q');
@@ -98,10 +88,11 @@ class NlpSurveyQuestion
     //nlp_debug_msg('questions', $questions);
     return $questions;
   }
-  
+
+  /** @noinspection PhpUnused */
   public function getAllSurveyQuestions(): ?array
   {
-    $messenger = \Drupal::messenger();
+    $messenger = Drupal::messenger();
     try{
       $query = $this->connection->select(self::QUESTIONS_TBL, 'q');
       $query->fields('q');
@@ -126,8 +117,9 @@ class NlpSurveyQuestion
     //nlp_debug_msg('questions', $questions);
     return $questions;
   }
-  
-  public function setSurveyQuestion($surveyQuestion,$surveyQuestionId)
+
+  /** @noinspection PhpUnused */
+  public function setSurveyQuestion($surveyQuestion, $surveyQuestionId)
   {
     $committee = $surveyQuestion['committee'];
     $qid = $this->getQid($committee);
@@ -166,7 +158,7 @@ class NlpSurveyQuestion
   
   private function countUsage($qid): int
   {
-    $messenger = \Drupal::messenger();
+    $messenger = Drupal::messenger();
     try{
       $query = $this->connection->select(self::QUESTIONS_TBL, 's');
       $query->fields('s');
@@ -181,7 +173,7 @@ class NlpSurveyQuestion
   }
   
   private function getQid($committee)  {
-    $messenger = \Drupal::messenger();
+    $messenger = Drupal::messenger();
     try {
       $query = $this->connection->select(self::QUESTIONS_TBL, 'q');
       $query->addField('q', 'qid');

@@ -83,7 +83,7 @@ class CountyChangeForm extends ConfigFormBase {
 
     $values = $form_state->getValues();
     //nlp_debug_msg('$values',$values);
-    $county = '';
+    //$county = '';
     if(!empty($values['county_select'])) {
       $selectedCountyIndex = $values['county_select'];
       $countyNames = $form_state->get('countyNames');

@@ -9,21 +9,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
 class DrupalUser {
-  /*
-  public array $nlpRoles = array(
-    'nl' => 'nlp_leader',
-    'co' => 'nlp_coordinator',
-    'admin' => 'nlp_admin',
-    //'authenticated' => 'authenticated user',
-  );
-  */
-/*
-  public array $nlpRoles = [  // These are id and label pairs.
-    NLP_ADMIN_ROLE_ID => NLP_ADMIN_ROLE_LABEL,
-    NLP_COORDINATOR_ROLE_ID => NLP_COORDINATOR_ROLE_LABEL,
-    NLP_LEADER_ROLE_ID => NLP_LEADER_ROLE_LABEL,
-  ];
-*/
+
   private array $searchFields = array(
     'mcid'=>'field_mcid',
     'firstName'=>'field_first_name',
@@ -284,7 +270,7 @@ class DrupalUser {
     
     $userArray = $this->getUserByMcid($userInfo['mcid']);
     $user = reset($userArray);  // first one.
-    nlp_debug_msg('$user',$user);
+    //nlp_debug_msg('$user',$user);
     //return TRUE;
     $msgDisplay = '';
     if(empty($user)) {

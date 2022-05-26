@@ -118,6 +118,7 @@ class NlpImap
     return $emailsToProcess;
   }
 
+  /** @noinspection PhpUnused */
   public function getNewNotificationReplies($connection): array
   {
     $emails = imap_search($connection,'UNSEEN');
@@ -190,7 +191,8 @@ class NlpImap
     return imap_fetchheader($connection, $emailNumber);
   }
 
-  public function getMsg($connection,$emailNumber): ?array
+  /** @noinspection PhpUnused */
+  public function getMsg($connection, $emailNumber): ?array
   {
     $parts = array('htmlmsg'=>'','charset'=>'');
     $overview = imap_fetch_overview($connection,$emailNumber);

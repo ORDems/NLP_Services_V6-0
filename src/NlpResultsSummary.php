@@ -4,12 +4,6 @@ namespace Drupal\nlpservices;
 
 use Drupal;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-//use Drupal\nlpservices\NlpVoters;
-//use Drupal\nlpservices\NlpMatchbacks;
-//use Drupal\nlpservices\NlpNls;
-//use Drupal\nlpservices\DrupalUser;
-//use Drupal\nlpservices\NlpCrosstabCounts;
-//use Drupal\nlpservices\NlpReports;
 
 /**
  * @noinspection PhpUnused
