@@ -54,9 +54,9 @@ class NlpSessionData
   {
     $sessionData = $this->userSession->get('nlpservices.session_data');
     $county = $sessionData->get('County');
-    nlp_debug_msg('$county',$county);
+    //nlp_debug_msg('$county',$county);
     $userSession = $sessionData->get('userSession');
-    nlp_debug_msg('$userSession',$userSession);
+    //nlp_debug_msg('$userSession',$userSession);
     if(!empty($county) AND !empty($userSession['mcid'] AND !$force)) {
       //$userSession = $sessionData->get('userSession');
       if(empty($userSession)) {

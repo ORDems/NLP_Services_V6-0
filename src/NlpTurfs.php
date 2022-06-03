@@ -42,14 +42,6 @@ class NlpTurfs {
   
   public function setAllTurfsDelivered($mcid,$county) {
     try {
-      /*
-      $select = "SELECT * FROM {".self::TURF_TBL."} WHERE  ".
-        "county = :county AND mcid = :mcid";
-      $args = array(
-        ':county' => $county,
-        ':mcid' => $mcid);
-      $result = $this->connection->query($select,$args);
-*/
       $query = $this->connection->select(self::TURF_TBL, 'i');
       $query->fields('i');
       $query->condition('county',$county);
@@ -77,22 +69,15 @@ class NlpTurfs {
       nlp_debug_msg('e', $e->getMessage() );
       return;
     }
-    
   }
   
   public function getCountyTurfs($county): array
   {
     try {
-      /*
-      $select = "SELECT * FROM {".self::TURF_TBL."} WHERE  "."county = :county ";
-      $args = array(':county' => $county,);
-      $result = $this->connection->query($select,$args);
-*/
       $query = $this->connection->select(self::TURF_TBL, 'i');
       $query->fields('i');
       $query->condition('county',$county);
       $result = $query->execute();
-
     }
     catch (Exception $e) {
       nlp_debug_msg('e', $e->getMessage() );
@@ -107,28 +92,34 @@ class NlpTurfs {
     } while (TRUE);
     return $turfArray;
   }
+  
+  public function getCountyTurfCount($county): int
+  {
+    try {
+      $query = $this->connection->select(self::TURF_TBL, 'i');
+      $query->condition('county',$county);
+      $query->addField('i','turfIndex');
+      $turfCount = $query->countQuery()->execute()->fetchField();    }
+    catch (Exception $e) {
+      nlp_debug_msg('e', $e->getMessage() );
+      return 0;
+    }
+    return $turfCount;
+  }
 
   public function getTurf($turfIndex): array
   {
-    //nlp_debug_msg('$turfIndex',$turfIndex);
     try {
-      /*
-      $select = "SELECT * FROM {".self::TURF_TBL."} WHERE turfIndex = :index ";
-      $args = array(':index' => $turfIndex);
-      $result = $this->connection->query($select,$args);
-*/
       $query = $this->connection->select(self::TURF_TBL, 'i');
       $query->fields('i');
       $query->condition('turfIndex',$turfIndex);
       $result = $query->execute();
-
       $dbTurf = $result->fetchAssoc();
     }
     catch (Exception $e) {
       nlp_debug_msg('e', $e->getMessage()  );
       return [];
     }
-    //nlp_debug_msg('$dbTurf',$dbTurf);
     if(empty($dbTurf)) {return [];}
     return $dbTurf;
   }
@@ -200,7 +191,6 @@ class NlpTurfs {
   
   public function getTurfs($turfReq) {
     $county = $turfReq['county'];
-
     try {
       $query = $this->connection->select(self::TURF_TBL,'t');
       $query->fields('t');
@@ -237,49 +227,6 @@ class NlpTurfs {
       }
       $turfArray[$turfIndex] = $turf;
     } while (TRUE);
-
-    /*
-    try {
-      $query = $this->connection->select(self::TURF_TBL,'t');
-      $query->join($this->nls::NLS_TBL,'n','n.mcid = t.mcid');
-      $query->fields('t');
-      $query->addField('n', 'hd');
-      $query->addField('n', 'precinct');
-      $query->addField('n', 'nickname');
-      $query->addField('n', 'lastName');
-      $query->condition('t.county',$county);
-      
-      if(isset($turfReq['hd'])) {
-        $query->condition('t.turfHd',$turfReq['hd']);
-      }
-      if(isset($turfReq['pct'])) {
-        $query->condition('t.turfPrecinct',$turfReq['pct']);
-      }
-      
-      $query->orderBy('lastName');
-      $query->orderBy('nickname');
-      $query->orderBy('turfName');
-      //nlp_debug_msg('$query',$query);
-      $result = $query->execute();
-    }
-    catch (Exception $e) {
-      nlp_debug_msg('e', $e->getMessage() );
-      return FALSE;
-    }
-
-    $turfArray = array();
-    do {
-      $dbTurf = $result->fetchAssoc();
-      nlp_debug_msg('$dbTurf',$dbTurf);
-      if (empty($dbTurf)) {break;}
-      
-      $turfIndex = $dbTurf['turfIndex'];
-      $turfArray[$turfIndex] = $dbTurf;
-    } while (TRUE);
-    */
-
-
-
     return $turfArray;
   }
   
@@ -311,16 +258,10 @@ class NlpTurfs {
     $county = $turf['county'];
     // Get the filenames the PDF walksheet, mail list, and call list.
     try {
-    /*
-      $select = "SELECT * FROM {".self::TURF_TBL."} WHERE  "."turfIndex = :index ";
-      $args = array(':index' => $turfIndex,);
-      $result = $this->connection->query($select,$args);
-      */
       $query = $this->connection->select(self::TURF_TBL, 'i');
       $query->fields('i');
       $query->condition('turfIndex',$turfIndex);
       $result = $query->execute();
-
     }
     catch (Exception $e) {
       nlp_debug_msg('e', $e->getMessage() );
@@ -373,21 +314,11 @@ class NlpTurfs {
 
   public function turfExists($mcid,$county): array
   {
-    // Get the list of turfs assigned to this NL.
-    /*
-    $select = "SELECT * FROM {".self::TURF_TBL."} WHERE "."county = :county AND mcid = :mcid";
-    $args = array(
-      ':county' => $county,
-      ':mcid' => $mcid);
-    $result = $this->connection->query($select,$args);
-*/
     $query = $this->connection->select(self::TURF_TBL, 'i');
     $query->fields('i');
     $query->condition('county',$county);
     $query->condition('mcid',$mcid);
     $result = $query->execute();
-
-    //nlp_debug_msg('$result',$result);
     $turfs = [];
     do {
       $dbTurf = $result->fetchAssoc();
@@ -432,46 +363,4 @@ class NlpTurfs {
     return $nlsWithTurfs;
   }
   
-  /*
-  
- 
-  public function getCountyNlsWithTurfs($county): ?array
-  {
-    try {
-      $query = db_select(self::TURF_TBL, 't');
-      $query->addField('t', 'mcid');
-      $query->distinct();
-      $query->condition('county',$county);
-      $result = $query->execute();
-    }
-    catch (Exception $e) {
-      nlp_debug_msg('e', $e->getMessage() );
-      return NULL;
-    }
-    
-    $nlList = array();
-    do {
-      $dbTurf = $result->fetchAssoc();
-      if (!$dbTurf) {break;}
-      $nlList[] = $dbTurf['mcid'];
-    } while (TRUE);
-    return $nlList;
-  }
-
-  public function setLastTurfAccess($turfIndex,$date) {
-    if(empty($date)) {
-      $date = date('Y-m-d');
-    }
-    try {
-      db_merge(self::TURF_TBL)
-        ->key(array('turfIndex' => $turfIndex,))
-        ->fields(array('lastAccess' => $date,))
-        ->execute();
-    }
-    catch (Exception $e) {
-      watchdog('nlp_co_notify', 'coordinator table query failed');
-      return;
-    }
-  }
-  */
 }

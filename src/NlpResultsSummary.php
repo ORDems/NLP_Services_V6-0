@@ -16,14 +16,17 @@ class NlpResultsSummary
   protected DrupalUser $drupalUser;
   protected NlpCrosstabCounts $crosstabsObj;
   protected NlpReports $reportsObj;
+  protected NlpTurfs $turfsObj;
   
-  public function __construct($votersObj,$matchbacksObj,$nlsObj,$drupalUser,$crosstabsObj,$reportsObj) {
+  public function __construct($votersObj,$matchbacksObj,$nlsObj,$drupalUser,
+                              $crosstabsObj,$reportsObj,$turfsObj) {
     $this->votersObj = $votersObj;
     $this->matchbacksObj = $matchbacksObj;
     $this->nlsObj = $nlsObj;
     $this->drupalUser = $drupalUser;
     $this->crosstabsObj = $crosstabsObj;
     $this->reportsObj = $reportsObj;
+    $this->turfsObj = $turfsObj;
   }
 
   public static function create(ContainerInterface $container): NlpResultsSummary
@@ -35,6 +38,7 @@ class NlpResultsSummary
       $container->get('nlpservices.drupal_user'),
       $container->get('nlpservices.crosstabs'),
       $container->get('nlpservices.reports'),
+      $container->get('nlpservices.turfs'),
     );
   }
 
@@ -115,7 +119,8 @@ class NlpResultsSummary
       'participation' => 'Participation',
     ];
     $hdr = ($county == "NLP") ? "All NLP Counties" : $county." County";
-    $rowType = ['all'=>$hdr,'rep'=>'Rep','nav'=>'Nav','dem'=>'Dem','vtr'=>'NLP','ctd'=>'Contacted','pc'=>'Postcard sent'];
+    $rowType = ['all'=>$hdr,'rep'=>'Rep','nav'=>'Nav','dem'=>'Dem','vtr'=>'NLP','att'=>'Attempted','ctd'=>'Contacted',
+      'pc'=>'Postcard sent'];
     $rows = [];
     foreach ($rowType as $type=>$title) {
       $row['type'] = $title;
@@ -127,6 +132,29 @@ class NlpResultsSummary
     return  [
       '#type' => 'table',
       '#caption' => 'Summary of results of this election',
+      '#header' => $header,
+      '#rows' => $rows,
+    ];
+  }
+
+  function buildLegend(): array
+  {
+    $header = [
+      'abr' => 'Row name',
+      'def' => 'Definition',
+    ];
+    $rowType = ['Rep'=>'Republicans','Nav'=>'Non-Affiliated voters','Dem'=>'Democrats','NLP'=>'Voters assigned to NLs',
+      'Attempted'=>'Reported as an attempt to contact.','Contacted'=>'Reported an answer to Pledge-to-vote question.',
+      'Postcard sent'=>'Reported that a postcard was sent.'];
+    $rows = [];
+    foreach ($rowType as $abr=>$def) {
+      $row['abr'] = $abr;
+      $row['def'] = $def;
+      $rows[] = $row;
+    }
+    return  [
+      '#type' => 'table',
+      '#caption' => 'Legend',
       '#header' => $header,
       '#rows' => $rows,
     ];
@@ -170,6 +198,20 @@ class NlpResultsSummary
         $vtr_percent = round($br2 / $vtr * 100, 1) . '%';
       }
       $countyCounts[$county]['vtr-pc'] = $vtr_percent;
+
+      $att = $this->reportsObj->countyAttempted($county);
+      $countyCounts[$county]['att'] = $att;
+      // Count the number of these voters who returned ballots.
+      $at2 = $this->votersObj->getVotedAndAttempted($county);
+      $countyCounts[$county]['att-br'] = $at2;
+      // Display the voter participation.
+      $att_percent = '0%';
+      if ($att > 0) {
+        $att_percent = round($at2 / $att * 100, 1) . '%';
+      }
+      $countyCounts[$county]['att-pc'] = $att_percent;
+
+
       // Count the number of voters who were contacted by NLs, either Face-to-face or by phone.
       $rr = $this->reportsObj->countyContacted($county);
       $countyCounts[$county]['ctd'] = $rr;
@@ -194,8 +236,11 @@ class NlpResultsSummary
       $countyCounts[$county]['pc-pc'] = $pc_percent;
 
     }
+
+    $output['legend'] = $this->buildLegend();
+
     // Build the tables.
-    $nls_sum = $rpt_sum = 0;
+    $nls_sum = $rpt_sum = $turfSum = 0;
     foreach ($counties as $county) {
       $output[$county]['countyName'] = [
         '#markup' => '<H1>' . $county . '</H1>',
@@ -228,10 +273,16 @@ class NlpResultsSummary
       $rpt_sum += $nls_rpt;
 
       $percentReporting = $this->percent($nls_cnt, $nls_rpt);
+      
+      $numberOfTurfs = $this->turfsObj->getCountyTurfCount($county);
+      $turfSum += $numberOfTurfs;
 
       $output[$county]['participation'] = [
-        '#markup' => "<p>Number of participating NLs: $nls_cnt<br>Number of NLs reporting results: $nls_rpt<br>
-Percentage of NLs reporting results: $percentReporting</p>",
+        '#markup' => "<p>
+Number of participating NLs: $nls_cnt<br>
+Number of NLs reporting results: $nls_rpt<br>
+Percentage of NLs reporting results: $percentReporting<br>
+Number of turfs: $numberOfTurfs</p>",
       ];
 
       $output[$county]['table'] = $this->buildCountDisplay($county, $aCountyCounts);
@@ -239,7 +290,7 @@ Percentage of NLs reporting results: $percentReporting</p>",
     // Display the sum of all participating counties.
     if ($admin) {
       //nlp_debug_msg('sum_counts',$allCountyCounts);
-      $pcr = array('dem', 'rep', 'nav', 'all', 'vtr', 'ctd', 'pc');
+      $pcr = array('dem', 'rep', 'nav', 'all', 'vtr', 'att', 'ctd', 'pc');
       $output['allCounties'] = [
         '#markup' => '<H1>NLP Counties</H1>',
       ];
@@ -255,8 +306,11 @@ Percentage of NLs reporting results: $percentReporting</p>",
       $percentReporting = $this->percent($nls_sum, $rpt_sum);
 
       $output['allParticipation'] = [
-        '#markup' => "<p>Number of participating NLs: $nls_sum<br>Number of NLs reporting results: $rpt_sum<br>
-Percentage of NLs reporting results: $percentReporting</p>",
+        '#markup' => "<p>
+Number of participating NLs: $nls_sum<br>
+Number of NLs reporting results: $rpt_sum<br>
+Percentage of NLs reporting results: $percentReporting<br>
+Number of turfs: $turfSum</p>",
       ];
 
       $output['allTable'] = $this->buildCountDisplay('NLP', $allCountyCounts);

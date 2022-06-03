@@ -1,0 +1,146 @@
+services:
+  nlpservices.awake:
+    class: Drupal\nlpservices\AwakeSalutation
+    arguments: [ '@config.factory' ]
+  nlpservices.render_test:
+    class: Drupal\nlpservices\RenderTest
+  nlpservices.activist_codes:
+    class: Drupal\nlpservices\ApiActivistCodes
+    arguments: [ '@http_client' ]
+  nlpservices.response_codes:
+    class: Drupal\nlpservices\ApiResponseCodes
+    arguments: [ '@http_client' ]
+  nlpservices.survey_question:
+    class: Drupal\nlpservices\ApiSurveyQuestion
+    arguments: [ '@http_client' ]
+  nlpservices.folders:
+    class: Drupal\nlpservices\ApiFolders
+    arguments: [ '@http_client' ]
+  nlpservices.saved_lists:
+    class: Drupal\nlpservices\ApiSavedLists
+    arguments: [ '@http_client' ]
+  nlpservices.api_nls:
+    class: Drupal\nlpservices\ApiNls
+    arguments: [ '@http_client' ]
+  nlpservices.api_voter:
+    class: Drupal\nlpservices\ApiVoter
+    arguments: [ '@http_client' ]
+  nlpservices.export_jobs:
+    class: Drupal\nlpservices\ApiExportJobs
+    arguments: [ '@http_client' , '@database' ]
+  nlpservices.paths:
+    class: Drupal\nlpservices\NlpPaths
+    arguments: ['@file_system']
+  nlpservices.turf_delivery_message:
+    class: Drupal\nlpservices\NlpTurfDeliveryMessage
+    arguments: [ '@file_system' , '@nlpservices.paths' ]
+  nlpservices.documents:
+    class: Drupal\nlpservices\NlpDocuments
+    arguments: ['@database']
+  nlpservices.nlp_config:
+    class: Drupal\nlpservices\NlpConfig
+    arguments: [ '@database' ]
+  nlpservices.nls:
+    class: Drupal\nlpservices\NlpNls
+    arguments: [ '@database' , '@nlpservices.awards']
+  nlpservices.instructions:
+    class: Drupal\nlpservices\NlpInstructions
+    arguments: [ '@database' ]
+  nlpservices.coordinators:
+    class: Drupal\nlpservices\NlpCoordinators
+    arguments: [ '@database' ]
+  nlpservices.legislative_fixes:
+    class: Drupal\nlpservices\NlpLegislativeFixes
+    arguments: [ '@database' ]
+  nlpservices.magic_word:
+    class: Drupal\nlpservices\MagicWord
+    arguments: [ '@config.factory' , '@database' ]
+  nlpservices.reports:
+    class: Drupal\nlpservices\NlpReports
+    arguments: [ '@config.factory' , '@database' ]
+  nlpservices.turfs:
+    class: Drupal\nlpservices\NlpTurfs
+    arguments: [ '@config.factory' , '@database' , '@file_system', '@nlpservices.nls', '@nlpservices.paths' ]
+  nlpservices.imap:
+    class: Drupal\nlpservices\NlpImap
+    arguments: [ '@config.factory' ]
+  nlpservices.minivan:
+    class: Drupal\nlpservices\NlpMinivan
+    arguments: [ '@config.factory' , '@nlpservices.reports' , '@nlpservices.voters', '@nlpservices.nls' ]
+  nlpservices.matchbacks:
+    class: Drupal\nlpservices\NlpMatchbacks
+    arguments: [ '@database' ]
+  nlpservices.awards:
+    class: Drupal\nlpservices\NlpAwards
+    arguments: [ '@database' ]
+  nlpservices.voters:
+    class: Drupal\nlpservices\NlpVoters
+    arguments: [ '@database', '@nlpservices.matchbacks', '@nlpservices.reports' ]
+  nlpservices.survey_question_nlp:
+    class: Drupal\nlpservices\NlpSurveyQuestion
+    arguments: [ '@database' , '@nlpservices.survey_responses_nlp' ]
+  nlpservices.survey_responses_nlp:
+    class: Drupal\nlpservices\NlpSurveyResponses
+    arguments: [ '@database' ]
+  nlpservices.api_key:
+    class: Drupal\nlpservices\NlpApiKey
+    arguments: [ '@nlpservices.nlp_config', '@nlpservices.encryption' ]
+  nlpservices.logger.channel.nlpservices:
+    parent: logger.channel_base
+    arguments: [ 'nlpservices' ]
+  nlpservices.encryption:
+    class: Drupal\nlpservices\NlpEncryption
+  nlpservices.create_frontpage:
+    class: Drupal\nlpservices\NlpCreateFrontPage
+  nlpservices.roles_permissions:
+    class: Drupal\nlpservices\NlpRolesPermissions
+  nlpservices.drupal_user:
+    class: Drupal\nlpservices\DrupalUser
+    arguments: [ '@nlpservices.magic_word' ]
+  nlpservices.session_data:
+    class: Drupal\nlpservices\NlpSessionData
+    arguments: [ '@tempstore.private' , '@nlpservices.drupal_user' ]
+  nlpservices.html_text:
+    class: Drupal\nlpservices\HtmlText
+  nlpservices.export_nls_status:
+    class: Drupal\nlpservices\NlpExportNlsStatus
+    arguments: [ '@file_system' , '@database' ,'@nlpservices.voters',
+                 '@nlpservices.reports','@nlpservices.nls']
+  nlpservices.export_voter_reports:
+    class: Drupal\nlpservices\NlpExportVoterReports
+    arguments: [ '@file_system' , '@database' ,'@nlpservices.voters',
+                 '@nlpservices.reports','@nlpservices.nls' ]
+  nlpservices.export_user_accounts:
+    class: Drupal\nlpservices\NlpExportUserAccounts
+    arguments: [ '@file_system' , '@database' ,'@nlpservices.drupal_user',
+                 '@nlpservices.magic_word','@nlpservices.nls' ]
+  nlpservices.export_turf_status:
+    class: Drupal\nlpservices\NlpExportTurfStatus
+    arguments: [ '@file_system'  ,'@nlpservices.voters','@nlpservices.reports',
+                 '@nlpservices.nls','@nlpservices.turfs' ,'@nlpservices.matchbacks' ]
+  nlpservices.export_award_status:
+    class: Drupal\nlpservices\NlpExportAwardStatus
+    arguments: [ '@file_system'  , '@nlpservices.awards' ]
+  nlpservices.crosstab_counts:
+    class: Drupal\nlpservices\NlpCrosstabCounts
+    arguments: [ '@database' ]
+  nlpservices.data_entry_helper:
+    class: Drupal\nlpservices\NlpDataEntryHelper
+    arguments: [ '@nlpservices.nls' , '@nlpservices.session_data', '@nlpservices.coordinators' ]
+  nlpservices.data_entry_print:
+    class: Drupal\nlpservices\NlpDataEntryPrint
+    arguments: [ '@tempstore.private',
+                 '@nlpservices.nls' , '@nlpservices.session_data',
+                 '@nlpservices.coordinators', '@nlpservices.voters',
+                 '@nlpservices.turfs', '@nlpservices.paths', '@nlpservices.instructions']
+  nlpservices.results_summary:
+    class: Drupal\nlpservices\NlpResultsSummary
+    arguments: [ '@nlpservices.voters' , '@nlpservices.matchbacks',
+                 '@nlpservices.nls', '@nlpservices.drupal_user',
+                 '@nlpservices.crosstab_counts', '@nlpservices.reports',
+                 '@nlpservices.turfs' ]
+  nlpservices.send_email:
+    class: Drupal\nlpservices\NlpSendEmail
+    arguments: [ '@language_manager' , '@nlpservices.html_text',
+                 '@plugin.manager.mail', '@nlpservices.instructions',
+                 '@nlpservices.turf_delivery_message' ]

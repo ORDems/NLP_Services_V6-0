@@ -515,6 +515,31 @@ class NlpVoters {
     return $contactedCount;
   }
 
+  public function getVotedAndAttempted($county): int
+  {
+    try {
+      $query = $this->connection->select(self::VOTER_TURF_TBL, 'g');
+      $query->join($this->matchbacksObj::MATCHBACK_TBL, 'm', 'g.vanid = m.vanid AND g.County = :county',
+        array(':county' => $county));
+      $query->addField('g','vanid');
+      $query->isNotNull('m.'.$this->matchbacksObj::DATE);
+      $query->distinct();
+      $voted = $query->execute();
+    }
+    catch (Exception $e) {
+      nlp_debug_msg('e', $e->getMessage() );
+      return 0;
+    }
+    $contactedCount = 0;
+    do {
+      $voter = $voted->fetchAssoc();
+      if(empty($voter)) {break;}
+      $voterContacted = $this->reportsObj->voterContactAttempted($voter['vanid']);
+      if($voterContacted) {$contactedCount++;}
+    } while (TRUE);
+    return $contactedCount;
+  }
+
   public function postcardAndVoted($county): int
   {
     try {

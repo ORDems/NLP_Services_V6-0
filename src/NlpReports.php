@@ -27,7 +27,7 @@ class NlpReports {
   
   const MULTI_INSERT = 100;
   const BATCH = 10;
-  
+
   private array $records = array();
   private int $sqlCnt = 0;
   private int $batchCnt = 0;
@@ -543,6 +543,31 @@ class NlpReports {
     return $contactCount>0;
   }
 
+  function voterContactAttempted($vanid): bool
+  {
+    $config = Drupal::config('nlpservices.configuration');
+    $electionConfiguration = $config->get('nlpservices-election-configuration');
+    $cycle = $electionConfiguration['nlp_election_cycle'];
+    try {
+      //$query = db_select(self::NLP_RESULTS_TBL, 'r');
+      $query = $this->connection->select(self::NLP_RESULTS_TBL, 'r');
+      $query->addField('r','vanid');
+      $query->condition('vanid',$vanid);
+      $query->condition('cycle',$cycle);
+      //$query->condition('type',self::SURVEY);
+      $orGroup = $query->orConditionGroup()
+        ->condition ('r.Type', self::SURVEY )
+        ->condition ('r.Type', self::CONTACT );
+      $query->condition($orGroup);
+      $contactCount = $query->countQuery()->execute()->fetchField();
+    }
+    catch (Exception $e) {
+      nlp_debug_msg('e', $e->getMessage() );
+      return FALSE;
+    }
+    return $contactCount>0;
+  }
+
   function voterSentPostcard($vanid): bool
   {
     $config = Drupal::config('nlpservices.configuration');
@@ -585,6 +610,30 @@ class NlpReports {
     }
     catch (Exception $e) {
       nlp_debug_msg('e', $e->getMessage() );
+      return 0;
+    }
+    return $contactedCount;
+  }
+
+  function countyAttempted($county): int
+  {
+    $config = Drupal::config('nlpservices.configuration');
+    $electionConfiguration = $config->get('nlpservices-election-configuration');
+    $cycle = $electionConfiguration['nlp_election_cycle'];
+    try {
+      $query = $this->connection->select(self::NLP_RESULTS_TBL, 'r');
+      $query->addField('r','vanid');
+      $query->distinct();
+      $query->condition('cycle',$cycle);
+      $query->condition('county',$county);
+      $orGroup = $query->orConditionGroup()
+        ->condition('type',self::SURVEY)
+        ->condition('type',self::CONTACT);
+      $query->condition($orGroup);
+      $contactedCount = $query->countQuery()->execute()->fetchField();
+    }
+    catch (Exception $e) {
+      nlp_debug_msg('countyAttempted', $e->getMessage() );
       return 0;
     }
     return $contactedCount;

@@ -4,21 +4,20 @@ namespace Drupal\nlpservices\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\nlpservices\NlpExportUserAccounts;
 
 class ExportUserAccountsController extends ControllerBase
 {
-  protected $exportUserAccounts;
+  protected NlpExportUserAccounts $exportUserAccounts;
 
-  /**
-   * {@inheritdoc}
-   */
   public function __construct( $exportUserAccounts) {
     $this->exportUserAccounts = $exportUserAccounts;
   }
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container) {
+  public static function create(ContainerInterface $container): ExportUserAccountsController
+  {
     return new static(
       $container->get('nlpservices.export_user_accounts'),
     );
