@@ -294,7 +294,8 @@ class DataEntryForm extends FormBase
     $form['counts_box'] = [
       '#markup' => '<div class="small-box-left">',
     ];
-    $form['voter_counts'] = $this->voterCounts($turfInfo['voterCount'],$turfInfo['votedCount']);
+    //$form['voter_counts'] = $this->voterCounts($turfInfo['voterCount'],$turfInfo['votedCount']);
+    $form['voter_counts'] = $this->voterCounts($turfInfo);
     $form['date_counts_end'] = [
       '#markup' => '</div>',
     ];
@@ -1269,19 +1270,30 @@ class DataEntryForm extends FormBase
   /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
    * voterCounts
    *
-   * @param $voterCount
-   * @param $votedCount
+   * @param $turfInfo
    * @return array
    */
-  function voterCounts($voterCount,$votedCount): array
+  function voterCounts($turfInfo): array
   {
+    $voterCount = $turfInfo['voterCount'];
+    $votedCount = $turfInfo['votedCount'];
+    $attemptedCount = $turfInfo['attemptedCount'];
+    $contactedCount = $turfInfo['contactedCount'];
+  
     $form_element['counts'] = array (
       '#markup' => "  \n ".'<div class="no-white voter-counts">',
     );
     $percentage = round($votedCount/$voterCount*100,1);
+    $attemptedPercentage = round($attemptedCount/$voterCount*100,1);
+    $contactedPercentage = round($contactedCount/$voterCount*100,1);
+  
     $form_element['voter-count'] = array(
-      '#markup' => " \n ".'<span class="voting-counts-title">Voting Summary<br><span class="voting-counts">
-          Voters: '.$voterCount.' Voted: '.$votedCount.'<br>Percent voted : '.$percentage.'%</span></span>',
+      '#markup' => " \n ".'<span class="voting-counts-title">
+ Voting Summary<br><span class="voting-counts">
+ Voters: '.$voterCount.', Voted: '.$votedCount.', '.$percentage.'%<br>
+ Attempted contacts: '.$attemptedCount.', '.$attemptedPercentage.'%<br>
+ Voters contacted: '.$contactedCount.', '.$contactedPercentage.'%
+ </span></span>',
     );
     $form_element['counts-end'] = array (
       '#markup' => " \n   ".'</div>',
@@ -1377,6 +1389,13 @@ class DataEntryForm extends FormBase
       }
       next($voters);
       $vanid = $voter['vanid'];
+  
+      $selectedContactMethod = NULL;
+      if(!empty($selectedContactMethods[$vanid])) {
+        $selectedContactMethod = $selectedContactMethods[$vanid];
+      } elseif (!empty($buildInfo['preferredContactMethod'])) {
+        $selectedContactMethod = $buildInfo['preferredContactMethod'];
+      }
       
       $nameDisplay = $this->nlp_name_display($voter);
       $contactInfo = $this->contactInfoDisplay($voter);
@@ -1385,6 +1404,8 @@ class DataEntryForm extends FormBase
       $pledge['nickname'] = $voter['nickname'];
       $pledge['questionArray'] = $surveyQuestions['state'];
       $pledge['defaultValue'] = 0;
+      $pledge['selectedContactMethod'] = $selectedContactMethod;
+  
       //$pledge['surveyResponseList'] = $surveyResponseList;
       $pledge2vote = $this->pledgeToVoteCell($pledge);
       
@@ -1392,13 +1413,15 @@ class DataEntryForm extends FormBase
       //$method['firstVoter'] = $voterCount == 0;
       $method['voterCount'] = $voterCount;
       $method['contactMethodOptions'] = $contactMethods;
-  
+      /*
       $method['selectedContactMethod'] = NULL;
       if(!empty($selectedContactMethods[$vanid])) {
         $method['selectedContactMethod'] = $selectedContactMethods[$vanid];
       } elseif (!empty($buildInfo['preferredContactMethod'])) {
         $method['selectedContactMethod'] = $buildInfo['preferredContactMethod'];
       }
+      */
+      $method['selectedContactMethod'] = $selectedContactMethod;
       //nlp_debug_msg('$buildInfo',$buildInfo);
       //nlp_debug_msg('$method',$method);
       $contactMethod = $this->contactMethodCell($method);
@@ -1439,7 +1462,8 @@ class DataEntryForm extends FormBase
       }
 
       //nlp_debug_msg('$noVoterContact',$noVoterContact);
-      $optionsDisplay = array('' => 'Select Method');
+      //$optionsDisplay = array('' => 'Select Method');
+      $optionsDisplay = NULL;
       if (!empty($noVoterContact['contactResponseOptions'])) {
         //nlp_debug_msg('method: '.$noVoterContact['contactMethod'],$noVoterContact['contactResponseOptions']);
 
@@ -1642,7 +1666,7 @@ class DataEntryForm extends FormBase
     //nlp_debug_msg('$turfIndex',$turfIndex);
     $votersInTurf = $this->voters->fetchVotersByTurf($turfIndex);
     //nlp_debug_msg('$votersInTurf',$votersInTurf);
-    $voterCount = $precinctCount = $votedCount = 0;
+    $voterCount = $precinctCount = $votedCount = $attemptedCount = $contactedCount = 0;
     $hd = $pct = $cd = NULL;
     foreach ($votersInTurf as $voterInfo) {
       $vanid = $voterInfo['vanid'];
@@ -1654,6 +1678,24 @@ class DataEntryForm extends FormBase
       }
       
       $voterContacts = $this->reports->getNlpReports($vanid);
+      //nlp_debug_msg('$voterContacts',$voterContacts);
+      $contacted = $attempted = false;
+      foreach ($voterContacts as $voterContactList) {
+        foreach ($voterContactList as $voterContact) {
+          //nlp_debug_msg('$voterContact',$voterContact);
+          //nlp_debug_msg('$voterContact[type]',$voterContact['type']);
+          if($voterContact['type'] == $this->reports::SURVEY) {
+            $attempted = $contacted = TRUE;
+            break;
+          } elseif ($voterContact['type'] == $this->reports::CONTACT) {
+            $attempted = TRUE;
+            //nlp_debug_msg('$voterContact',$voterContact);
+          }
+        }
+      }
+      if($attempted) {$attemptedCount++;}
+      if($contacted) {$contactedCount++;}
+  
       //nlp_debug_msg('reports: '.$vanid,$voterContacts);
       $voterAc = $this->reports->getNlpAcReport($vanid);
       $display = $this->reports->displayNlReports($voterContacts);
@@ -1688,6 +1730,8 @@ class DataEntryForm extends FormBase
     $turfInfo['turf-cd'] = $cd;
     $turfInfo['voterCount'] = $voterCount;
     $turfInfo['votedCount'] = $votedCount;
+    $turfInfo['attemptedCount'] = $attemptedCount;
+    $turfInfo['contactedCount'] = $contactedCount;
     $turfInfo['pageCount'] = (int) ceil($voterCount/10);
     return $turfInfo;
   }
@@ -1774,6 +1818,7 @@ class DataEntryForm extends FormBase
     $form_element['start'] = array(
       '#markup' => " \n ".'<div><b>Contact Method</b> ',
     );
+    /*
     $form_element["contact_method-$vanid"] = array(
       '#type' => 'select',
       '#options' => $method['contactMethodOptions'],
@@ -1782,8 +1827,22 @@ class DataEntryForm extends FormBase
         'wrapper' => 'no_contact_row'.$method['voterCount'].'_div',
       ),
     );
+    */
+    $form_element["contact_method-$vanid"] = array(
+      '#type' => 'select',
+      '#options' => $method['contactMethodOptions'],
+      '#ajax' => array(
+        'callback' => '::formCallback',
+        'wrapper' => 'voterForm-div',
+      ),
+    );
     if(!empty($method['selectedContactMethod'])) {
       $form_element["contact_method-$vanid"]['#default_value'] =  $method['selectedContactMethod'];
+    } else {
+      $form_element['method_hint'] = array(
+        '#markup' => " \n ".'<div><i>You must select a Contact Method <br>
+ before you can report a voter contact response.</i> ',
+      );
     }
     $form_element['end'] = array(
       '#markup' => " \n ".'</div>',
@@ -1802,27 +1861,43 @@ class DataEntryForm extends FormBase
     $form_element = array();
     
     if (!empty($pledge['questionArray'])) {
-      //nlp_debug_msg('questionArray',$pledge['questionArray']);
-      $question = strip_tags(t($pledge['questionArray']['scriptQuestion'], array(':fn' => $pledge['nickname'])));
-      $form_element['title'] = array(
-        '#markup' => t(" \n " . '<div class="response-title">Voter Responded<br></div>'
-          .'<div class="response-title-note line-spacer">(Skip this report unless voter responds directly.)</div>'
-          //.'<div class="line-spacer">'
-          . $question . '</div>'),
-      );
-      $responseList = [0=>'Select Response'];
-      foreach ($pledge['questionArray']['responses'] as $responseId=>$response) {
-        $responseList[$responseId] = $response['name'];
+      
+      if(empty($pledge['selectedContactMethod'])) {
+  
+        $form_element['title'] = array(
+          '#markup' => t(" \n "
+            . '<div class="response-title">Voter Responded<br></div>'
+            . '<i>Select a Contact Method first.<br></i>' . '</div>'),
+        );
+      } else {
+        //nlp_debug_msg('questionArray',$pledge['questionArray']);
+        $question = strip_tags(t($pledge['questionArray']['scriptQuestion'],
+          array(':fn' => $pledge['nickname'])));
+        $form_element['title'] = array(
+          '#markup' => t(" \n "
+            .'<div class="response-title">Voter Responded<br></div>'
+            . $question . '</div>'),
+        );
+        $responseList = [0=>'Select Response'];
+        foreach ($pledge['questionArray']['responses'] as $responseId=>$response) {
+          $responseList[$responseId] = $response['name'];
+        }
+  
+        $responseList = str_replace(":fn", $pledge['nickname'], $responseList);
+        $form_element["pledge2vote-" . $pledge['vanid']] = array(
+          '#type' => 'select',
+          '#options' => $responseList,
+          '#default_value' => $pledge['defaultValue'],
+          '#prefix' => '<div>',
+          '#suffix' => '</div>',
+        );
+        $form_element['pledge_hint'] = array(
+          '#markup' => t(" \n "
+            .'<div class="response-title-note line-spacer">
+            (Skip this report unless voter responds directly.)</div>'),
+        );
       }
       
-      $responseList = str_replace(":fn", $pledge['nickname'], $responseList);
-      $form_element["pledge2vote-" . $pledge['vanid']] = array(
-        '#type' => 'select',
-        '#options' => $responseList,
-        '#default_value' => $pledge['defaultValue'],
-        '#prefix' => '<div>',
-        '#suffix' => '</div>',
-      );
     }
     return $form_element;
   }
@@ -1840,7 +1915,8 @@ class DataEntryForm extends FormBase
     if(!empty($countyQuestion['countyQuestionArray'])) {
       $question = strip_tags(t($countyQuestion['countyQuestionArray']['scriptQuestion'], array(':fn' => $countyQuestion['nickname'])));
       $form_element['county_question_title'] = array(
-        '#markup' => t(" \n " . '<div class="response-title line-spacer">Voter Responded<br></div>'
+        '#markup' => t(" \n "
+          . '<div class="response-title line-spacer">Voter Responded<br></div>'
           .'<div class="line-spacer">'
           . $question . '</div>'),
       );
@@ -1857,7 +1933,33 @@ class DataEntryForm extends FormBase
         '#suffix' => '</div><div class="line-spacer"></div>',
       );
     }
-    
+    $vanid = $noVoterContact['vanid'];
+    $form_element['note'] = array(
+      '#markup' => '<b>No Voter Response</b>',
+    );
+    if(empty($noVoterContact['optionsDisplay'])) {
+      $voterCount = $noVoterContact['voterCount'];
+      $form_element['notice'] = array(
+        '#markup' => '<i>Select a Contact Method first.<br></i>',
+        '#prefix' => '<div id="no_contact_row'.$voterCount.'_div">',
+        '#suffix' => '</div>',
+      );
+    } else {
+      //nlp_debug_msg('$noVoterContact',$noVoterContact);
+      $optionsDisplay = $noVoterContact['optionsDisplay'];
+  
+      //nlp_debug_msg('preferredContactMethod',$noVoterContact['preferredContactMethod']);
+      $voterCount = $noVoterContact['voterCount'];
+  
+      $form_element["no_contact-".$voterCount] = array(
+        '#type' => 'select',
+        '#options' => $optionsDisplay,
+        '#prefix' => '<div id="no_contact_row'.$voterCount.'_div">',
+        '#suffix' => '</div>',
+      );
+  
+    }
+    /*
     $form_element['note'] = array(
       '#markup' => '<b>No Voter Response</b>',
     );
@@ -1874,7 +1976,7 @@ class DataEntryForm extends FormBase
       '#prefix' => '<div id="no_contact_row'.$voterCount.'_div">',
       '#suffix' => '</div>',
     );
-    
+    */
     $form_element['historical-start'.$vanid] = array(
       '#markup' => '<div>',
     );
@@ -1885,7 +1987,7 @@ class DataEntryForm extends FormBase
     if (!empty($noVoterContact['historical'])) {
       $form_element['historical'] = array(
         '#markup' => '<div class="line-spacer"></div><div class="hint_note historical-report-title">'
-          . '<p>View historical contacts' . $historicalContacts . '</p></div>',
+          . '<p><br>View historical contacts' . $historicalContacts . '</p></div>',
       );
     }
     $form_element['historical-end'.$vanid] = array(
@@ -2273,6 +2375,10 @@ class DataEntryForm extends FormBase
    */
   function row9Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-9-body"]['no_contact-9'];
+  }
+  
+  function formCallback($form, $unused) {
+    return $form['voters']['voterForm'];
   }
   
 }
