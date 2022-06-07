@@ -167,7 +167,7 @@ class SyncTurfForm extends FormBase {
         $form['turf_list_select']['turf_submit'] = array(
           '#name' => 'turf_submit',
           '#type' => 'submit',
-          '#value' => 'Checkin the selected turf >>',
+          '#value' => 'Sync (check in) the selected turf.',
         );
         break;
       case 'nl_select':
