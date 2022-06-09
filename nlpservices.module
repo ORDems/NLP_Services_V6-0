@@ -1,6 +1,7 @@
 <?php
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
 
 const NLP_MODULE = 'nlpservices';
 
@@ -114,7 +115,6 @@ function nlpservices_mail($key, &$message, $params) {
 
   }
   //nlp_debug_msg('$message',$message);
-
 }
 
 /**
@@ -123,7 +123,6 @@ function nlpservices_mail($key, &$message, $params) {
  */
 function nlpservices_user_login(Drupal\user\Entity\User $account)
 {
-
   $user = $account::load(Drupal::currentUser()->id());
   $county = $user->get('field_county')->getValue()[0]['value'];
   //nlp_debug_msg('$county',$county);
@@ -132,6 +131,12 @@ function nlpservices_user_login(Drupal\user\Entity\User $account)
   $store->set('County',$county);
 }
 
+/** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * implements nlp_debug_msg
+ *
+ * @param $msg
+ * @param mixed $values
+ */
 function nlp_debug_msg($msg,$values='EMPTY') {
   $messenger = Drupal::messenger();
   $backTrace = debug_backtrace();
@@ -155,6 +160,7 @@ function nlp_debug_msg($msg,$values='EMPTY') {
     $msg = t($location."<br><pre>$huh</pre>",
       ['@mod'=>$caller,'@line'=>$line]);
   } else {
+    
     $nice = highlight_string("<?php\n\$values =\n" . var_export($values, true) . ";\n?>", TRUE);
     $msg = t($location."<br><pre>$nice</pre>",
       ['@mod'=>$caller,'@line'=>$line]);
@@ -170,46 +176,82 @@ function nlp_debug_msg($msg,$values='EMPTY') {
 function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id)
 {
   /* @var Drupal\Core\Entity\FieldableEntityInterface $entity */
-  //nlp_debug_msg('form',$form);
-  //nlp_debug_msg('$form_id',$form_id);
   switch ($form_id) {
-    case 'user_login_block':
-    case 'user_login_form' :
-      array_unshift($form['#submit'], 'custom_login_submit');
+   
+    case 'awake_form':
+    case 'nlpservices_sync_active_nls_form':
+    case 'nlpservices_manage_drupal_accounts_form':
+    case 'nlpservices_login_credentials_reminder_form':
+      $form['#attached']['library'][] = 'nlpservices/info-boxes';
+    break;
+  
+    case 'nlpservices_data_entry_form':
+      $form['#attached']['library'][] = 'nlpservices/data-entry-table';
       break;
-  }
-
-  $nlpForms = ['awake_form', 'nlpservices_sync_active_nls_form',
-    'nlpservices_manage_drupal_accounts_form',
-    'nlpservices_login_credentials_reminder_form'];
-
-  $nlpForm = $form['#form_id'];
-  if (in_array($nlpForm, $nlpForms)) {
-    $form['#attached']['library'][] = 'nlpservices/info-boxes';
-  }
-
-  if ($nlpForm == 'nlpservices_data_entry_form') {
-    $form['#attached']['library'][] = 'nlpservices/data-entry-table';
+      
+    case 'user_register_form':
+      $form['#validate'][] = 'nlpservices_add_user_validate';
+      break;
   }
 }
 
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * implements hook_user_presave
+ * implements hook_user_create_access
  *
- * Implementation of hook_user_presave().  Check if the user is an NL that
- * is changing the password.  Save the password to help with a hint for
- * turf delivery emails.
- *
- * @param $unused
- * @noinspection PhpUnusedParameterInspection
- */
-function nlpservices_user_presave($unused){
+ * @param AccountInterface $account
+ * @param array $context
+ * @param $entity_bundle
+ * @noinspection PhpUnused
+*/
+
+function nlpservices_user_create_access(AccountInterface $account,
+                                        array $context, $entity_bundle) {
+  if($context['entity_type_id'] != 'user') {return;}
+  if(empty($_REQUEST['form_id']) OR $_REQUEST['form_id'] != 'user_register_form') {
+    return;
+  }
   $magicWordObj = Drupal::getContainer()->get('nlpservices.magic_word');
-  //nlp_debug_msg('$_REQUEST',$_REQUEST);
   if(!empty($_REQUEST['field_mcid'][0]['value'])) {
-    //$magicWordObj = new NlpMagicWord();
-    //nlp_debug_msg('mcid',$_REQUEST['field_mcid'][0]['value']);
     $magicWordObj->setMagicWord($_REQUEST['field_mcid'][0]['value'], $_REQUEST['pass']['pass1']);
+  }
+}
+
+/** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * nlpservices_add_user_validate
+ *
+ * @param $form
+ * @param FormStateInterface $form_state
+ */
+function nlpservices_add_user_validate(&$form, FormStateInterface $form_state) {
+  $values = $form_state->getValues();
+  //nlp_debug_msg('$values',$values);
+  
+  $county = $values['field_county'][0]['value'];
+  $config = Drupal::getContainer()->get('config.factory');
+  $nlpConfig = $config->get('nlpservices.configuration');
+  $countyNames = $nlpConfig->get('nlpservices-county-names');
+  $countyNames = array_keys($countyNames);
+  unset($countyNames[0]);
+  if(!empty($county) AND !in_array($county,$countyNames)) {
+    $form_state->setErrorByName('field_county',t('Unknown county, check spelling.'));
+  }
+  
+  $roles = $values['roles'];
+  if(in_array(NLP_LEADER_ROLE_ID,$roles)) {
+    if(empty($values['field_mcid'][0]['value'])) {
+      $form_state->setErrorByName('field_mcid',
+        t('You must specify an MCID for an NLP Leader.'));
+    }
+    if(empty($values['field_county'][0]['value'])) {
+      $form_state->setErrorByName('field_county',
+        t('You must specify a County for an NLP Leader.'));
+    }
+  }
+  if(in_array(NLP_COORDINATOR_ROLE_ID,$roles)) {
+    if(empty($values['field_county'][0]['value'])) {
+      $form_state->setErrorByName('field_county',
+        t('You must specify a County for an NLP Coordinator.'));
+    }
   }
 }
 
