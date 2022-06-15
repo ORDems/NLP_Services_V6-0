@@ -179,6 +179,9 @@ function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id
   switch ($form_id) {
    
     case 'awake_form':
+      $form['#attached']['library'][] = 'nlpservices/info-boxes';
+      $form['#attached']['library'][] = 'nlpservices/data-entry-table';
+      break;
     case 'nlpservices_sync_active_nls_form':
     case 'nlpservices_manage_drupal_accounts_form':
     case 'nlpservices_login_credentials_reminder_form':
@@ -202,7 +205,8 @@ function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id
  * @param array $context
  * @param $entity_bundle
  * @noinspection PhpUnused
-*/
+ * @noinspection PhpUnusedParameterInspection
+ */
 
 function nlpservices_user_create_access(AccountInterface $account,
                                         array $context, $entity_bundle) {
@@ -221,6 +225,8 @@ function nlpservices_user_create_access(AccountInterface $account,
  *
  * @param $form
  * @param FormStateInterface $form_state
+ * @noinspection PhpUnusedParameterInspection
+ * @noinspection PhpUnused
  */
 function nlpservices_add_user_validate(&$form, FormStateInterface $form_state) {
   $values = $form_state->getValues();

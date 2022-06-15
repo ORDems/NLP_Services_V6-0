@@ -69,62 +69,42 @@ class AwakeForm extends ConfigFormBase {
     $canvassDate = date('Y-m-d h:i:s A',time());  // Today.
     nlp_debug_msg('$canvassDate',$canvassDate);
 
-    /*
-    $query = Drupal::entityQuery('node')
-      ->condition('type', 'page')
-      ->condition('title', 'Welcome');
-    $nids = $query->execute();
-    nlp_debug_msg('$nids',$nids);
-    try {
-      $node_storage = Drupal::entityTypeManager()->getStorage('node');
-    } catch (InvalidPluginDefinitionException | PluginNotFoundException $e) {
-      return;
-    }
-    $nodes = $node_storage->loadMultiple($nids);
-
-    foreach ($nodes as $node) {
-      $title = $node->title->value;
-      $nid = $node->nid->value;
-      nlp_debug_msg('$title',$title);
-      nlp_debug_msg('$nid',$nid);
-      try {
-        $node_storage = Drupal::entityTypeManager()->getStorage('node');
-      } catch (InvalidPluginDefinitionException | PluginNotFoundException $e) {
-        nlp_debug_msg('error', $e->getMessage());
-      }
-      $node = $node_storage->load($nid);
-
-      try {
-        $node->delete();
-      } catch (EntityStorageException $e) {
-        nlp_debug_msg('error', $e->getMessage());
-      }
-
-    }
-
-    if(empty($nodes)) {
-      $node = Node::create([
-        'type'        => 'page',
-        'title'       => 'Welcome',
-        'promote' => 1,
-        'sticky' => 1,
-        'status' => 1,
-      ]);
-      $node->set('body', array(
-        //'summary' => "Teaser",
-        'value' => '<p><span style="font-size:16px;">Welcome to the login for the Neighborhood Leader Program website.
-&nbsp; Up and to the right, click on the <u>Log in</u> link to either login as a Neighborhood Leader to report the 
-results of a canvass or login as a coordinator to assist our Neighborhood Leaders.</span></p>
-<p><em><span style="font-size:16px;">By logging in, you are agreeing to keep the information secure and not to share 
-it with any unauthorized person. </span></em></p>
-<!--break-->',
-        'format' => 'full_html',
-      ));
-      //nlp_debug_msg('$node',$node);
-      //$node->field_text->value = 'Simple text';
-      $node->save();
-    }
-*/
+    $form['search-cell'] = ['#markup'=>" \n ".'
+ <!-- search --><section class="search-box">',];
+    $form['search-name'] = ['#markup' => '
+<table class="no-white search"><tbody class="no-white">
+<tr class="no-white white-back"><td class="no-white" colspan="2">
+<div class="no-white">Search by last name.</div>
+</td></tr>'];
+    $form['search-header'] = ['#markup' => '
+<tr class="no-white white-back"><td class="no-white">'];
+  
+    $form['last-name'] = array(
+      '#type' => 'textfield',
+      '#decription' => 'Last name.',
+      '#size' => 20,
+      '#maxlength' => 40,
+      //'#attributes' => array('class' => array('no-white')),
+    );
+  
+  
+    $form['search-submit'] = ['#markup' => '</td><td class="no-white">'];
+  
+    //$form['last_name_submit'] = ['#markup' => 'huh'];
+  
+    
+      $form['last_name_submit'] = array (
+        '#type' => 'submit',
+        '#name' => 'last_name_search',
+        '#value' => 'Search',
+      );
+    
+    
+    $form['search-name-end'] = ['#markup' => '</td></tr></tbody></table>'];
+  
+    $form['search-cell-end'] = ['#markup'=>" \n ".'</section>'];
+    
+    
 
     $form['awards'] = [
       '#type' => 'file',

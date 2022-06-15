@@ -6,7 +6,9 @@
 .voter-table {font-size:small; padding:0; border-color:#d3e7f4; border-width:1px; table-layout: fixed; width:1207px; }
 .no-border {border-collapse: collapse; border-style: hidden; table-layout:fixed;}
 .no-white {margin:0; padding:0; line-height:100%;}
-.form-item {margin-top:0;}
+.white-back { background: rgba(0, 0, 0, 0) }
+.form-item { margin-top:0; margin-bottom:0; }
+.form-actions { margin-top:0;  margin-bottom:0; }
 .td-de {margin-left:2px; margin-bottom:2px; line-height:100%; font-size:small; vertical-align: text-top;}
 .form-type-textfield {margin: 2px 2px;}
 div.voter-name { float: left; font-size:medium; font-weight:bold; }
@@ -34,7 +36,14 @@ div.line-spacer { padding-bottom:4px; }
     border: 2px solid #0000ff; border-radius:5px;
     background: rgba(255, 255, 255, 1.0) }
 div.end-big-box { clear: both; }
-div.date-box { width: 1210px; margin:0; padding:0;}
+div.date-bar { width: 1230px; margin:0; padding:0;}
+div.date-box-left {float: left; font-size:x-small; width: 140px; margin:0; padding:4px 0 0 0;}
+div.counts-box-left {float: left; font-size:x-small; width: 180px; margin:0; padding:4px 0 0 0;}
+div.awards-box-left {float: left; font-size:x-small; width: 250px; margin:0; padding:4px 0 0 0;}
+div.search-box-left {float: left; font-size:x-small; width: 180px; margin:0; padding:4px 0 0 0;}
+div.nav-box-right {float: right; font-size:x-small; width: 400px; margin:0; padding:4px 0 0 0;}
+
+
 div.inner-box-left {float: left; font-size:x-small;  margin:0; padding:4px 0 0 0;}
 div.x-small-box-left {float: left; font-size:x-small; width: 50px; margin:0; padding:4px 0 0 0;}
 div.small-box-left {float: left; font-size:x-small; width: 200px; margin:0; padding:4px 0 0 0;}
@@ -57,18 +66,18 @@ div.medium-box-right {float: right; font-size:x-small; width: 400px; margin:0; p
 div.canvass_date { border: 1px solid red; border-radius: 5px;
     padding-left:5px; padding-right:5px; box-sizing: border-box;
     width:130px; font-size:x-small;}
-div.voter-counts { margin: 10px 0 0 0; padding: 5px; border: 1px solid blue;
+div.voter-counts { margin: 0; padding: 5px; border: 1px solid blue;
     border-radius: 5px; line-height:100%; font-size:x-small; width:155px; }
 .voting-counts-title { font-weight: bold; }
 .voting-counts { color: green; }
 
-div.award-box { width:290px; }
-div.badge-container { position: relative; color: white; float:left; width:140px; }
-img.badge-img { width:80%; margin:0; padding:0; }
-div.note-container { float:left; width: 150px; font-size: small;
-    line-height: 105%; padding-top: 10px; color:maroon; }
-div.single-digit { left: 49px; }
-div.double-digit { left: 44px; }
+div.award-box { width:240px; }
+div.badge-container { position: relative; color: white; float:left; width:110px; }
+img.badge-img { width:90%; margin:0; padding:0; }
+div.note-container { float:left; width: 130px; font-size: small;
+    line-height: 105%; color:maroon; }
+div.single-digit { left: 44px; }
+div.double-digit { left: 39px; }
 div.election-count { position: absolute; bottom: 27px; font-size:x-large; color:maroon; }
 
 .yes { color: green; font-weight: bold;}
@@ -77,3 +86,13 @@ div.election-count { position: absolute; bottom: 27px; font-size:x-large; color:
 div.star-box { width: 225px; margin:0; padding:0; position:relative; }
 div.star-img { float: left; width: 101px; margin:0; padding:0; }
 div.star-text { float: right; width: 118px; padding:0; margin-left: 105px; position:absolute; top:30%; }
+
+section.search-box { border: 1px solid blue; border-radius: 5px;
+    padding:5px 0 0 5px; box-sizing: border-box; width:180px; }
+table.search { border-collapse:collapse; border-style:hidden; }
+td.search-name { width: 180px; font-size:small; }
+td.search-submit { width: 60px; font-size:small; }
+
+div.form-no-label { margin-top:0; margin-bottom:0; }
+
+div.form-item { margin-top:0; margin-bottom:0; }

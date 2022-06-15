@@ -3,9 +3,6 @@
 namespace Drupal\nlpservices;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
-//use Drupal\nlpservices\NlpCoordinators;
-//use Drupal\nlpservices\NlpSessionData;
-//use Drupal\nlpservices\NlpNls;
 
 /**
  * @noinspection PhpUnused
@@ -98,6 +95,11 @@ calls.   ';
     $output .= '<H5>New email</H5>If you get an email address for this voter, be sure the voter agrees to getting 
 emails from the state and county parties.  The VoteBuilder database is not updated.  Ask your coordinator to 
 enter the new email into MyCampaign and subscribe to both the county and state email lists. ';
+    $output .= '<H5>Last name search</H5>The search looks for the first match
+of the text you provide in the last name field.  The search is case insensitive and
+can be a partial name.  The response will be the page containing the voter
+that matches the search.  If you made any voter contact reports, they will be
+processed first.';
     return $output;
   }
 

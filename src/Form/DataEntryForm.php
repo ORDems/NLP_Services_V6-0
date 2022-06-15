@@ -181,6 +181,14 @@ class DataEntryForm extends FormBase
       //nlp_debug_msg('$canvassDate',$canvassDate);
 
       $currentPage = $tempSessionData->get('currentPage');
+      if(is_array($currentPage)) {
+        $currentPage = 0;
+        try {
+          $tempSessionData->set('currentPage', $currentPage-1);
+        } catch (Drupal\Core\TempStore\TempStoreException $e) {
+          nlp_debug_msg('Temp store save error',$e->getMessage());
+        }
+      }
       $form_state->set('currentPage',$currentPage);
 
       $mcid = $sessionData['mcid'];
@@ -278,11 +286,11 @@ class DataEntryForm extends FormBase
     $awards = $this->awardsObj->getAward($mcid);
     
     $form['date_bar'] = [
-      '#markup' => '<div class="date-box">',
+      '#markup' => '<div class="date-bar">',
     ];
   
     $form['date_box'] = [
-      '#markup' => '<div class="small-box-left">',
+      '#markup' => '<div class="date-box-left">',
     ];
     $defaultDate = $canvassDate;
     //nlp_debug_msg('$defaultDate',$defaultDate);
@@ -292,7 +300,7 @@ class DataEntryForm extends FormBase
       '#markup' => '</div>',
     ];
     $form['counts_box'] = [
-      '#markup' => '<div class="small-box-left">',
+      '#markup' => '<div class="counts-box-left">',
     ];
     //$form['voter_counts'] = $this->voterCounts($turfInfo['voterCount'],$turfInfo['votedCount']);
     $form['voter_counts'] = $this->voterCounts($turfInfo);
@@ -301,15 +309,23 @@ class DataEntryForm extends FormBase
     ];
   
     $form['award_box'] = [
-      '#markup' => '<div class="small-box-left">',
+      '#markup' => '<div class="awards-box-left">',
     ];
     $form['award'] = $this->awardDisplay($awards);
     $form['award_end'] = [
       '#markup' => '</div>',
     ];
   
+    $form['search_box'] = [
+      '#markup' => '<div class="search-box-left">',
+    ];
+    $form['search'] = $this->searchRequest();
+    $form['search_end'] = [
+      '#markup' => '</div>',
+    ];
+  
     $form['nav_box'] = [
-      '#markup' => '<div class="medium-box-right">',
+      '#markup' => '<div class="nav-box-right">',
     ];
     $form['nav'] = $this->navigate($turfInfo['voterCount'],$turfInfo['pageCount'],$currentPage);
     $form['nav_end'] = [
@@ -649,19 +665,6 @@ class DataEntryForm extends FormBase
 
     if(!empty($actions)) {
       // Something was reported that needs to be recorded.
-
-      /*
-      $mcid = $form_state->get('mcid');
-      if(empty($mcid)) {
-        Drupal::logger('nlpservices')->notice('Missing mcid.');
-        $nlsInfo['firstName'] = $nlsInfo['lastName'] = '???';
-      } elseif(empty($nlsInfo['firstName'])) {
-        Drupal::logger('nlpservices')->notice('Missing nlsInfo. '.$mcid);
-        $nice = highlight_string("<?php\n\$actions 578 =\n" . var_export($actions, true) . ";\n?>", TRUE);
-        Drupal::logger('nlpservices')->notice($nice);
-        $nlsInfo['firstName'] = $nlsInfo['lastName'] = '???';
-      }
-*/
       $actions[0]['mcid'] = $form_state->get('mcid');
       $actions[0]['county'] = $form_state->get('county');
       $actions[0]['turfIndex'] = $form_state->get('turfIndex');
@@ -673,8 +676,7 @@ class DataEntryForm extends FormBase
       //nlp_debug_msg('$actions',$actions);
       $this->recordActions($actions);
     }
-
-
+    
     $triggeringElement = $form_state->getTriggeringElement();
     //nlp_debug_msg('$triggeringElement',$triggeringElement);
     $elementClicked = $triggeringElement['#name'];
@@ -704,6 +706,20 @@ class DataEntryForm extends FormBase
           $tempSessionData = $this->userSession->get('nlpservices.session_data');
           try {
             $tempSessionData->set('currentPage', $currentPage-1);
+          } catch (Drupal\Core\TempStore\TempStoreException $e) {
+            nlp_debug_msg('Temp store save error',$e->getMessage());
+          }
+        }
+        break;
+      case 'last_name_search':
+        $turfIndex = $form_state->get('turfIndex');
+        $lastName = $values['last-name'];
+        $searchResult = $this->voterSearch($turfIndex,$lastName);
+        if($searchResult['found']) {
+          $form_state->set('currentPage',$searchResult['page']);
+          $tempSessionData = $this->userSession->get('nlpservices.session_data');
+          try {
+            $tempSessionData->set('currentPage', $searchResult['page']);
           } catch (Drupal\Core\TempStore\TempStoreException $e) {
             nlp_debug_msg('Temp store save error',$e->getMessage());
           }
@@ -1314,16 +1330,19 @@ class DataEntryForm extends FormBase
     $electionCount = $awards['electionCount'];
     $countPosition = ($electionCount > 9)?'double-digit':'single-digit';
     $badge = "/".$modulePath."/img/nlp_award_seal_2.jpg";
+    $form_element['award_start'] =  array(
+      '#markup'=>" \n ".'<div class="award-box">');
     $nlAward = '
-      <div class="award-box">
       <div class="badge-container">
         <img src="'.$badge.'" alt="Snow" class="badge-img">';
     $nlAward .= '
         <div class="election-count '.$countPosition.'">'.$electionCount.'</div>';
     $nlAward .= '
-      </div><div class="note-container">Number of elections you have been a successful Neighborhood Leader.</div></div>';
+      </div><div class="note-container">Number of elections you have been a successful Neighborhood Leader.</div>';
     $form_element['award'] =  array(
       '#markup'=>" \n ".$nlAward);
+    $form_element['award_end'] =  array(
+      '#markup'=>" \n ".'<div class="end-big-box"></div></div>');
     return $form_element;
   }
   
@@ -2242,6 +2261,8 @@ class DataEntryForm extends FormBase
       '#prefix' => " \n".'<div class="nav_back" >'." \n",
       '#suffix' => " \n".'<br><span class="nav_note">And save reports.</span></div>'." \n",
     );
+    //nlp_debug_msg('$currentPage',$currentPage);
+    $currentPage = 1;
     $startVoter = $currentPage*$this::DE_PAGE_SIZE+1;
     $page = $currentPage+1;
     $endVoter = $page*$this::DE_PAGE_SIZE;
@@ -2276,13 +2297,86 @@ class DataEntryForm extends FormBase
     
     return $form_element;
   }
-
+  
   /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * @param $unused
-   * @param $form
-   * @return mixed
-   * @noinspection PhpUnusedParameterInspection
+   * searchRequest
+   *
+   * @return array
    */
+  function searchRequest(): array
+  {
+    $form_element['search-cell'] = ['#markup'=>" \n ".'
+ <!-- search --><section class="search-box">',];
+    $form_element['search-name'] = ['#markup' => '
+<table class="no-white search"><tbody class="no-white">
+<tr class="no-white white-back"><td class="no-white" colspan="2">
+<div class="no-white">Search by last name.</div>
+</td></tr>'];
+    $form_element['search-header'] = ['#markup' => '
+<tr class="no-white white-back"><td class="no-white">'];
+  
+    $form_element['last-name'] = array(
+      '#type' => 'textfield',
+      '#decription' => 'Last name.',
+      '#size' => 20,
+      '#maxlength' => 40,
+      //'#attributes' => array('class' => array('no-white')),
+    );
+    
+    $form_element['search-submit'] = ['#markup' => '</td><td class="no-white">'];
+  
+    $form_element['last_name_submit'] = array (
+      '#type' => 'submit',
+      '#name' => 'last_name_search',
+      '#value' => 'Search',
+    );
+    $form_element['search-name-end'] = ['#markup' => '</td></tr></tbody></table>'];
+  
+    $form_element['search-cell-end'] = ['#markup'=>" \n ".'</section>'];
+  
+    return $form_element;
+  }
+  
+  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * voterSearch
+   *
+   * @param $turfIndex int
+   * @param $needle string
+   * @return int
+   */
+  function voterSearch(int $turfIndex, string $needle): array {
+    $this->fetchVoters($turfIndex,$voters);
+    $lcNeedle = strtolower($needle);
+    //nlp_debug_msg('$lcNeedle',$lcNeedle);
+    $voterIndex = $page = 0;
+    $found = FALSE;
+    foreach($voters as $voter) {
+      $lcLastName = strtolower( $voter['lastName']);
+      //('$lcLastName',$lcLastName);
+      if(str_contains($lcLastName,$lcNeedle)) {
+        $found = TRUE;
+        break;
+      }
+      $voterIndex++;
+    }
+    if($found) {
+      //nlp_debug_msg('$voterIndex',$voterIndex);
+      $page = (int) floor($voterIndex/$this::DE_PAGE_SIZE);
+      //nlp_debug_msg('$page',$page);
+    } else {
+      $messenger = Drupal::messenger();
+      $messenger->addStatus('Voter not found.');
+    }
+    //nlp_debug_msg('$voters',$voters);
+    return ['found'=> $found,'page'=> $page];
+  }
+    
+      /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+       * @param $unused
+       * @param $form
+       * @return mixed
+       * @noinspection PhpUnusedParameterInspection
+       */
   function row0Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-0-body"]['no_contact-0'];
   }
