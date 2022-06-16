@@ -2242,7 +2242,7 @@ class DataEntryForm extends FormBase
    */
   function navigate($voterCount,$pageCount,$currentPage): array
   {
-    
+    //nlp_debug_msg('$voterCount',$voterCount);
     $form_element['navigation_box'] = array (
       '#markup' => "  \n ".'<section class="nav_box no-white">',
     );
@@ -2254,15 +2254,18 @@ class DataEntryForm extends FormBase
       '#attributes' => array(
         'style' => array('background-image: none; border:0; padding:0; margin:0; '),),
     );
-    $form_element['nav']['previous_voters'] = array(
-      '#type' => 'submit',
-      '#value' => 'Previous page',
-      '#name' => 'previous_voters',
-      '#prefix' => " \n".'<div class="nav_back" >'." \n",
-      '#suffix' => " \n".'<br><span class="nav_note">And save reports.</span></div>'." \n",
-    );
+    if($currentPage != 0) {
+        $form_element['nav']['previous_voters'] = array(
+            '#type' => 'submit',
+            '#value' => 'Previous page',
+            '#name' => 'previous_voters',
+            '#prefix' => " \n".'<div class="nav_back" >'." \n",
+            '#suffix' => " \n".'<br><span class="nav_note">And save reports.</span></div>'." \n",
+        );
+    }
+
     //nlp_debug_msg('$currentPage',$currentPage);
-    $currentPage = 1;
+    //$currentPage = 1;
     $startVoter = $currentPage*$this::DE_PAGE_SIZE+1;
     $page = $currentPage+1;
     $endVoter = $page*$this::DE_PAGE_SIZE;
@@ -2275,13 +2278,16 @@ class DataEntryForm extends FormBase
       '#prefix' => " \n".'<div class="nav_page">'." \n",
       '#suffix' => " \n".'</div>'." \n",
     );
-    $form_element['nav']['next_voters'] = array(
-      '#type' => 'submit',
-      '#value' => 'Next page',
-      '#name' => 'next_voters',
-      '#prefix' => " \n".'<div class="nav_next">'." \n",
-      '#suffix' => " \n".'<br><span class="nav_note">And save reports.</span></div>'." \n",
-    );
+    if($endVoter != $voterCount) {
+        $form_element['nav']['next_voters'] = array(
+            '#type' => 'submit',
+            '#value' => 'Next page',
+            '#name' => 'next_voters',
+            '#prefix' => " \n".'<div class="nav_next">'." \n",
+            '#suffix' => " \n".'<br><span class="nav_note">And save reports.</span></div>'." \n",
+        );
+    }
+
     $form_element['nav']['save_reports'] = array(
       '#type' => 'submit',
       '#value' => 'Save reports',
