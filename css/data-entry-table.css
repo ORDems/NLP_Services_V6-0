@@ -63,6 +63,13 @@ div.medium-box-right {float: right; font-size:x-small; width: 400px; margin:0; p
 .nav_page { width: 80px; float:left; text-align: center; padding: 0; }
 .nav_next { width: 90px; float:left; }
 
+.nav_number {float:left; text-align: center; padding: 2px 2px 0 2px;}
+.nav_dots {float:left; text-align: center; padding: 8px 2px 0 2px; font-size:small; }
+.nav_current_number {float:left; text-align: center; padding: 2px 2px 0 2px; border-bottom: 2px solid blue;}
+
+.button--nav_current_page { color: #00007f; background-color: #fff;
+    background-image: linear-gradient(to bottom, #f3f3f3, #e8e8e8); font-weight: bold;}
+
 div.canvass_date { border: 1px solid red; border-radius: 5px;
     padding-left:5px; padding-right:5px; box-sizing: border-box;
     width:130px; font-size:x-small;}

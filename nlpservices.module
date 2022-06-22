@@ -151,7 +151,17 @@ function nlp_debug_msg($msg,$values='EMPTY') {
 
   if(is_string($values) OR is_scalar($values) OR empty($values)) {
     if(!empty($values)) {
-      $msg = t($location.'@values', ['@values' => $values,'@mod'=>$caller,'@line'=>$line]);
+      if(is_bool($values)) {
+        $msg = t($location.'@values', ['@values' => 'TRUE','@mod'=>$caller,'@line'=>$line]);
+      } else {
+        $msg = t($location.'@values', ['@values' => $values,'@mod'=>$caller,'@line'=>$line]);
+      }
+    } elseif($values === 0) {
+      $msg = t($location.'@values', ['@values' => '0','@mod'=>$caller,'@line'=>$line]);
+    } elseif($values === FALSE) {
+      $msg = t($location.'@values', ['@values' => 'FALSE','@mod'=>$caller,'@line'=>$line]);
+    } elseif($values === NULL) {
+      $msg = t($location.'@values', ['@values' => 'NULL','@mod'=>$caller,'@line'=>$line]);
     } else {
       $msg = t($location.'@values', ['@values' => 'empty','@mod'=>$caller,'@line'=>$line]);
     }
@@ -160,12 +170,11 @@ function nlp_debug_msg($msg,$values='EMPTY') {
     $msg = t($location."<br><pre>$huh</pre>",
       ['@mod'=>$caller,'@line'=>$line]);
   } else {
-    
     $nice = highlight_string("<?php\n\$values =\n" . var_export($values, true) . ";\n?>", TRUE);
     $msg = t($location."<br><pre>$nice</pre>",
       ['@mod'=>$caller,'@line'=>$line]);
   }
-  $messenger->addMessage($msg, $messenger::TYPE_STATUS);
+  $messenger->addMessage($msg, $messenger::TYPE_STATUS,TRUE);
 }
 
 /**
@@ -175,6 +184,7 @@ function nlp_debug_msg($msg,$values='EMPTY') {
  */
 function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id)
 {
+  //nlp_debug_msg('$form_id',$form_id);
   /* @var Drupal\Core\Entity\FieldableEntityInterface $entity */
   switch ($form_id) {
    
@@ -207,7 +217,6 @@ function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id
  * @noinspection PhpUnused
  * @noinspection PhpUnusedParameterInspection
  */
-
 function nlpservices_user_create_access(AccountInterface $account,
                                         array $context, $entity_bundle) {
   if($context['entity_type_id'] != 'user') {return;}

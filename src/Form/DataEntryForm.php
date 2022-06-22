@@ -38,10 +38,10 @@ class DataEntryForm extends FormBase
   protected NlpSurveyResponses $surveyResponses;
   protected NlpPaths $paths;
   protected NlpEncryption $nlpEncrypt;
-  protected NlpSessionData $sessionData;
+  protected NlpSessionData $sessionDataObj;
   protected NlpMatchbacks $matchbacks;
   protected NlpReports $reports;
-  protected PrivateTempStoreFactory $userSession;
+  protected PrivateTempStoreFactory $privateTempstoreObj;
   protected NlpAwards $awardsObj;
   protected ApiSurveyQuestion $apiSurveyQuestionObj;
   protected ApiVoter $apiVotersObj;
@@ -49,7 +49,7 @@ class DataEntryForm extends FormBase
 
 
   public function __construct(  $configFactory ,$nls, $voters, $turfs, $surveyQuestion,
-                  $surveyResponses, $paths, $nlpEncrypt, $sessionData , $matchbacks, $reports, $userSession,
+                  $surveyResponses, $paths, $nlpEncrypt, $sessionDataObj , $matchbacks, $reports, $privateTempstoreObj,
                   $awardsObj, $apiSurveyQuestionObj, $apiVotersObj,$drupalUserObj ) {
     $this->configFactory = $configFactory;
     $this->nls = $nls;
@@ -59,10 +59,10 @@ class DataEntryForm extends FormBase
     $this->surveyResponses = $surveyResponses;
     $this->paths = $paths;
     $this->nlpEncrypt = $nlpEncrypt;
-    $this->sessionData = $sessionData;
+    $this->sessionDataObj = $sessionDataObj;
     $this->matchbacks = $matchbacks;
     $this->reports = $reports;
-    $this->userSession = $userSession;
+    $this->privateTempstoreObj = $privateTempstoreObj;
     $this->awardsObj = $awardsObj;
     $this->apiSurveyQuestionObj = $apiSurveyQuestionObj;
     $this->apiVotersObj = $apiVotersObj;
@@ -109,233 +109,43 @@ class DataEntryForm extends FormBase
    */
   public function buildForm(array $form, FormStateInterface $form_state): array
   {
-    $messenger = Drupal::messenger();
-    if (empty($form_state->get('reenter'))) {
-      
-      $county = $this->sessionData->getCounty();
-      $form_state->set('county',$county);
-  
-      $tempSessionData = $this->userSession->get('nlpservices.session_data');
-      $defaultVoterContactMethod = $tempSessionData->get('defaultVoterContactMethod');
-      $form_state->set('defaultVoterContactMethod',$defaultVoterContactMethod);
-  
-      $sessionData = $this->sessionData->getUserSession();
-      $form_state->set('sessionData',$sessionData);
-
-      $user = $this->drupalUserObj->getCurrentUser();
-      //nlp_debug_msg('$user',$user);
-      $uid = $user['uid'];
-      $accessDate = date("Y-m-d\TH:i:s", time());
-      //nlp_debug_msg('$accessDate',$accessDate);
-      $editUpdate = [
-        'uid' => $uid,
-        'turfAccess' => $accessDate,
-      ];
-      $this->drupalUserObj->updateUser($editUpdate);
-  
-      $config = Drupal::config('nlpservices.configuration');
-  
-      $apiKeys = $config->get('nlpservices-api-keys');
-      $committeeKey = $apiKeys[$county];
-      
-      $committeeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $committeeKey['API Key']);
-      $form_state->set('committeeKey',$committeeKey);
-    
-      $stateCommitteeKey = $apiKeys['State Committee'];
-      $stateCommitteeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $stateCommitteeKey['API Key']);
-      $form_state->set('stateCommitteeKey',$stateCommitteeKey);
-    
-      $electionDates = $config->get('nlpservices-election-configuration');
-      $cycle = $electionDates['nlp_election_cycle'];
-      $form_state->set('cycle',$cycle);
-      $form_state->set('cycleName',$electionDates['nlp_cycle_name']);
-    
-      $cycleParts = explode('-',$cycle);
-      $cycleYear = $cycleParts[0];
-      $form_state->set('cycleYear',$cycleYear);
-    
-      $countyNames = $config->get('nlpservices-county-names');
-      $form_state->set('state',$countyNames['State']);
-    
-      $nlpHostile = $config->get('nlpservices_hostile_ac');
-      $form_state->set('nlpHostile',$nlpHostile);
-      $nlpVoter = $config->get('nlpservices_voter_ac');
-      $form_state->set('nlpVoter',$nlpVoter);
-      //nlp_debug_msg('$nlpVoter',$nlpVoter);
-  
-      $canvassResponseCodes = $config->get('nlpservices_canvass_response_codes');
-      $form_state->set('canvassResponseCodes',$canvassResponseCodes);
-      //nlp_debug_msg('$canvassResponseCodes',$canvassResponseCodes);
-      
-      $contactMethods = array_keys($canvassResponseCodes);
-      array_unshift($contactMethods, 'Select method');
-      //nlp_debug_msg('$contactMethods',$contactMethods);
-      $form_state->set('contactMethods',$contactMethods);
-
-      //$tempSessionData = $this->userSession->get('nlpservices.session_data');
-      $canvassDate = $tempSessionData->get('canvassDate');
-      if(empty($canvassDate)) {
-        $canvassDate = date('Y-m-d',time());  // Today.
-      }
-      $form_state->set('canvassDate',$canvassDate);
-      //nlp_debug_msg('$canvassDate',$canvassDate);
-
-      $currentPage = $tempSessionData->get('currentPage');
-      if(is_array($currentPage)) {
-        $currentPage = 0;
-        try {
-          $tempSessionData->set('currentPage', $currentPage-1);
-        } catch (Drupal\Core\TempStore\TempStoreException $e) {
-          nlp_debug_msg('Temp store save error',$e->getMessage());
-        }
-      }
-      $form_state->set('currentPage',$currentPage);
-
-      $mcid = $sessionData['mcid'];
-      $date = date('Y-m-d');
-      $nlsStatus = $this->nls->getNlsStatus($mcid,$county);
-      $nlsStatus['loginDate'] = $date;
-      $this->nls->setNlsStatus($nlsStatus);
-
-      //$form_state->set('currentPage',0);
-      $form_state->set('defaultValues',NULL);
-
+    if(!$this->initializeDataReporting($form_state)) {
+      return $form;
     }
     $county = $form_state->get('county');
-    $state = $form_state->get('state');
+    $state = $form_state->get('State');
     $canvassDate = $form_state->get('canvassDate');
-    //nlp_debug_msg('$canvassDate',$canvassDate);
-    //nlp_debug_msg('$county',$county);
-    $sessionData = $form_state->get('sessionData');
-
-    if(empty($sessionData['mcid'])) {  // Refresh session if expired.
-      $sessionData = $this->sessionData->getUserSession();
-      $form_state->set('sessionData',$sessionData);
-    }
-    //nlp_debug_msg('$sessionData',$sessionData);
-    $defaultVoterContactMethod = $form_state->get('defaultVoterContactMethod');
+    $defaultVoterContactMethod = $form_state->get('$defaultVoterContactMethod');
   
-    if(empty($sessionData['mcid'])) {
-      $messenger->addWarning('Your MCID is missing, contact your coordinator.');
-    }
+    $mcid = $form_state->get('mcid');
+    $turfIndex = $form_state->get('turfIndex');
+  
+    $form_state->set('defaultValues',NULL);
     
-    $mcid = $sessionData['mcid'];
-  
-    $nlsInfo = NULL;
-    if(empty($form_state->get('nlsInfo'))) {
-      // Verify we know this NL.
-      $nlsInfo = $this->nls->getNlById($sessionData['mcid']);
-      // Stop if we don't have this person in the database.
-      if (empty($nlsInfo)) {
-        $currentUserData = $this->sessionData->getUserSession(TRUE);  // force look at Drupal record.
-        if(!empty($currentUserData['mcid']) AND $currentUserData['mcid'] == $mcid) {
-          $messenger->addWarning('You are not in our list of active
-                                        Neighborhood Leaders, contact your coordinator.');
-          return $form;
-        }
-        $form_state->set('sessionData',$currentUserData);
-        $mcid = $sessionData['mcid'];
-        $sessionData = $currentUserData;
-        $nlsInfo = $this->nls->getNlById($sessionData['mcid']);
-      }
-      $form_state->set('nlsStatus', $this->nls->getNlsStatus($sessionData['mcid'],$county));
-    }
-    $form_state->set('nlsInfo', $nlsInfo);
-    $form_state->set('mcid', $mcid);
-
-    $sessionData = $this->sessionData->getUserSession();
-    //nlp_debug_msg('$sessionData',$sessionData);
-    if(!empty($sessionData['turfIndex'] AND !empty($this->turfs->getTurf($sessionData['turfIndex'])))) {
-      $turfIndex = $sessionData['turfIndex'];
-    } else {
-      $turfArray = $this->turfs->turfExists($mcid,$county);
-      $form_state->set('turfArray', $turfArray);
-      if (empty($turfArray)) {
-        $messenger->addWarning("You do not have a turf assigned");
-        return $form;
-      }
-      $turfIndex = $turfArray['turfIndex'];
-      $sessionData['turfIndex'] = $turfIndex;
-      $this->sessionData->setUserSession($sessionData);
-    }
-    $form_state->set('turfIndex', $turfIndex);
-
     $turfInfo = $this->fetchVoters($turfIndex,$voters);
     //nlp_debug_msg('$turfInfo',$turfInfo);
     $form_state->set('voterCount',$turfInfo['voterCount']);
     $form_state->set('pageCount',$turfInfo['pageCount']);
-    $currentPage = $form_state->get('currentPage');
+    $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
+    $currentPage = $tempSessionData->get('currentPage');
+    //nlp_debug_msg('$currentPage',$currentPage);
     //nlp_debug_msg('$voters',$voters);
   
+    //$defaultVoterContactMethod = $form_state->get('defaultVoterContactMethod');
     $contactMethods = $form_state->get('contactMethods');
     $preferredContactMethod = array_search($defaultVoterContactMethod, $contactMethods);
-    //nlp_debug_msg('$preferredContactMethod',$preferredContactMethod);
+  
+    $awards = $this->awardsObj->getAward($mcid);
+    $form['dateBar'] = $this->createDateBar($canvassDate, $turfInfo, $awards, $currentPage);
     
     $buildInfo['county'] = $county;
-  
     $buildInfo['state'] = $state;
     $buildInfo['currentPage'] = $currentPage;
     $buildInfo['preferredContactMethod'] = $preferredContactMethod;
-  
     $buildInfo['contactMethods'] = $form_state->get('contactMethods');
     $buildInfo['selectedContactMethods'] = $form_state->get('selectedContactMethods');
-
     $buildInfo['canvassResponseCodes'] = $form_state->get('canvassResponseCodes');
-    $buildInfo['defaultValues'] = $form_state->get('defaultValues');
-  
-    $awards = $this->awardsObj->getAward($mcid);
-    
-    $form['date_bar'] = [
-      '#markup' => '<div class="date-bar">',
-    ];
-  
-    $form['date_box'] = [
-      '#markup' => '<div class="date-box-left">',
-    ];
-    $defaultDate = $canvassDate;
-    //nlp_debug_msg('$defaultDate',$defaultDate);
-    
-    $form['canvass_date'] = $this->canvassDate($defaultDate);
-    $form['date_box_end'] = [
-      '#markup' => '</div>',
-    ];
-    $form['counts_box'] = [
-      '#markup' => '<div class="counts-box-left">',
-    ];
-    //$form['voter_counts'] = $this->voterCounts($turfInfo['voterCount'],$turfInfo['votedCount']);
-    $form['voter_counts'] = $this->voterCounts($turfInfo);
-    $form['date_counts_end'] = [
-      '#markup' => '</div>',
-    ];
-  
-    $form['award_box'] = [
-      '#markup' => '<div class="awards-box-left">',
-    ];
-    $form['award'] = $this->awardDisplay($awards);
-    $form['award_end'] = [
-      '#markup' => '</div>',
-    ];
-  
-    $form['search_box'] = [
-      '#markup' => '<div class="search-box-left">',
-    ];
-    $form['search'] = $this->searchRequest();
-    $form['search_end'] = [
-      '#markup' => '</div>',
-    ];
-  
-    $form['nav_box'] = [
-      '#markup' => '<div class="nav-box-right">',
-    ];
-    $form['nav'] = $this->navigate($turfInfo['voterCount'],$turfInfo['pageCount'],$currentPage);
-    $form['nav_end'] = [
-      '#markup' => '</div>',
-    ];
-    
-    $form['date_bar_end'] = [
-      '#markup' => '</div><div class="end-big-box"></div>',
-    ];
-  
+    //$buildInfo['defaultValues'] = $form_state->get('defaultValues');
     $buildInfo['defaultValues'] = NULL;
     //nlp_debug_msg('$buildInfo',$buildInfo);
 
@@ -343,7 +153,6 @@ class DataEntryForm extends FormBase
     //nlp_debug_msg('$buildInfo',$buildInfo);
     $form_state->set('displayedVanids',$buildInfo['vanids']);
     $form_state->set('defaultValues',$buildInfo['defaultValues']);
-    //$form_state->set('contactResponseOptions',$buildInfo['contactResponseOptions']);
     $form_state->set('optionsDisplay',$buildInfo['optionsDisplay']);
 
     $form['navigate'] = $this->navigate($turfInfo['voterCount'],$turfInfo['pageCount'],$currentPage);
@@ -358,21 +167,18 @@ class DataEntryForm extends FormBase
   {
     $values = $form_state->getValues();
     //nlp_debug_msg('$values',$values);
+    //nlp_debug_msg('validate',time());
     
     foreach ($values as $valueId=>$value) {
       $valueIdParts = explode('-',$valueId);
-      switch ($valueIdParts[0]) {
-        case 'contact_method':  // The contact method for the voter was changed.
-          $vanid = $valueIdParts[1];
-          $selectedContactMethods = $form_state->get('selectedContactMethods');
-          $selectedContactMethods[$vanid] = $value;
-          $form_state->set('selectedContactMethods',$selectedContactMethods);
-          //nlp_debug_msg('$selectedContactMethods',$selectedContactMethods);
-          break;
+      if ($valueIdParts[0] == 'contact_method') {
+        $vanid = $valueIdParts[1];
+        $selectedContactMethods = $form_state->get('selectedContactMethods');
+        $selectedContactMethods[$vanid] = $value;
+        $form_state->set('selectedContactMethods',$selectedContactMethods);
       }
     }
   }
-  
   
   /**
    * {@inheritdoc}
@@ -380,17 +186,15 @@ class DataEntryForm extends FormBase
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
     $messenger = Drupal::messenger();
-
-    //$form_state->setRebuild();
-    //$form_state->set('reenter',TRUE);
     $values = $form_state->getValues();
     //nlp_debug_msg('$values',$values);
-    
+    //nlp_debug_msg('submit',time());
+  
     $newCanvassDate = $values['canvassDate'];
     $canvassDate = $form_state->get('canvassDate');
     if($canvassDate != $newCanvassDate) {
       $form_state->set('canvassDate',$newCanvassDate);
-      $tempSessionData = $this->userSession->get('nlpservices.session_data');
+      $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
       try {
         $tempSessionData->set('canvassDate', $newCanvassDate);
       } catch (Drupal\Core\TempStore\TempStoreException $e) {
@@ -423,6 +227,7 @@ class DataEntryForm extends FormBase
     foreach ($values as $valueId=>$value) {
       $valueIdParts = explode('-',$valueId);
       $reportType = $valueIdParts[0];
+      //nlp_debug_msg('$valueId',$valueId);
       switch ($reportType) {
         case 'contact_method':
           if(empty($value)) {break;}
@@ -466,28 +271,17 @@ class DataEntryForm extends FormBase
         case 'moved':
         case 'hostile':
         case 'deceased':
-          //nlp_debug_msg('$values',$values);
-          //nlp_debug_msg('$defaultValues',$defaultValues);
           $vanid = $valueIdParts[1];
-          // If the value of the checkbox changed, a report is needed.
-          //nlp_debug_msg('$vanid'.' '.$reportType,$vanid);
-  
           $defaultValue = !empty($defaultValues[$vanid][$reportType]);
           //nlp_debug_msg('$defaultValue'.' '.$vanid,$defaultValue);
           $currentValue = !empty($value);
           //nlp_debug_msg('$currentValue'.' '.$vanid,$currentValue);
-  
           if($defaultValue != $currentValue) {
             //nlp_debug_msg('$value'.' '.$vanid,$value);
-            
             if($reportType == 'deceased' OR $reportType == 'moved') {
-              if(!empty($defaultValue)) {
-                return;  // Deceased and moved can't be undone this way.
-              }
+              if(!empty($defaultValue)) {break;}  // Deceased and moved can't be undone this way.
             }
-  
             // Use "Walk" as contact method if the NL did not set a method.
-
             if(empty($actions[$vanid]['contact_method'])) {
               $contactMethod = 'Walk';
               $actions[$vanid]['vanid'] = $vanid;
@@ -499,7 +293,6 @@ class DataEntryForm extends FormBase
             $actions[$vanid][$reportType]['value'] = $value;
             if($reportType == 'hostile') {
               $actions[$vanid][$reportType]['rid'] = $form_state->get('nlpHostile');
-              
             } elseif ($reportType == 'deceased') {
               //nlp_debug_msg('$canvassResponseCodes',$canvassResponseCodes);
               $actions[$vanid][$reportType]['rid'] = $canvassResponseCodes[$contactMethod]['responses']['Deceased'];
@@ -513,14 +306,10 @@ class DataEntryForm extends FormBase
                 $rid = $canvassResponseCodes[$contactMethod]['responses']['Moved'];
               }
               $actions[$vanid][$reportType]['rid'] = $rid;
-              //$actions[$vanid][$reportType]['addressInNlp'] = '';
             }
             
           }
-
           //nlp_debug_msg('$actions',$actions);
-          //$form_state->setValue($valueId,0);
-          //$form_state->setUserInput([$valueId=>0,]);
           break;
         case 'note':
           if(empty($value)) {break;}
@@ -678,46 +467,52 @@ class DataEntryForm extends FormBase
     }
     
     $triggeringElement = $form_state->getTriggeringElement();
-    //nlp_debug_msg('$triggeringElement',$triggeringElement);
     $elementClicked = $triggeringElement['#name'];
+    //nlp_debug_msg('$elementClicked '.time(),$elementClicked);
+    $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
 
-    switch ($elementClicked) {
+    $navButtonParts = explode('-',$elementClicked);
+    
+    switch ($navButtonParts[0]) {
       case 'save_reports':
-        break;
-      case 'next_voters':
-        $pageCount = $form_state->get('pageCount')-1;
-        //nlp_debug_msg('$pageCount',$pageCount);
-        $currentPage = $form_state->get('currentPage');
-        //nlp_debug_msg('$currentPage',$currentPage);
-        if($currentPage < $pageCount) {
-          $form_state->set('currentPage',$currentPage+1);
-          $tempSessionData = $this->userSession->get('nlpservices.session_data');
-          try {
-            $tempSessionData->set('currentPage', $currentPage+1);
-          } catch (Drupal\Core\TempStore\TempStoreException $e) {
-            nlp_debug_msg('Temp store save error',$e->getMessage());
-          }
+        $pageCount = $form_state->get('pageCount');
+        $currentPage = $tempSessionData->get('currentPage');
+        $currentPage++;
+        $page = ($currentPage<$pageCount)?$currentPage:0;
+        try {
+          $tempSessionData->set('currentPage', $page);
+        } catch (Drupal\Core\TempStore\TempStoreException $e) {
+          nlp_debug_msg('Temp store save error',$e->getMessage());
         }
         break;
-      case 'previous_voters':
-        $currentPage = $form_state->get('currentPage');
-        if($currentPage > 0) {
-          $form_state->set('currentPage',$currentPage-1);
-          $tempSessionData = $this->userSession->get('nlpservices.session_data');
-          try {
-            $tempSessionData->set('currentPage', $currentPage-1);
-          } catch (Drupal\Core\TempStore\TempStoreException $e) {
-            nlp_debug_msg('Temp store save error',$e->getMessage());
-          }
+      case 'pageSelect':
+        $page = $navButtonParts[1]-1;
+        try {
+          $tempSessionData->set('currentPage', $page);
+        } catch (Drupal\Core\TempStore\TempStoreException $e) {
+          nlp_debug_msg('Temp store save error',$e->getMessage());
         }
+        break;
+      case 'next':
+        try {
+          $tempSessionData->set('currentPage', 6);
+        } catch (Drupal\Core\TempStore\TempStoreException $e) {
+          nlp_debug_msg('Temp store save error',$e->getMessage());
+        }
+        break;
+      case 'previous':
+        try {
+          $tempSessionData->set('currentPage', 5);
+        } catch (Drupal\Core\TempStore\TempStoreException $e) {
+          nlp_debug_msg('Temp store save error',$e->getMessage());
+        }
+        
         break;
       case 'last_name_search':
         $turfIndex = $form_state->get('turfIndex');
         $lastName = $values['last-name'];
         $searchResult = $this->voterSearch($turfIndex,$lastName);
         if($searchResult['found']) {
-          $form_state->set('currentPage',$searchResult['page']);
-          $tempSessionData = $this->userSession->get('nlpservices.session_data');
           try {
             $tempSessionData->set('currentPage', $searchResult['page']);
           } catch (Drupal\Core\TempStore\TempStoreException $e) {
@@ -952,7 +747,7 @@ class DataEntryForm extends FormBase
               //nlp_debug_msg('$result',$result);
               $this->reports->mergeReport($result);
   
-              $turfIndex = $common['turfIndex'];
+              //$turfIndex = $common['turfIndex'];
               $this->voters->setMovedStatus($turfIndex,$vanid,$movedStatus);
               // Results reported by this NL.
               $this->nls->resultsReported($common['mcid'],$common['county']);
@@ -2231,6 +2026,69 @@ class DataEntryForm extends FormBase
   }
   
   /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * createDateBar
+   *
+   * @param $canvassDate
+   * @param $turfInfo
+   * @param $awards
+   * @param $currentPage
+   * @return array
+   */
+  function createDateBar($canvassDate, $turfInfo, $awards, $currentPage): array {
+    $form['date_bar'] = [
+      '#markup' => '<div class="date-bar">',
+    ];
+  
+    $form['date_box'] = [
+      '#markup' => '<div class="date-box-left">',
+    ];
+    $defaultDate = $canvassDate;
+    //nlp_debug_msg('$defaultDate',$defaultDate);
+  
+    $form['canvass_date'] = $this->canvassDate($defaultDate);
+    $form['date_box_end'] = [
+      '#markup' => '</div>',
+    ];
+    $form['counts_box'] = [
+      '#markup' => '<div class="counts-box-left">',
+    ];
+    //$form['voter_counts'] = $this->voterCounts($turfInfo['voterCount'],$turfInfo['votedCount']);
+    $form['voter_counts'] = $this->voterCounts($turfInfo);
+    $form['date_counts_end'] = [
+      '#markup' => '</div>',
+    ];
+  
+    $form['award_box'] = [
+      '#markup' => '<div class="awards-box-left">',
+    ];
+    $form['award'] = $this->awardDisplay($awards);
+    $form['award_end'] = [
+      '#markup' => '</div>',
+    ];
+  
+    $form['search_box'] = [
+      '#markup' => '<div class="search-box-left">',
+    ];
+    $form['search'] = $this->searchRequest();
+    $form['search_end'] = [
+      '#markup' => '</div>',
+    ];
+  
+    $form['nav_box'] = [
+      '#markup' => '<div class="nav-box-right">',
+    ];
+    $form['nav'] = $this->navigate($turfInfo['voterCount'],$turfInfo['pageCount'],$currentPage);
+    $form['nav_end'] = [
+      '#markup' => '</div>',
+    ];
+  
+    $form['date_bar_end'] = [
+      '#markup' => '</div><div class="end-big-box"></div>',
+    ];
+    return $form;
+  }
+  
+  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
    * navigate
    *
    * Build the buttons for navigation through the data entry pages.
@@ -2243,9 +2101,27 @@ class DataEntryForm extends FormBase
   function navigate($voterCount,$pageCount,$currentPage): array
   {
     //nlp_debug_msg('$voterCount',$voterCount);
+    $currentPage++;
+    if($pageCount < 7) {
+      $page = 1;
+      $elementCount = $pageCount;
+      $less = $more = FALSE;
+    } elseif ($currentPage < 7) {
+      $page = 1;
+      $elementCount = 6;
+      $less = FALSE;
+      $more = TRUE;
+    } else {
+      $page = 7;
+      $elementCount = $pageCount-6;
+      $less = TRUE;
+      $more = FALSE;
+    }
+  
     $form_element['navigation_box'] = array (
       '#markup' => "  \n ".'<section class="nav_box no-white">',
     );
+  
     
     $form_element['nav'] = array(
       '#type' => 'fieldset',
@@ -2254,53 +2130,71 @@ class DataEntryForm extends FormBase
       '#attributes' => array(
         'style' => array('background-image: none; border:0; padding:0; margin:0; '),),
     );
-    if($currentPage != 0) {
-        $form_element['nav']['previous_voters'] = array(
-            '#type' => 'submit',
-            '#value' => 'Previous page',
-            '#name' => 'previous_voters',
-            '#prefix' => " \n".'<div class="nav_back" >'." \n",
-            '#suffix' => " \n".'<br><span class="nav_note">And save reports.</span></div>'." \n",
-        );
+    
+    if($less) {
+      $form_element['nav']['previous'] = array(
+        '#type' => 'submit',
+        '#value' => '< Previous',
+        '#name' => 'previous',
+        '#prefix' => " \n".'<div class="nav_number" >'." \n",
+        '#suffix' => " \n".'</div>'." \n",
+      );
+      $form_element['nav']['dots'] = array(
+        '#markup' => ' ... ',
+        '#prefix' => " \n".'<div class="nav_dots" >'." \n",
+        '#suffix' => " \n".'</div>'." \n",
+      );
     }
-
-    //nlp_debug_msg('$currentPage',$currentPage);
-    //$currentPage = 1;
-    $startVoter = $currentPage*$this::DE_PAGE_SIZE+1;
-    $page = $currentPage+1;
-    $endVoter = $page*$this::DE_PAGE_SIZE;
-
-    if($endVoter > $voterCount) {
-      $endVoter = $voterCount;
+  
+  
+    for ($element=1; $element<=$elementCount; $element++) {
+      //$pageName = $formPageName[$element];
+    
+      if($page == $currentPage) {
+        $hoverMessage = "You are on page $page.";
+        $pageClass = 'nav_current_number';
+      } else {
+        $hoverMessage = "Go to page $page.";
+        $pageClass = 'nav_number';
+      }
+      $form_element['nav']['pageSelect-'.$page] = [
+        '#type' => 'submit',
+        '#value' => $page,
+        '#name' => 'pageSelect-'.$page,
+        '#prefix' => " \n".'<div class="'.$pageClass.'" title="'.$hoverMessage.'">'." \n",
+        '#suffix' => " \n".'</div>'." \n",
+      ];
+      $page++;
     }
-    $form_element['nav']['page'] = array(
-      '#markup' => '<p class="nav_voter_display">Voters '.$startVoter.' - '.$endVoter.'<br>Page '.$page.' of '. $pageCount.'</p>',
-      '#prefix' => " \n".'<div class="nav_page">'." \n",
-      '#suffix' => " \n".'</div>'." \n",
-    );
-    if($endVoter != $voterCount) {
-        $form_element['nav']['next_voters'] = array(
-            '#type' => 'submit',
-            '#value' => 'Next page',
-            '#name' => 'next_voters',
-            '#prefix' => " \n".'<div class="nav_next">'." \n",
-            '#suffix' => " \n".'<br><span class="nav_note">And save reports.</span></div>'." \n",
-        );
+  
+    if($more) {
+      $form_element['nav']['dots'] = array(
+        '#markup' => ' ... ',
+        '#prefix' => " \n".'<div class="nav_dots" >'." \n",
+        '#suffix' => " \n".'</div>'." \n",
+      );
+      $form_element['nav']['next'] = array(
+        '#type' => 'submit',
+        '#value' => 'Next >',
+        '#name' => 'next',
+        '#prefix' => " \n".'<div class="nav_number" >'." \n",
+        '#suffix' => " \n".'</div>'." \n",
+      );
     }
-
+  
     $form_element['nav']['save_reports'] = array(
       '#type' => 'submit',
       '#value' => 'Save reports',
       '#name' => 'save_reports',
-      '#prefix' => " \n".'<div class="nav_done">'." \n",
-      '#suffix' => " \n".'<br><span class="nav_note">And stay on this page.</span></div>'." \n",
+      '#prefix' => " \n".'<div class="nav_number" title="And go to next page.">'." \n",
+      '#suffix' => " \n".'</div>'." \n",
     );
-    
+  
     $form_element['navigation_end'] = array (
       '#type' => 'markup',
       '#markup' => " \n   ".'</section>',
     );
-    
+   
     return $form_element;
   }
   
@@ -2348,7 +2242,7 @@ class DataEntryForm extends FormBase
    *
    * @param $turfIndex int
    * @param $needle string
-   * @return int
+   * @return array
    */
   function voterSearch(int $turfIndex, string $needle): array {
     $this->fetchVoters($turfIndex,$voters);
@@ -2376,12 +2270,138 @@ class DataEntryForm extends FormBase
     //nlp_debug_msg('$voters',$voters);
     return ['found'=> $found,'page'=> $page];
   }
+  
+  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * initializeDataReporting
+   *
+   * @param $form_state
+   * @return bool
+   */
+  function initializeDataReporting($form_state): bool
+  {
+    $messenger = Drupal::messenger();
+  
+    // Get the session data.
+    $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
+    $defaultVoterContactMethod = $tempSessionData->get('defaultVoterContactMethod');
+    $form_state->set('defaultVoterContactMethod',$defaultVoterContactMethod);
+  
+    $sessionData = $this->sessionDataObj->getUserSession();
+    if(empty($sessionData['mcid'])) {
+      $messenger->addWarning('The MCID is missing from your user login, contact your coordinator.');
+      return FALSE;
+    }
+    //nlp_debug_msg('$sessionData',$sessionData);
+    $mcid = $sessionData['mcid'];
+    $form_state->set('mcid', $mcid);
+    $form_state->set('sessionData',$sessionData);
+  
+    $county = $this->sessionDataObj->getCounty();
+    $form_state->set('county',$county);
+  
+    $canvassDate = $tempSessionData->get('canvassDate');
+    if(empty($canvassDate)) {
+      $canvassDate = date('Y-m-d',time());  // Today.
+    }
+    $form_state->set('canvassDate',$canvassDate);
+  
+    // Verify we know this NL.
+    $nlsInfo = $this->nls->getNlById($sessionData['mcid']);
+    // Stop if we don't have this person in the database.
+    if (empty($nlsInfo)) {
+      $messenger->addWarning('You are not in the list of active Neighborhood Leaders, contact your coordinator.');
+      return FALSE;
+    }
+    $form_state->set('nlsStatus', $this->nls->getNlsStatus($sessionData['mcid'],$county));
+  
+    //Do we have a turf?
+    if(!empty($sessionData['turfIndex'] AND !empty($this->turfs->getTurf($sessionData['turfIndex'])))) {
+      $turfIndex = $sessionData['turfIndex'];
+    } else {
+      $turfArray = $this->turfs->turfExists($mcid,$county);
+      $form_state->set('turfArray', $turfArray);
+      if (empty($turfArray)) {
+        $messenger->addWarning("You do not have a turf assigned");
+        return FALSE;
+      }
+      $turfIndex = $turfArray['turfIndex'];
+      $sessionData['turfIndex'] = $turfIndex;
+      $this->sessionDataObj->setUserSession($sessionData);
+    }
+    $form_state->set('turfIndex', $turfIndex);
+    
+    // What page are we on?
+    $currentPage = $tempSessionData->get('currentPage');
+    //nlp_debug_msg('$currentPage',$currentPage);
+    try {
+      $tempSessionData->set('currentPage', $currentPage);
+    } catch (Drupal\Core\TempStore\TempStoreException $e) {
+      nlp_debug_msg('Temp store save error',$e->getMessage());
+    }
+    try {
+      $tempSessionData->set('changePage', FALSE);
+    } catch (Drupal\Core\TempStore\TempStoreException $e) {
+      nlp_debug_msg('Temp store save error',$e->getMessage());
+    }
+  
+    // Set the date for this turf access.
+    $date = date('Y-m-d');
+    $nlsStatus = $this->nls->getNlsStatus($mcid,$county);
+    $nlsStatus['loginDate'] = $date;
+    $this->nls->setNlsStatus($nlsStatus);
+    $user = $this->drupalUserObj->getCurrentUser();
+    $uid = $user['uid'];
+    $editUpdate = [
+      'uid' => $uid,
+      'turfAccess' => $date,
+    ];
+    $this->drupalUserObj->updateUser($editUpdate);
+  
+    // Get the API keys.
+    $config = Drupal::config('nlpservices.configuration');
+    $apiKeys = $config->get('nlpservices-api-keys');
+    $committeeKey = $apiKeys[$county];
+    $committeeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $committeeKey['API Key']);
+    $form_state->set('committeeKey',$committeeKey);
+    $stateCommitteeKey = $apiKeys['State Committee'];
+    $stateCommitteeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $stateCommitteeKey['API Key']);
+    $form_state->set('stateCommitteeKey',$stateCommitteeKey);
+  
+    // Get the cycle info.
+    $electionDates = $config->get('nlpservices-election-configuration');
+    $cycle = $electionDates['nlp_election_cycle'];
+    $form_state->set('cycle',$cycle);
+    $form_state->set('cycleName',$electionDates['nlp_cycle_name']);
+    $cycleParts = explode('-',$cycle);
+    $cycleYear = $cycleParts[0];
+    $form_state->set('cycleYear',$cycleYear);
+  
+    // Get the state name.
+    $countyNames = $config->get('nlpservices-county-names');
+    $state = $countyNames['State'];
+    $form_state->set('state',$state);
+  
+    // Get the codes for reporting an NLP Voter and NLP Hostile.
+    $nlpHostile = $config->get('nlpservices_hostile_ac');
+    $form_state->set('nlpHostile',$nlpHostile);
+    $nlpVoter = $config->get('nlpservices_voter_ac');
+    $form_state->set('nlpVoter',$nlpVoter);
+  
+    // Get the permitted canvass response codes and contact methods.
+    $canvassResponseCodes = $config->get('nlpservices_canvass_response_codes');
+    $form_state->set('canvassResponseCodes',$canvassResponseCodes);
+    $contactMethods = array_keys($canvassResponseCodes);
+    array_unshift($contactMethods, 'Select method');
+    $form_state->set('contactMethods',$contactMethods);
+  return TRUE;
+  }
     
       /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
        * @param $unused
        * @param $form
        * @return mixed
        * @noinspection PhpUnusedParameterInspection
+       * @noinspection PhpUnused
        */
   function row0Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-0-body"]['no_contact-0'];
@@ -2392,6 +2412,7 @@ class DataEntryForm extends FormBase
    * @param $form
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function row1Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-1-body"]['no_contact-1'];
@@ -2402,6 +2423,7 @@ class DataEntryForm extends FormBase
    * @param $form
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function row2Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-2-body"]['no_contact-2'];
@@ -2412,6 +2434,7 @@ class DataEntryForm extends FormBase
    * @param $form
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function row3Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-3-body"]['no_contact-3'];
@@ -2422,6 +2445,7 @@ class DataEntryForm extends FormBase
    * @param $form
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function row4Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-4-body"]['no_contact-4'];
@@ -2432,6 +2456,7 @@ class DataEntryForm extends FormBase
    * @param $form
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function row5Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-5-body"]['no_contact-5'];
@@ -2442,6 +2467,7 @@ class DataEntryForm extends FormBase
    * @param $form
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function row6Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-6-body"]['no_contact-6'];
@@ -2452,6 +2478,7 @@ class DataEntryForm extends FormBase
    * @param $form
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function row7Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-7-body"]['no_contact-7'];
@@ -2462,6 +2489,7 @@ class DataEntryForm extends FormBase
    * @param $form
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function row8Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-8-body"]['no_contact-8'];
@@ -2472,11 +2500,15 @@ class DataEntryForm extends FormBase
    * @param $form
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function row9Callback($form, $unused) {
     return $form['voters']['voterForm']["cell03-9-body"]['no_contact-9'];
   }
   
+  /** @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
+   */
   function formCallback($form, $unused) {
     return $form['voters']['voterForm'];
   }

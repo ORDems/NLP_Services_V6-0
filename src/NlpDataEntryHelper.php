@@ -95,11 +95,19 @@ calls.   ';
     $output .= '<H5>New email</H5>If you get an email address for this voter, be sure the voter agrees to getting 
 emails from the state and county parties.  The VoteBuilder database is not updated.  Ask your coordinator to 
 enter the new email into MyCampaign and subscribe to both the county and state email lists. ';
-    $output .= '<H5>Last name search</H5>The search looks for the first match
-of the text you provide in the last name field.  The search is case insensitive and
-can be a partial name.  The response will be the page containing the voter
-that matches the search.  If you made any voter contact reports, they will be
-processed first.';
+    $output .= '<H3><u>Navigation</u></H3>You use the navigation buttons to save your voter contact reports and
+move from page to page.  Most turfs will have approximately 50 voters and the data entry page has these voters in
+approximately the same order as found on the walk sheets.  The data entry page displays 10 voters at a time, so you
+have to move from page to page with the navigation buttons.   Clicking any button will save any reports you made
+on the current page.';
+    $output .= '<H5>Page buttons</H5>The navigation box displays buttons with a number.  You can navigate directly
+to a page by clicking the appropriate number button.  You may know the page you want but it may be easier to
+searcg for the voter by the last name.';
+    $output .= '<H5>Next and Previous buttons</H5>If there are more than 60 voters in the turf, you will see the
+Next and Previous buttons.  Use these to reveal the first or last block of pages.';
+    $output .= '<H5>Last name search</H5>The search looks for the first match of the text you provide in the last
+name field.  The search is case-insensitive and can be a partial name.  The response will be the page containing
+the voter that matches the search.  If you made any voter contact reports, they will be processed first.';
     return $output;
   }
 
