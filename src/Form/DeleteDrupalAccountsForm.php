@@ -169,7 +169,7 @@ class DeleteDrupalAccountsForm extends FormBase
       $row['firstName'] = $user['firstName'];
       $row['userName'] = $user['userName'];
       $row['createDate'] = date('Y/n/j',$user['created']);
-      $row['accessDate'] = date('Y/n/j',$user['access']);
+      $row['accessDate'] = (!empty($user['access']))?date('Y/n/j',$user['access']):'Never';
       $row['county'] = $user['county'];
   
       $adminRole = FALSE;
