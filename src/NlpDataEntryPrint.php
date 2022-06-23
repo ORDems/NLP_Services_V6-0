@@ -159,18 +159,24 @@ household <br>has not yet voted and a reminder call might be helpful.</p>";
     $someOneToCall = FALSE;
     $savedHousehold = array();
     foreach ($voters as $voter) {
+      $exclude = ($voter['status']['deceased'] OR $voter['status']['hostile']);
       // Extracted the name, address and age info from the vtr record.
       $voterNickname = " [".$voter['nickname']."]";
       $voterName = $voter['firstName']." ".$voter['lastName'];
+      $exclusion = '';
+      if($exclude) {
+        $voterName = '<del>'.$voterName.'</del>';
+        $exclusion = ($voter['status']['deceased'])?'DECEASED':'HOSTILE';
+      }
       $voterAge = " - Age(".$voter['age'].")";
       $voterSex = " ".$voter['sex'];
       $status = $voter['status'];
       //nlp_debug_msg('status', $status);
-      if(empty($status['voted'])) {
+      if(empty($status['voted']) AND !$exclude) {
         $householdNames = '<span class="help-not-voted">'
           .$voterName.$voterNickname.'</span>'.$voterSex.$voterAge.' *';
       } else {
-        $householdNames = $voterName.$voterNickname.$voterSex.$voterAge;
+        $householdNames = $voterName.$voterNickname.$voterSex.$voterAge.' '.$exclusion;
       }
       if(empty($voter['homePhone']) AND empty($voter['cellPhone'])) {
         $householdNames .= '<br>&nbsp;&nbsp;<i>No phone number</i>';
@@ -280,11 +286,20 @@ household <br>has not yet voted and a reminder call might be helpful.</p>";
 
     // Create the display of voter's mailing address, grouped if more than one at the same address.
     foreach ($voters as $voter) {
+      $exclude = ($voter['status']['deceased'] OR $voter['status']['hostile']);
       // Extracted the name, address and age info from the vtr record.
       $salutation = " [".$voter['nickname']."]";
       $name = $voter['firstName']." ".$voter['lastName'];
+      $exclusion = '';
+      if($exclude) {
+        $name = '<del>'.$name.'</del>';
+        $exclusion = ($voter['status']['deceased'])?'DECEASED':'HOSTILE';
+      }
       $age = "- Age(".$voter['age'].")";
       $voterName = $name.$salutation.$age;
+      if($exclude) {
+        $voterName .= ' '.$exclusion;
+      }
       if(empty($voter['address']['mAddress'])) {
         $mailingAddress = 'Not available.';
       } else {
