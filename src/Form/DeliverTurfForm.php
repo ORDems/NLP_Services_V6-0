@@ -458,7 +458,7 @@ class DeliverTurfForm extends FormBase
 <br><b>Username:</b> @name<br><b>Password:</b> @pass</p>';
     $plainNote = NULL;
     if (!empty($emailInfo['note'])) {
-      $plainNote = '<p style="font-size: large; font-family: Trebuchet MS,sans-serif;">' . $emailInfo['note'] . '</p>';
+      $plainNote = '<p>' . $emailInfo['note'] . '</p>';
     }
 
     $needles = array('@nlpLogin','@coordinatorContactInfo','@plainNote');
