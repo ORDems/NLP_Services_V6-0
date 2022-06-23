@@ -421,14 +421,14 @@ class ActiveNlsDisplayForm extends FormBase
     $hdrRow .= " \n  ".'<th>Address</th>';
     $hdrRow .= " \n  ".'<th>Email-Phone</th>';
     $hdrRow .= " \n  ".'<th>Notes</th>';
-    $hdrRow .= " \n  ".'<th>NL</th>';
-    $hdrRow .= " \n  ".'<th>TC</th>';
-    $hdrRow .= " \n  ".'<th>TD</th>';
-    $hdrRow .= " \n  ".'<th>CO</th>';
-    $hdrRow .= " \n  ".'<th>LI</th>';
-    $hdrRow .= " \n  ".'<th>Attempts</th>';
-    $hdrRow .= " \n  ".'<th>P2V</th>';
-    $hdrRow .= " \n  ".'<th>Voters</th>';
+    $hdrRow .= " \n  ".'<th><div title="Indicates who has signed up to be an NL for this cycle.">NL</div></th>';
+    $hdrRow .= " \n  ".'<th><div title="Turf Cut: typically indicates a turf was synced.">TC</div></th>';
+    $hdrRow .= " \n  ".'<th><div title="Turf Delivers, typically by email.">TD</div></th>';
+    $hdrRow .= " \n  ".'<th><div title="The NLs preferred method of contact.">CO</div></th>';
+    $hdrRow .= " \n  ".'<th><div title="Date of the last login by the NL.">LI</div></th>';
+    $hdrRow .= " \n  ".'<th><div title="Count of voters with at least one attempt to contact.">Attempts</div></th>';
+    $hdrRow .= " \n  ".'<th><div title="Count of voters who answered the Pledge-to-Vote question..">P2V</div></th>';
+    $hdrRow .= " \n  ".'<th><div title="Count of voters assigned to this NL.">Voters</div></th>';
     
     
     // Create the header row.
@@ -620,6 +620,7 @@ class ActiveNlsDisplayForm extends FormBase
    * @param $unused
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function nlp_checkbox_callback($form, $unused) {
     //nlp_debug_msg('callback','called');
@@ -633,6 +634,7 @@ class ActiveNlsDisplayForm extends FormBase
    * @param $unused
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function nlp_textbox_callback($form, $unused) {
     return $form['nls_table']['nls-form'];
@@ -645,6 +647,7 @@ class ActiveNlsDisplayForm extends FormBase
    * @param $unused
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function nlp_selectbox_callback($form, $unused) {
     return $form['nls_table']['nls-form'];
