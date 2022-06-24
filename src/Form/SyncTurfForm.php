@@ -6,6 +6,7 @@ use Drupal;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use stdClass;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\nlpservices\ApiExportJobs;
@@ -40,10 +41,11 @@ class SyncTurfForm extends FormBase {
   protected NlpReports $reports;
   protected FileSystemInterface $fileSystem;
   protected NlpEncryption $nlpEncrypt;
+  protected PrivateTempStoreFactory $privateTempstoreObj;
   
   
   public function __construct( $exportJobs, $savedLists, $folders, $nls, $apiVoter, $voters, $turfs, $surveyQuestion,
-                               $paths, $magicWord, $drupalUser, $reports, $fileSystem, $nlpEncrypt) {
+                               $paths, $magicWord, $drupalUser, $reports, $fileSystem, $nlpEncrypt, $privateTempstoreObj) {
     $this->exportJobs = $exportJobs;
     $this->savedLists = $savedLists;
     $this->folders = $folders;
@@ -58,6 +60,7 @@ class SyncTurfForm extends FormBase {
     $this->reports = $reports;
     $this->fileSystem = $fileSystem;
     $this->nlpEncrypt = $nlpEncrypt;
+    $this->privateTempstoreObj = $privateTempstoreObj;
   
   }
   
@@ -81,6 +84,7 @@ class SyncTurfForm extends FormBase {
       $container->get('nlpservices.reports'),
       $container->get('file_system'),
       $container->get('nlpservices.encryption'),
+      $container->get('tempstore.private'),
 
     );
   }
@@ -98,43 +102,56 @@ class SyncTurfForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state): array
   {
-    if (empty($form_state->get('reenter'))) {
-      $form_state->set('phase','turf_list_select');
-      $factory = Drupal::service('tempstore.private');
-      $store = $factory->get('nlpservices.session_data');
-      $county = $store->get('County');
-      $form_state->set('county',$county);
-      
-      $config = $this->config('nlpservices.configuration');
-      $apiKeys = $config->get('nlpservices-api-keys');
-      $committeeKey = $apiKeys[$county];
-      $committeeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $committeeKey['API Key']);
-      $form_state->set('committeeKey',$committeeKey);
-      
-      $stateCommitteeKey = $apiKeys['State Committee'];
-      $stateCommitteeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $stateCommitteeKey['API Key']);
-      $form_state->set('stateCommitteeKey',$stateCommitteeKey);
-      
-      $electionDates = $config->get('nlpservices-election-configuration');
-      $cycle = $electionDates['nlp_election_cycle'];
-      $form_state->set('cycle',$cycle);
-      $form_state->set('cycleName',$electionDates['nlp_cycle_name']);
-      
-      $cycleParts = explode('-',$cycle);
-      $cycleYear = $cycleParts[0];
-      $form_state->set('cycleYear',$cycleYear);
-      
-      $countyNames = $config->get('nlpservices-county-names');
-      $form_state->set('state',$countyNames['State']);
+    $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
   
-      $nlpHostile = $config->get('nlpservices_hostile_ac');
-      $form_state->set('nlpHostile',$nlpHostile);
-      //nlp_debug_msg('$nlpHostile',$nlpHostile);
-
-      $nlpVoter = $config->get('nlpservices_voter_ac');
-      $form_state->set('nlpVoter',$nlpVoter);
-      //nlp_debug_msg('$nlpVoter',$nlpVoter);
+    if (empty($form_state->get('reenter'))) {
+      $currentFolderId = $tempSessionData->get('currentFolderId');
+      if(empty($currentFolderId)) {$currentFolderId=0;}
+      try {
+        $tempSessionData->set('currentFolderId', $currentFolderId);
+      } catch (Drupal\Core\TempStore\TempStoreException $e) {
+        nlp_debug_msg('Temp store save error',$e->getMessage());
+      }
+  
+      //$form_state->set('currentFolderId',$currentFolderId);
+      nlp_debug_msg('$currentFolderId',$currentFolderId);
     }
+    $form_state->set('phase','turf_list_select');
+    $factory = Drupal::service('tempstore.private');
+    $store = $factory->get('nlpservices.session_data');
+    $county = $store->get('County');
+    $form_state->set('county',$county);
+    
+    $config = $this->config('nlpservices.configuration');
+    $apiKeys = $config->get('nlpservices-api-keys');
+    $committeeKey = $apiKeys[$county];
+    $committeeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $committeeKey['API Key']);
+    $form_state->set('committeeKey',$committeeKey);
+    
+    $stateCommitteeKey = $apiKeys['State Committee'];
+    $stateCommitteeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $stateCommitteeKey['API Key']);
+    $form_state->set('stateCommitteeKey',$stateCommitteeKey);
+    
+    $electionDates = $config->get('nlpservices-election-configuration');
+    $cycle = $electionDates['nlp_election_cycle'];
+    $form_state->set('cycle',$cycle);
+    $form_state->set('cycleName',$electionDates['nlp_cycle_name']);
+    
+    $cycleParts = explode('-',$cycle);
+    $cycleYear = $cycleParts[0];
+    $form_state->set('cycleYear',$cycleYear);
+    
+    $countyNames = $config->get('nlpservices-county-names');
+    $form_state->set('state',$countyNames['State']);
+
+    $nlpHostile = $config->get('nlpservices_hostile_ac');
+    $form_state->set('nlpHostile',$nlpHostile);
+    //nlp_debug_msg('$nlpHostile',$nlpHostile);
+
+    $nlpVoter = $config->get('nlpservices_voter_ac');
+    $form_state->set('nlpVoter',$nlpVoter);
+    //nlp_debug_msg('$nlpVoter',$nlpVoter);
+    
     $county = $form_state->get('county');
     
     $phase = $form_state->get('phase');
@@ -144,7 +161,10 @@ class SyncTurfForm extends FormBase {
         $committeeKey = $form_state->get('committeeKey');
         $folderInfo = $justNames = [];
   
-        $currentFolderId = $form_state->get('currentFolderId');
+        //$currentFolderId = $form_state->get('currentFolderId');
+        $currentFolderId = $tempSessionData->get('currentFolderId');
+  
+        nlp_debug_msg('$currentFolderId',$currentFolderId);
         $form['turf_list_select'] = $this->turf_list_select(
           $county,$committeeKey,$currentFolderId,$folderInfo,$justNames,$listNames);
         $form_state->set('folderInfo', $folderInfo);
@@ -181,6 +201,8 @@ class SyncTurfForm extends FormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state)
   {
+    $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
+  
     $form_state->set('reenter', TRUE);
     $messenger = Drupal::messenger();
     $values = $form_state->getValues();
@@ -190,8 +212,16 @@ class SyncTurfForm extends FormBase {
     //nlp_debug_msg('$triggeringElement',$triggeringElement);
     $elementClicked = $triggeringElement['#name'];
     if($elementClicked == 'folder') {
-      $form_state->set('currentFolderId', $values['folder']);
-    return;
+      $currentFolderId = $values['folder'];
+      //$form_state->set('currentFolderId', $currentFolderId);
+      try {
+        $tempSessionData->set('currentFolderId', $currentFolderId);
+      } catch (Drupal\Core\TempStore\TempStoreException $e) {
+        nlp_debug_msg('Temp store save error',$e->getMessage());
+      }
+      nlp_debug_msg('$currentFolderId',$currentFolderId);
+  
+      return;
     }
     
     $listId = $form_state->getValue('list_select');
@@ -258,6 +288,8 @@ class SyncTurfForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
+    $form_state->set('reenter',TRUE);
+    $form_state->setRebuild();
     $messenger = Drupal::messenger();
 
     $county = $form_state->get('county');
