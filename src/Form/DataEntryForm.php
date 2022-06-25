@@ -173,7 +173,7 @@ class DataEntryForm extends FormBase
     $form_state->set('defaultValues',$buildInfo['defaultValues']);
     $form_state->set('optionsDisplay',$buildInfo['optionsDisplay']);
 
-    $form['navigate'] = $this->navigate($turfInfo['voterCount'],$turfInfo['pageCount'],$currentPage);
+    $form['navigate'] = $this->navigate($turfInfo['pageCount'],$currentPage);
     
     return $form;
   }
@@ -1121,26 +1121,13 @@ class DataEntryForm extends FormBase
     //$votedCount = ($votedCount <  10)?'&nbsp;'.$votedCount:$votedCount;
     $attemptedCount = $turfInfo['attemptedCount'];
     $contactedCount = $turfInfo['contactedCount'];
-  
-    $form_element['counts'] = array (
-      '#markup' => "  \n ".'<div class="no-white voter-counts">',
-    );
+    
     $percentage = round($votedCount/$voterCount*100,1);
     $attemptedPercentage = round($attemptedCount/$voterCount*100,1);
     $contactedPercentage = round($contactedCount/$voterCount*100,1);
     $voted = $votedCount.' &nbsp;('.$percentage.'%)';
     $attemptedCount = $attemptedCount.' &nbsp;('.$attemptedPercentage.'%)';
     $contactedCount = $contactedCount.' &nbsp;('.$contactedPercentage.'%)';
-    /*
-    $form_element['voter-count'] = array(
-      '#markup' => " \n ".'<span class="voting-counts">
- Voters: &nbsp;&nbsp;&nbsp;'.$voterCount.'<br>
- Voted: &nbsp;&nbsp;&nbsp;&nbsp;'.$votedCount.' &nbsp;('.$percentage.'%)<br>
- Attempted: '.$attemptedCount.' &nbsp;('.$attemptedPercentage.'%)<br>
- Contacted: '.$contactedCount.' &nbsp;('.$contactedPercentage.'%)
- </span>',
-    );
-  */
     
     $form_element['counts'] = [
       '#markup' => "  \n ".'<div class="no-white voter-counts">',
@@ -1164,13 +1151,6 @@ class DataEntryForm extends FormBase
     $form_element['table-end'] = [
       '#markup' => '</tbody></table>',
     ];
-  
-  
-    $form_element['counts-end'] = array (
-      '#markup' => " \n   ".'</div>',
-    );
-    
-    
     
     $form_element['counts-end'] = array (
       '#markup' => " \n   ".'</div>',
@@ -2145,7 +2125,7 @@ It is not for general comments.">',
     $form['nav_box'] = [
       '#markup' => '<div class="nav-box-right">',
     ];
-    $form['nav'] = $this->navigate($turfInfo['voterCount'],$turfInfo['pageCount'],$currentPage);
+    $form['nav'] = $this->navigate($turfInfo['pageCount'],$currentPage);
     $form['nav_end'] = [
       '#markup' => '</div>',
     ];
@@ -2161,12 +2141,11 @@ It is not for general comments.">',
    *
    * Build the buttons for navigation through the data entry pages.
    *
-   * @param  $voterCount - total count of voters.
    * @param  $pageCount - number of pages for this turf.
    * @param  $currentPage - current page bing viewed.
    * @return array of form elements.
    */
-  function navigate($voterCount,$pageCount,$currentPage): array
+  function navigate($pageCount,$currentPage): array
   {
     //nlp_debug_msg('$voterCount',$voterCount);
     $currentPage++;
