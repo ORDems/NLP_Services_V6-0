@@ -73,10 +73,20 @@ div.medium-box-right {float: right; font-size:x-small; width: 400px; margin:0; p
 div.canvass_date { border: 1px solid red; border-radius: 5px;
     padding-left:5px; padding-right:5px; box-sizing: border-box;
     width:130px; font-size:x-small;}
-div.voter-counts { margin: 0; padding: 5px; border: 1px solid blue;
-    border-radius: 5px; line-height:100%; font-size:x-small; width:155px; }
+div.voter-counts { margin: 0; padding: 1px 1px 1px 5px; border: 1px solid blue;
+    border-radius: 5px; line-height:100%;  width:155px; font-size:x-small; }
 .voting-counts-title { font-weight: bold; }
 .voting-counts { color: green; }
+
+.table { border-collapse:collapse; border:0; border-spacing:0;
+    font-size:x-small; margin:0; }
+tr.counts-row { padding:0; background: white; }
+table.counts { border-collapse:collapse; border-style:hidden; }
+td.counts-name { width: 140px; padding:0; }
+td.counts-numbers { width: 90px; padding:0; }
+
+
+
 
 div.award-box { width:240px; }
 div.badge-container { position: relative; color: white; float:left; width:110px; }

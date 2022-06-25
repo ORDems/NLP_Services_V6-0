@@ -58,7 +58,8 @@ contacts you are reporting.  If you do not enter a date, the report will use tod
     $output .= '<H3><u>Method of voter contact</u></H3>The voter database for the Democratic party requires that each report
 of a voter contact specify both a method and a result.   To report results, you should start by entering the method.
 This can be accomplished by selecting the method for each voter or by specifying the default method for all voters.  
-The default is set using the tab above.';
+The default is set using the tab above.   Also, there is a checkbox to report that you send a postcard to the voter.
+This checkbox is the same result as selecting the Method/result pair.  The checkbox can\'t be cleared once set.';
     $output .= '<H3><u>Selecting a result</u></H3>The purpose of the NL program is to get our Democratic base to vote.  The 
 most important results is to record that you asked the voter to commit to vote and to record that commitment.  Of 
 secondary importance is to make at least one attempt to contact the voter and record that attempt.  Your report of
@@ -69,7 +70,7 @@ but it can be something else from time to time.   If you were able to contact th
 question, select the response from the drop down menu.  For some elections or voter contact projects, you will see a 
 secondary survey question.   The reply from the voter is recorded with a drop down selection.';
     $output .= '<H5>No voter response</H5>If you tried but failed to contact a voter, select the response from the
-drop down menu.  This menu changes based on the voter contact method you selected.';
+drop down menu.  This menu changes based on the voter contact method you selected. ';
     $output .= '<H3><u>Something went wrong</u></H3>When a voter contact is not possible, these options will change the 
 voter database for future turfs. ';
     $output .= '<H5>Moved</H5>Check this box if you discover that the voter is no longer living at the address 

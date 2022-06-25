@@ -66,93 +66,65 @@ class AwakeForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
   
-    $currentPage = 7;
-    $pageCount = 8;
-    
-    
-    if($pageCount < 7) {
-      $page = 1;
-      $elementCount = $pageCount;
-      $less = $more = FALSE;
-    } elseif ($currentPage < 7) {
-      $page = 1;
-      $elementCount = 6;
-      $less = FALSE;
-      $more = TRUE;
-    } else {
-      $page = 7;
-      $elementCount = $pageCount-6;
-      $less = TRUE;
-      $more = FALSE;
-    }
-    
-    $form['navigation_box'] = array (
-      '#markup' => "  \n ".'<section class="nav_box no-white">',
-    );
-    
-    
-    
   
-    $form['nav'] = array(
-      '#type' => 'fieldset',
-      '#prefix' => " \n".'<div class="nav_div">'." \n",
-      '#suffix' => " \n".'</div>'." \n",
-      '#attributes' => array(
-        'style' => array('background-image: none; border:0; padding:0; margin:0; '),),
-    );
+  
+    $form['date_bar'] = [
+      '#markup' => '<div class="date-bar">',
+    ];
+  
+    $form['date_box'] = [
+      '#markup' => '<div class="date-box-left">',
+    ];
+    //nlp_debug_msg('$defaultDate',$defaultDate);
+  
+    $form['canvass_date'] = 'nice';
+    $form['date_box_end'] = [
+      '#markup' => '</div>',
+    ];
+    $form['counts_box'] = [
+      '#markup' => '<div class="counts-box-left">',
+    ];
+    //$form['voter_counts'] = $this->voterCounts($turfInfo['voterCount'],$turfInfo['votedCount']);
   
     
-    if($less) {
-      $form['nav']['less'] = array(
-        '#type' => 'submit',
-        '#value' => '< Previous',
-        '#name' => 'less',
-        '#prefix' => " \n".'<div class="nav_number" >'." \n",
-        '#suffix' => " \n".'</div>'." \n",
-      );
-      $form['nav']['dots'] = array(
-        '#markup' => ' ... ',
-        '#prefix' => " \n".'<div class="nav_number" >'." \n",
-        '#suffix' => " \n".'</div>'." \n",
-      );
-    }
     
+    $form_element['counts'] = [
+      '#markup' => "  \n ".'<div class="no-white voter-counts">',
+    ];
   
-    for ($element=1; $element<=$elementCount; $element++) {
-      //$pageName = $formPageName[$element];
-      
-      if($page == $currentPage) {
-        $hoverMessage = "You are on page $page.";
-        $pageClass = 'nav_current_number';
-      } else {
-        $hoverMessage = "Jump to page $page.";
-        $pageClass = 'nav_number';
-      }
-      $form['nav']['pageSelect-'.$page] = [
-        '#type' => 'submit',
-        '#value' => $page,
-        '#name' => 'pageSelect-'.$page,
-        '#prefix' => " \n".'<div class="'.$pageClass.'" title="'.$hoverMessage.'">'." \n",
-        '#suffix' => " \n".'</div>'." \n",
-      ];
-      $page++;
-    }
-    
-    if($more) {
-      $form['nav']['more'] = array(
-        '#type' => 'submit',
-        '#value' => 'Next >',
-        '#name' => 'more',
-        '#prefix' => " \n".'<div class="nav_number" >'." \n",
-        '#suffix' => " \n".'</div>'." \n",
-      );
-    }
+    $form_element['table-start'] = [
+      '#markup' => '<table class="table" ><tbody>',
+    ];
+    $form_element['row-one'] = [
+      '#markup' => '<tr class="counts-row"><td  class="counts-name" >Name</td><td class="counts-numbers" ></td>',
+    ];
+    $form_element['row-two'] = [
+      '#markup' => '<tr class="counts-row"><td class="counts-name">Big Name</td><td class="counts-numbers">10 (5%)</td>',
+    ];
+    $form_element['row-three'] = [
+      '#markup' => '<tr class="counts-row"><td class="counts-name">Nameit</td><td class="counts-numbers">2 (1%)</td>',
+    ];
+    $form_element['table-end'] = [
+      '#markup' => '</tbody></table>',
+    ];
     
    
-    $form['navigation_end'] = array (
-      '#type' => 'markup',
-      '#markup' => " \n   ".'</section>',
+    $form_element['counts-end'] = array (
+      '#markup' => " \n   ".'</div>',
     );
+    $form['voter_counts'] = $form_element;
+    
+    
+    //$form['voter_counts'] = $this->voterCounts($turfInfo);
+    $form['date_counts_end'] = [
+      '#markup' => '</div>',
+    ];
+  
+   
+  
+    $form['date_bar_end'] = [
+      '#markup' => '</div><div class="end-big-box"></div>',
+    ];
     
 
     $form['awards'] = [

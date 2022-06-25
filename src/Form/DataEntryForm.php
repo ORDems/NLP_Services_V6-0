@@ -109,6 +109,24 @@ class DataEntryForm extends FormBase
    */
   public function buildForm(array $form, FormStateInterface $form_state): array
   {
+    $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
+    if(!$form_state->get('reenter')) {
+      try {
+        $tempSessionData->set('currentPage', 0);
+      } catch (Drupal\Core\TempStore\TempStoreException $e) {
+        nlp_debug_msg('Temp store save error',$e->getMessage());
+      }
+  
+      $canvassDate = date('Y-m-d',time());  // Today.
+      try {
+        $tempSessionData->set('canvassDate', $canvassDate);
+      } catch (Drupal\Core\TempStore\TempStoreException $e) {
+        nlp_debug_msg('Temp store save error',$e->getMessage());
+      }
+      $form_state->set('canvassDate',$canvassDate);
+    }
+    
+    
     if(!$this->initializeDataReporting($form_state)) {
       return $form;
     }
@@ -185,10 +203,11 @@ class DataEntryForm extends FormBase
    */
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
+    $form_state->setRebuild();
+    $form_state->set('reenter',TRUE);
     $messenger = Drupal::messenger();
     $values = $form_state->getValues();
     //nlp_debug_msg('$values',$values);
-    //nlp_debug_msg('submit',time());
   
     $newCanvassDate = $values['canvassDate'];
     $canvassDate = $form_state->get('canvassDate');
@@ -203,7 +222,6 @@ class DataEntryForm extends FormBase
       $canvassDate = $newCanvassDate;
     }
     $form_state->set('canvassDate',$canvassDate);
-    //nlp_debug_msg('$canvassDate',$canvassDate);
 
     $defaultValues = $form_state->get('defaultValues');
     //nlp_debug_msg('$defaultValues',$defaultValues);
@@ -211,15 +229,12 @@ class DataEntryForm extends FormBase
     if(empty($nlsInfo)) {
       $mcid = $form_state->get('mcid');
       $nlsInfo = $this->nls->getNlById($mcid);
-      //Drupal::logger('nlpservices')->notice('Lost nlsInfo 395. '.$mcid);
     }
   
     $stateCommitteeKey = $form_state->get('stateCommitteeKey');
     
     $contactMethods = $form_state->get('contactMethods');
-    //nlp_debug_msg('$contactMethods',$contactMethods);
     $canvassResponseCodes = $form_state->get('canvassResponseCodes');
-    //nlp_debug_msg('$canvassResponseCodes',$canvassResponseCodes);
   
     $turfIndex = $form_state->get('turfIndex');
     
@@ -239,15 +254,14 @@ class DataEntryForm extends FormBase
           break;
         case 'no_contact':
           if(empty($value)) {break;}
+          nlp_debug_msg('$valueId',$valueId);
           $voterIndex = $valueIdParts[1];
           $vanids = $form_state->get('displayedVanids');
           $vanid = $vanids[$voterIndex];
-          //nlp_debug_msg('$vanid',$vanid);
           
           if(empty($actions[$vanid]['contact_method'])) {break;}
+          //nlp_debug_msg('contact_method',$actions[$vanid]['contact_method']);
           $optionsDisplay = $form_state->get('optionsDisplay');
-          //nlp_debug_msg('$optionsDisplay',$optionsDisplay);
-          
           $chosenOption = $optionsDisplay[$vanid][$value];
           //nlp_debug_msg('chosenOption',$chosenOption);
           $actions[$vanid][$reportType]['chosenOption'] = $chosenOption;
@@ -258,6 +272,20 @@ class DataEntryForm extends FormBase
   
           $form_state->setValue($valueId,0);
           $form_state->setUserInput([$valueId=>0,]);
+          break;
+        case 'postcardMailed':
+          if(empty($value)) {break;}  // Not set.
+          $vanid = $valueIdParts[1];
+          //nlp_debug_msg('$vanid',$vanid);
+          $postcardSend = $this->reports->voterSentPostcard($vanid);
+          if($postcardSend) {break;}  // Card already reported as sent.
+          $actions[$vanid]['vanid'] = $vanid;
+          $actions[$vanid]['contact_method'] = 'Postcard';
+          $actions[$vanid]['no_contact']['chosenOption'] = 'Mailed';
+          $actions[$vanid]['no_contact']['rid'] = $canvassResponseCodes['Postcard']['responses']['Mailed'];
+          $actions[$vanid]['cid'] = $canvassResponseCodes['Postcard']['code'];
+          //nlp_debug_msg('$actions',$actions);
+          
           break;
         case 'pledge2vote':
           if(empty($value)) {break;}
@@ -475,6 +503,7 @@ class DataEntryForm extends FormBase
     
     switch ($navButtonParts[0]) {
       case 'save_reports':
+        /**
         $pageCount = $form_state->get('pageCount');
         $currentPage = $tempSessionData->get('currentPage');
         $currentPage++;
@@ -484,6 +513,7 @@ class DataEntryForm extends FormBase
         } catch (Drupal\Core\TempStore\TempStoreException $e) {
           nlp_debug_msg('Temp store save error',$e->getMessage());
         }
+         */
         break;
       case 'pageSelect':
         $page = $navButtonParts[1]-1;
@@ -1088,6 +1118,7 @@ class DataEntryForm extends FormBase
   {
     $voterCount = $turfInfo['voterCount'];
     $votedCount = $turfInfo['votedCount'];
+    //$votedCount = ($votedCount <  10)?'&nbsp;'.$votedCount:$votedCount;
     $attemptedCount = $turfInfo['attemptedCount'];
     $contactedCount = $turfInfo['contactedCount'];
   
@@ -1097,15 +1128,50 @@ class DataEntryForm extends FormBase
     $percentage = round($votedCount/$voterCount*100,1);
     $attemptedPercentage = round($attemptedCount/$voterCount*100,1);
     $contactedPercentage = round($contactedCount/$voterCount*100,1);
-  
+    $voted = $votedCount.' &nbsp;('.$percentage.'%)';
+    $attemptedCount = $attemptedCount.' &nbsp;('.$attemptedPercentage.'%)';
+    $contactedCount = $contactedCount.' &nbsp;('.$contactedPercentage.'%)';
+    /*
     $form_element['voter-count'] = array(
-      '#markup' => " \n ".'<span class="voting-counts-title">
- Voting Summary<br><span class="voting-counts">
- Voters: '.$voterCount.', Voted: '.$votedCount.', '.$percentage.'%<br>
- Attempted contacts: '.$attemptedCount.', '.$attemptedPercentage.'%<br>
- Voters contacted: '.$contactedCount.', '.$contactedPercentage.'%
- </span></span>',
+      '#markup' => " \n ".'<span class="voting-counts">
+ Voters: &nbsp;&nbsp;&nbsp;'.$voterCount.'<br>
+ Voted: &nbsp;&nbsp;&nbsp;&nbsp;'.$votedCount.' &nbsp;('.$percentage.'%)<br>
+ Attempted: '.$attemptedCount.' &nbsp;('.$attemptedPercentage.'%)<br>
+ Contacted: '.$contactedCount.' &nbsp;('.$contactedPercentage.'%)
+ </span>',
     );
+  */
+    
+    $form_element['counts'] = [
+      '#markup' => "  \n ".'<div class="no-white voter-counts">',
+    ];
+  
+    $form_element['table-start'] = [
+      '#markup' => '<table class="table" ><tbody>',
+    ];
+    $form_element['row-voters'] = [
+      '#markup' => '<tr class="counts-row"><td  class="counts-name" >Voters</td><td class="counts-numbers" >'.$voterCount.'</td>',
+    ];
+    $form_element['row-voted'] = [
+      '#markup' => '<tr class="counts-row"><td class="counts-name">Voted</td><td class="counts-numbers">'.$voted.'</td>',
+    ];
+    $form_element['row-attempted'] = [
+      '#markup' => '<tr class="counts-row"><td class="counts-name">Attempted</td><td class="counts-numbers">'.$attemptedCount.'</td>',
+    ];
+    $form_element['row-contacted'] = [
+      '#markup' => '<tr class="counts-row"><td class="counts-name">Contacted</td><td class="counts-numbers">'.$contactedCount.'</td>',
+    ];
+    $form_element['table-end'] = [
+      '#markup' => '</tbody></table>',
+    ];
+  
+  
+    $form_element['counts-end'] = array (
+      '#markup' => " \n   ".'</div>',
+    );
+    
+    
+    
     $form_element['counts-end'] = array (
       '#markup' => " \n   ".'</div>',
     );
@@ -1650,6 +1716,19 @@ class DataEntryForm extends FormBase
         'wrapper' => 'voterForm-div',
       ),
     );
+  
+  
+    $postcardSend = $this->reports->voterSentPostcard($vanid);
+    $form_element["postcardMailed-$vanid"] = array(
+      '#type' => 'checkbox',
+      '#title' => 'A postcard was mailed.',
+      '#default_value' => $postcardSend,
+      '#prefix' => '<div class="line-spacer" title="Selecting this option is the same as selecting both the method
+and the response.  It can\'t be undone">',
+      '#suffix' => '</div><div class="line-spacer"></div>',
+    );
+  
+  
     if(!empty($method['selectedContactMethod'])) {
       $form_element["contact_method-$vanid"]['#default_value'] =  $method['selectedContactMethod'];
     } else {
@@ -1759,43 +1838,30 @@ class DataEntryForm extends FormBase
         '#suffix' => '</div>',
       );
     } else {
-      //nlp_debug_msg('$noVoterContact',$noVoterContact);
       $optionsDisplay = $noVoterContact['optionsDisplay'];
-  
-      //nlp_debug_msg('preferredContactMethod',$noVoterContact['preferredContactMethod']);
       $voterCount = $noVoterContact['voterCount'];
-  
       $form_element["no_contact-".$voterCount] = array(
         '#type' => 'select',
         '#options' => $optionsDisplay,
         '#prefix' => '<div id="no_contact_row'.$voterCount.'_div">',
         '#suffix' => '</div>',
       );
-  
     }
-    /*
-    $form_element['note'] = array(
-      '#markup' => '<b>No Voter Response</b>',
-    );
-    //nlp_debug_msg('$noVoterContact',$noVoterContact);
-    $optionsDisplay = $noVoterContact['optionsDisplay'];
-    
-    //nlp_debug_msg('preferredContactMethod',$noVoterContact['preferredContactMethod']);
-    $vanid = $noVoterContact['vanid'];
-    $voterCount = $noVoterContact['voterCount'];
   
-    $form_element["no_contact-".$voterCount] = array(
-      '#type' => 'select',
-      '#options' => $optionsDisplay,
-      '#prefix' => '<div id="no_contact_row'.$voterCount.'_div">',
-      '#suffix' => '</div>',
+    /*
+    $postcardSend = $this->reports->voterSentPostcard($vanid);
+    $form_element["postcardMailed-$vanid"] = array(
+      '#type' => 'checkbox',
+      '#title' => 'A postcard was mailed.',
+      '#default_value' => $postcardSend,
+      '#prefix' => '<div class="line-spacer">',
+      '#suffix' => '</div><div class="line-spacer"></div>',
     );
     */
+    
     $form_element['historical-start'.$vanid] = array(
       '#markup' => '<div>',
     );
-    
-    //$offset = $noVoterContact['historicalLines'] * 13 + 6;
     $historicalContacts = '<span class="historical-report-list">'
       . $noVoterContact['historical'] . '</span>';
     if (!empty($noVoterContact['historical'])) {
@@ -1862,7 +1928,9 @@ class DataEntryForm extends FormBase
       '#type' => 'textfield',
       '#size' => 20,
       '#maxlength' => 128,
-      //'#suffix' => '</div>',
+      '#prefix' => '<div title="This text box is to report a new phone number or email.
+It is not for general comments.">',
+      '#suffix' => '</div>',
     );
     return $form_element;
   }
@@ -2186,7 +2254,7 @@ class DataEntryForm extends FormBase
       '#type' => 'submit',
       '#value' => 'Save reports',
       '#name' => 'save_reports',
-      '#prefix' => " \n".'<div class="nav_number" title="And go to next page.">'." \n",
+      '#prefix' => " \n".'<div class="nav_number" title="And stay on this page.">'." \n",
       '#suffix' => " \n".'</div>'." \n",
     );
   
