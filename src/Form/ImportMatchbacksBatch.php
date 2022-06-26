@@ -84,25 +84,21 @@ function importMatchbacksBatch($arg,&$context) {
       $batchVanids[$vanid] = $vanid;
 
       // If the record already exists, skip the insert.
-      $exists = $matchbacksObj->matchbackExists($vanid);
-      if(!$exists) {
-        // Convert date to index.
-        $ballotReceivedDate = $voterInfo[$fieldPos['ballotReceived']];
-        if(empty($ballotReceivedDate)) {continue;}
-        $ballotReceivedTime = strtotime($ballotReceivedDate);  // Convert US date to time.
-        $convertedDate = date('Y-m-d',$ballotReceivedTime);  // Convert to ISO date.
-        //nlp_debug_msg('$convertedDate',$convertedDate);
-
-        if($ballotReceivedTime > $latestMatchbackTime) {
-          $latestMatchbackTime = $ballotReceivedTime;
-          $latestMatchbackDate = $convertedDate;
-        }
-        // Create a record for this ballot received status, and add it to a
-        // group until there are 100 records to insert.
-        $batchLimit = $matchbacksObj->insertMatchbacks($vanid,$convertedDate);
+      $ballotReceivedDate = $voterInfo[$fieldPos['ballotReceived']];
+      if(empty($ballotReceivedDate)) {continue;}
+      $ballotReceivedTime = strtotime($ballotReceivedDate);  // Convert US date to time.
+      if($ballotReceivedTime === FALSE OR $ballotReceivedTime==0) {continue;}
+      $convertedDate = date('Y-m-d',$ballotReceivedTime);  // Convert to ISO date.
+      if($ballotReceivedTime > $latestMatchbackTime) {
+        $latestMatchbackTime = $ballotReceivedTime;
+        $latestMatchbackDate = $convertedDate;
       }
+      // Create a record for this ballot received status, and add it to a
+      // group until there are 100 records to insert.
+      $batchLimit = $matchbacksObj->insertMatchbacks($vanid,$convertedDate);
     }
-    // When we have completed 100 inserts of 100 records, return to the
+    
+    // When we have completed the batch limit of records, return to the
     // queue to continue processing with a refreshed timer.   It also displays
     // progress to the user.
     if ($batchLimit OR $recordCount>READ_COUNT_LIMIT) {
@@ -138,6 +134,7 @@ function importMatchbacksBatch($arg,&$context) {
  * @param $results
  * @param $unused
  * @noinspection PhpUnusedParameterInspection
+ * @noinspection PhpUnused
  */
 function importMatchbacksBatchFinished($success, $results, $unused) {
   $messenger = Drupal::messenger();
