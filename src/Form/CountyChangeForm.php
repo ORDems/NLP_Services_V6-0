@@ -97,6 +97,19 @@ class CountyChangeForm extends ConfigFormBase {
     $store = $factory->get('nlpservices.session_data');
     //$county = $store->get('County');
     $store->set('County',$county);
+    
+    try {
+      $store->set('currentFolderId', 0);
+    } catch (Drupal\Core\TempStore\TempStoreException $e) {
+      nlp_debug_msg('Temp store save error',$e->getMessage());
+    }
+  
+    try {
+      $store->set('currentHd', NULL);
+      $store->set('currentPct', NULL);
+    } catch (Drupal\Core\TempStore\TempStoreException $e) {
+      nlp_debug_msg('Temp store save error',$e->getMessage());
+    }
 
     parent::submitForm($form, $form_state);
   }

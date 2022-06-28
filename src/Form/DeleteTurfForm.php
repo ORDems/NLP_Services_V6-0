@@ -5,6 +5,7 @@ namespace Drupal\nlpservices\Form;
 use Drupal;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\nlpservices\NlpNls;
 use Drupal\nlpservices\NlpVoters;
@@ -24,14 +25,18 @@ class DeleteTurfForm extends FormBase
   protected ApiSurveyQuestion $surveyQuestion;
   protected NlpPaths $paths;
   protected NlpEncryption $nlpEncrypt;
+  protected PrivateTempStoreFactory $privateTempstoreObj;
   
-  public function __construct( $nls, $voters, $turfs, $surveyQuestion, $paths, $nlpEncrypt ) {
+  
+  public function __construct( $nls, $voters, $turfs, $surveyQuestion, $paths, $nlpEncrypt, $privateTempstoreObj ) {
     $this->nls = $nls;
     $this->voters = $voters;
     $this->turfs = $turfs;
     $this->surveyQuestion = $surveyQuestion;
     $this->paths = $paths;
     $this->nlpEncrypt = $nlpEncrypt;
+    $this->privateTempstoreObj = $privateTempstoreObj;
+  
   }
   
   /**
@@ -46,6 +51,8 @@ class DeleteTurfForm extends FormBase
       $container->get('nlpservices.survey_question'),//
       $container->get('nlpservices.paths'),
       $container->get('nlpservices.encryption'),
+      $container->get('tempstore.private'),
+
     );
   }
   
@@ -63,7 +70,8 @@ class DeleteTurfForm extends FormBase
   public function buildForm(array $form, FormStateInterface $form_state): array
   {
     $messenger = Drupal::messenger();
-  
+    $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
+    
     if (empty($form_state->get('reenter'))) {
       /*
       $factory = Drupal::service('tempstore.private');
@@ -72,7 +80,7 @@ class DeleteTurfForm extends FormBase
       */
       $sessionObj = Drupal::getContainer()->get('nlpservices.session_data');
       $county = $sessionObj->getCounty();
-
+  
       $form_state->set('county',$county);
   
       $config = $this->config('nlpservices.configuration');
@@ -84,9 +92,45 @@ class DeleteTurfForm extends FormBase
       $stateCommitteeKey = $apiKeys['State Committee'];
       $stateCommitteeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $stateCommitteeKey['API Key']);
       $form_state->set('stateCommitteeKey',$stateCommitteeKey);
+      
+      $hdSaved = $pctSaved = 0;
+      $currentHd = $tempSessionData->get('currentHd');
+      //nlp_debug_msg('$currentHd',$currentHd);
+      $currentPct = $tempSessionData->get('currentPct');
+      //nlp_debug_msg('$currentPct',$currentPct);
   
-      $form_state->set('hd-saved',0);
-      $form_state->set('pct-saved',0);
+      $hdOptions = $this->turfs->getTurfHD($county);
+      if(empty($currentHd)) {
+        $currentHd = $hdOptions[0];
+        $pctOptions = $this->turfs->getTurfPct($county, $currentHd);
+        $currentPct = $pctOptions[0];
+      } else {
+        $hdSaved = array_search($currentHd,$hdOptions);
+        if($hdSaved === FALSE) {
+          $hdSaved = 0;
+          $currentHd = $hdOptions[0];
+          $pctOptions = $this->turfs->getTurfPct($county, $currentHd);
+          $currentPct = $pctOptions[0];
+        } else {
+          $pctOptions = $this->turfs->getTurfPct($county, $currentHd);
+          $pctSaved = array_search($currentPct,$pctOptions);
+          if($pctSaved === FALSE) {
+            $pctSaved = 0;
+            $currentPct = $pctOptions[0];
+          }
+        }
+      }
+      try {
+        $tempSessionData->set('currentHd', $currentHd);
+        $tempSessionData->set('currentPct', $currentPct);
+      } catch (Drupal\Core\TempStore\TempStoreException $e) {
+        nlp_debug_msg('Temp store save error',$e->getMessage());
+      }
+      
+      $form_state->set('hd-saved',$hdSaved);
+      $form_state->set('pct-saved',$pctSaved);
+      //nlp_debug_msg('$hdSaved',$hdSaved);
+      //nlp_debug_msg('$pctSaved',$pctSaved);
       $form_state->set('reenter', TRUE);
     }
     $county = $form_state->get('county');
@@ -98,6 +142,11 @@ class DeleteTurfForm extends FormBase
       $form_state->set('PreviousHD',$hdSaved);
     } else {
       $selectedHd = $form_state->getValue('hd');
+      try {
+        $tempSessionData->set('currentHd', $selectedHd);
+      } catch (Drupal\Core\TempStore\TempStoreException $e) {
+        nlp_debug_msg('Temp store save error',$e->getMessage());
+      }
       $previousHd = $form_state->get('PreviousHD');
     }
     // If the user changed the HD, then reset the pct to zero.
@@ -122,6 +171,7 @@ class DeleteTurfForm extends FormBase
       // House Districts exist.
       $form_state->set('hd_options', $hdOptions);
       //nlp_debug_msg('$hdOptions',$hdOptions);
+      //nlp_debug_msg('$selectedHd',$selectedHd);
       $form['hd'] = array(
         '#type' => 'select',
         '#title' => t('House District Number'),
@@ -140,17 +190,32 @@ class DeleteTurfForm extends FormBase
         '#type' => 'fieldset',
         '#attributes' => array('style' => array('background-image: none; border: 0px; width: 550px; padding:0px; margin:0px; background-color: rgb(255,255,255);'),),
       );
-      $selectedPct = (!empty($form_state->getValue('pct'))) ? $form_state->getValue('pct') : 0;
+      $savedPct = $form_state->get('pct-saved');
+      //nlp_debug_msg('$savedPct',$savedPct);
+      $selectedPct = (!empty($form_state->getValue('pct')))?$form_state->getValue('pct'):$savedPct;
+      //nlp_debug_msg('$selectedPct',$selectedPct);
+  
       $selectedHdName = $hdOptions[$selectedHd];
       $pctOptions = $this->turfs->getTurfPct($county, $selectedHdName);
       //nlp_debug_msg('$pctOptions',$pctOptions);
       $form_state->set('pct_options', $pctOptions);
+  
+      if($savedPct != $selectedPct) {
+        $form_state->set('pct-saved',$savedPct);
+        try {
+          $tempSessionData->set('currentPct', $pctOptions[$selectedPct]);
+        } catch (Drupal\Core\TempStore\TempStoreException $e) {
+          nlp_debug_msg('Temp store save error',$e->getMessage());
+        }
+      }
+      
       if (!$pctOptions) {
         $messenger->addStatus(t("No turfs exist"));
       } else {
         if (empty($pctOptions[$selectedPct])) {
           $selectedPct = 0;  // turf was deleted.
         }
+        //nlp_debug_msg('$selectedPct',$selectedPct);
         // Precincts exist.
         $form_state->set('pct_options', $pctOptions);
         $form['hd-change']['pct'] = array(
@@ -198,6 +263,9 @@ class DeleteTurfForm extends FormBase
   
   }
   
+  /**
+   * {@inheritdoc}
+   */
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
     $messenger = Drupal::messenger();

@@ -5,6 +5,7 @@ namespace Drupal\nlpservices\Form;
 use Drupal;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\nlpservices\NlpVoters;
 use Drupal\nlpservices\NlpReports;
@@ -20,16 +21,20 @@ class ActiveNlsDisplayForm extends FormBase
   const NLS_ALL_MAX = 500;
   
   protected NlpVoters $votersObj;
-  protected NlpReports $reportsObj;
+  protected NlpReports $reportsObj;  protected PrivateTempStoreFactory $privateTempstoreObj;
+  
   protected NlpNls $nlsObj;
   protected NlpTurfs $turfsObj;
   
   
-  public function __construct( $votersObj, $reportsObj, $nlsObj, $turfsObj) {
+  
+  public function __construct( $votersObj, $reportsObj, $nlsObj, $turfsObj, $privateTempstoreObj) {
     $this->votersObj = $votersObj;
     $this->reportsObj = $reportsObj;
     $this->nlsObj = $nlsObj;
     $this->turfsObj = $turfsObj;
+    $this->privateTempstoreObj = $privateTempstoreObj;
+  
   }
   
   /**
@@ -42,6 +47,7 @@ class ActiveNlsDisplayForm extends FormBase
       $container->get('nlpservices.reports'),
       $container->get('nlpservices.nls'),
       $container->get('nlpservices.turfs'),
+      $container->get('tempstore.private'),
     );
   }
   
@@ -58,6 +64,8 @@ class ActiveNlsDisplayForm extends FormBase
    */
   public function buildForm(array $form, FormStateInterface $form_state): array
   {
+    $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
+    
     if(empty($form_state->get('page'))) {
       //nlp_debug_msg('empty page');
       $form_state->set('page','data_entry');
@@ -67,9 +75,10 @@ class ActiveNlsDisplayForm extends FormBase
         ];
       $form_state->set('sortable',$sortable);
   
-      $factory = Drupal::service('tempstore.private');
-      $store = $factory->get('nlpservices.session_data');
-      $county = $store->get('County');
+      //$factory = Drupal::service('tempstore.private');
+      //$store = $factory->get('nlpservices.session_data');
+      
+      $county = $tempSessionData->get('County');
       $form_state->set('county',$county);
       //nlp_debug_msg('$county',$county);
   
@@ -88,9 +97,16 @@ class ActiveNlsDisplayForm extends FormBase
       $hdOptions = $this->nlsObj->getHdList($county);
       //nlp_debug_msg('$hdOptions',$hdOptions);
       $form_state->set('hd-options',$hdOptions);
-      $hd = reset($hdOptions);
-      //nlp_debug_msg('$hd',$hd);
-      $form_state->set('hd',$hd);
+      $firstHd = reset($hdOptions);
+  
+      $currentHd = $tempSessionData->get('currentHd');
+      if(empty($currentHd)) {
+        try {
+          $tempSessionData->set('currentHd', $firstHd);
+        } catch (Drupal\Core\TempStore\TempStoreException $e) {
+          nlp_debug_msg('Temp store save error',$e->getMessage());
+        }
+      }
     }
   
     $county = $form_state->get('county');
@@ -102,7 +118,8 @@ class ActiveNlsDisplayForm extends FormBase
       case 'data_entry':
         
         // Select the HD to display.
-        $hd = $form_state->get('hd');
+        //$hd = $form_state->get('hd');
+        $currentHd = $tempSessionData->get('currentHd');
         //nlp_debug_msg('$hd',$hd);
         $hdOptions = $form_state->get('hd-options');
         $sortable = $form_state->get('sortable');
@@ -112,11 +129,11 @@ class ActiveNlsDisplayForm extends FormBase
         ];
   
         // Add the line for selecting an HD and CSV download.
-        $form['options_display'] = $this->nlp_options_display($hdOptions,$hd,$sortable);
+        $form['options_display'] = $this->nlp_options_display($hdOptions,$currentHd,$sortable);
 
         // Fetch the list of NL names and contact information.
         if(empty($form_state->get('nl-records'))) {
-          $nlRecords = $this->nlsObj->getNls($county,$hd);
+          $nlRecords = $this->nlsObj->getNls($county,$currentHd);
           //nlp_debug_msg('$nlRecords',$nlRecords);
           $nlKeys = array_keys($nlRecords);
           //nlp_debug_msg('$nlKeys',$nlKeys);
@@ -160,10 +177,10 @@ class ActiveNlsDisplayForm extends FormBase
         if($form_state->get('hd-select') == 0 AND $form_state->get('nlsCount') > self::NLS_ALL_MAX) {
           //nlp_set_msg('There are too many NLs to display them all.','error');
           $messenger->addError(t('There are too many NLs to display them all.'));
-          $form_state->set('hd-select',1);
+          //$form_state->set('hd-select',1);
           $form_state->set('page','data_entry');
-        } else {
-            $form_state->set('hd',$form_state->getValue('hd-select'));
+        //} else {
+        //    $form_state->set('hd',$form_state->getValue('hd-select'));
         }
         return;
         
@@ -225,8 +242,8 @@ class ActiveNlsDisplayForm extends FormBase
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
     $form_state->setRebuild();
-    //$values = $form_state->getValues();
-    //nlp_debug_msg('submit',$values);
+    $values = $form_state->getValues();
+    //('submit',$values);
     $triggering_element = $form_state->getTriggeringElement();
     //nlp_debug_msg('$triggering_element',$triggering_element);
     $element_clicked = $triggering_element['#name'];
@@ -236,6 +253,13 @@ class ActiveNlsDisplayForm extends FormBase
       case 'hd-submit':
         // The user changed the HD to display.
         $form_state->set('hd',$form_state->getValue('hd-select'));
+        $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
+        try {
+          $tempSessionData->set('currentHd', $form_state->getValue('hd-select'));
+        } catch (Drupal\Core\TempStore\TempStoreException $e) {
+          nlp_debug_msg('Temp store save error',$e->getMessage());
+        }
+    
         //nlp_debug_msg('hd-select',$form_state->getValue('hd-select'));
         $form_state->set('nl-records',NULL);
         break;
