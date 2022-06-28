@@ -26,6 +26,7 @@ div.line-spacer { padding-bottom:4px; }
 .voter-postcard { color:orange; font-weight: bold; }
 .voter-attempt { color:orange; font-weight: bold; }
 .voter-no-attempt { color:red; font-weight: bold; }
+.voter-sms-status { font-size: xx-small; font-style: italic; }
 .historical-report-title { color:blue; font-weight: bold; }
 .historical-report-list { left: -175px; top: 16px; width: 500px; font-size:x-small; }
 .hint_note { position: relative; }
@@ -82,8 +83,9 @@ div.voter-counts { margin: 0; padding: 1px 1px 1px 5px; border: 1px solid blue;
     font-size:x-small; margin:0; }
 tr.counts-row { padding:0; background: white; }
 table.counts { border-collapse:collapse; border-style:hidden; }
-td.counts-name { width: 140px; padding:0; }
-td.counts-numbers { width: 90px; padding:0; }
+td.counts-name { width: 120px; padding:0; }
+td.counts-numbers { width: 20px; padding:0; text-align: right; }
+td.counts-percent { width: 70px; padding:0 0 0 3px; text-align: left;}
 
 
 

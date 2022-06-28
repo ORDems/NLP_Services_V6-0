@@ -114,7 +114,7 @@ class SyncTurfForm extends FormBase {
       }
   
       //$form_state->set('currentFolderId',$currentFolderId);
-      nlp_debug_msg('$currentFolderId',$currentFolderId);
+      //nlp_debug_msg('$currentFolderId',$currentFolderId);
     }
     $form_state->set('phase','turf_list_select');
     $factory = Drupal::service('tempstore.private');
@@ -164,7 +164,7 @@ class SyncTurfForm extends FormBase {
         //$currentFolderId = $form_state->get('currentFolderId');
         $currentFolderId = $tempSessionData->get('currentFolderId');
   
-        nlp_debug_msg('$currentFolderId',$currentFolderId);
+        //nlp_debug_msg('$currentFolderId',$currentFolderId);
         $form['turf_list_select'] = $this->turf_list_select(
           $county,$committeeKey,$currentFolderId,$folderInfo,$justNames,$listNames);
         $form_state->set('folderInfo', $folderInfo);
@@ -219,7 +219,7 @@ class SyncTurfForm extends FormBase {
       } catch (Drupal\Core\TempStore\TempStoreException $e) {
         nlp_debug_msg('Temp store save error',$e->getMessage());
       }
-      nlp_debug_msg('$currentFolderId',$currentFolderId);
+      //nlp_debug_msg('$currentFolderId',$currentFolderId);
   
       return;
     }

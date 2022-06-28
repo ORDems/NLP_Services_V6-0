@@ -64,13 +64,13 @@ This checkbox is the same result as selecting the Method/result pair.  The check
 most important results is to record that you asked the voter to commit to vote and to record that commitment.  Of 
 secondary importance is to make at least one attempt to contact the voter and record that attempt.  Your report of
 a voter contact should be done as soon as possible after the contact.  Our candidates and the coordinated campaign
-are relying on you to contact our base voters and they need to see that the contact was attempted and/or successful. ';
-    $output .= '<H5>Voter responded</H5>The survey question is typically a "pledge to vote" question
+are relying on you to contact our base voters, and they need to see that the contact was attempted and/or successful. ';
+    $output .= '<H5>Voter responded</H5>The survey question is typically a "pledge to vote" question,
 but it can be something else from time to time.   If you were able to contact the voter and get an answer to the
-question, select the response from the drop down menu.  For some elections or voter contact projects, you will see a 
-secondary survey question.   The reply from the voter is recorded with a drop down selection.';
+question, select the response from the drop-down menu.  For some elections or voter contact projects, you will see a
+secondary survey question.   The reply from the voter is recorded with a drop-down selection.';
     $output .= '<H5>No voter response</H5>If you tried but failed to contact a voter, select the response from the
-drop down menu.  This menu changes based on the voter contact method you selected. ';
+drop-down menu.  This menu changes based on the voter contact method you selected. ';
     $output .= '<H3><u>Something went wrong</u></H3>When a voter contact is not possible, these options will change the 
 voter database for future turfs. ';
     $output .= '<H5>Moved</H5>Check this box if you discover that the voter is no longer living at the address 
@@ -87,6 +87,9 @@ good at removing deceased voters from the registered voters lists.   ';
 new contact information.  Use this drop down menu and text box to enter something new. ';
     $output .= '<H5>Bad No.</H5>Use this option to report that a phone number listed for this voter is wrong.  When 
 you make this selection, the party and NLP databases are updated and the phone number will no longer be displayed.   ';
+    $output .= '<H5>Opt out of texting.</H5>If you used the cell phone number displayed for this voter, and they
+do not want to receive text messages, you can record this here.  However, you must contact your coordinator
+to have them change the status of text messaging in VoteBuilder.  The process is manual for now.   ';
     $output .= '<H5>New cell number</H5>If you get a new cell phone number, select this option and enter the number 
 in the text box below.  This new number is record in the NLP database but not in the party database.  There is no 
 current method to allow an update of VoteBuilder.  If the voter gave permission, ask your coordinator to enter the 
@@ -102,8 +105,8 @@ approximately the same order as found on the walk sheets.  The data entry page d
 have to move from page to page with the navigation buttons.   Clicking any button will save any reports you made
 on the current page.';
     $output .= '<H5>Page buttons</H5>The navigation box displays buttons with a number.  You can navigate directly
-to a page by clicking the appropriate number button.  You may know the page you want but it may be easier to
-searcg for the voter by the last name.';
+to a page by clicking the appropriate number button.  You may know the page you want, but it may be easier to
+search for the voter by the last name.';
     $output .= '<H5>Next and Previous buttons</H5>If there are more than 60 voters in the turf, you will see the
 Next and Previous buttons.  Use these to reveal the first or last block of pages.';
     $output .= '<H5>Last name search</H5>The search looks for the first match of the text you provide in the last

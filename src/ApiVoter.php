@@ -221,11 +221,13 @@ class ApiVoter
             if($phone['isPreferred']) {
               $voter['cellPhone'] = $phone['phoneNumber'];
               $voter['cellPhoneId'] = $phone['phoneId'];
+              $voter['smsOptInStatus'] = $phone['smsOptInStatus'];
               $voter['preferredPhoneType'] = 'C';
             } else {
               if(empty($voter['cellPhone'])) {
                 $voter['cellPhone'] = $phone['phoneNumber'];
                 $voter['cellPhoneId'] = $phone['phoneId'];
+                $voter['smsOptInStatus'] = $phone['smsOptInStatus'];
               }
             }
             break;

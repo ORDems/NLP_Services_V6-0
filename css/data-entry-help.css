@@ -16,3 +16,6 @@ td.call-status { border: 1px solid green; border-collapse: collapse; width:30px;
 table.mail-table { border-collapse: collapse; font-size:small; padding:0; border: 1px solid green; width:555px; }
 th.name { border: 1px solid green; border-collapse: collapse; width:350px; }
 th.address { border: 1px solid green; border-collapse: collapse; width:200px; }
+
+.voter-sms-status { font-size: xx-small; font-style: italic; color: blue; }
+

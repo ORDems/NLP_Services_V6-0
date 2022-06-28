@@ -141,15 +141,11 @@ class DataEntryForm extends FormBase
     $form_state->set('defaultValues',NULL);
     
     $turfInfo = $this->fetchVoters($turfIndex,$voters);
-    //nlp_debug_msg('$turfInfo',$turfInfo);
     $form_state->set('voterCount',$turfInfo['voterCount']);
     $form_state->set('pageCount',$turfInfo['pageCount']);
     $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
     $currentPage = $tempSessionData->get('currentPage');
-    //nlp_debug_msg('$currentPage',$currentPage);
-    //nlp_debug_msg('$voters',$voters);
-  
-    //$defaultVoterContactMethod = $form_state->get('defaultVoterContactMethod');
+    
     $contactMethods = $form_state->get('contactMethods');
     $preferredContactMethod = array_search($defaultVoterContactMethod, $contactMethods);
   
@@ -380,7 +376,6 @@ class DataEntryForm extends FormBase
                   $newContactParts = $valueIdParts;
                   $newContactParts[2] = 'value';
                   $newContact = implode('-',$newContactParts);
-                  nlp_debug_msg('$newContact',$newContact);
                   if(empty($values[$newContact]))  {
                     $messenger->addWarning('You must enter a new email, Voter is '.$voterName);
                     break;
@@ -407,7 +402,7 @@ class DataEntryForm extends FormBase
                   }
                   $actions[$vanid][$reportType][$field] = $value;
                   break;
-                case 'BC':  // Bad cell.
+                case 'BH':  // Bad cell.
                   $voter = $this->voters->getVoterById($vanid,$turfIndex);
                   $actions[$vanid][$reportType]['homePhoneId'] = NULL;
                   if(!empty($voter['homePhoneId'])) {
@@ -418,7 +413,8 @@ class DataEntryForm extends FormBase
                   $actions[$vanid][$reportType]['homePhone'] = $voter['homePhone'];
                   $actions[$vanid][$reportType][$field] = $value;
                   break;
-                case 'BH':  // Bad home phone.
+                case 'BC':  // Bad home phone.
+                case 'OO':  // Opt out of texting.
                   $voter = $this->voters->getVoterById($vanid,$turfIndex);
                   $actions[$vanid][$reportType]['cellPhoneId'] = NULL;
                   if(empty($voter['cellPhoneId'])) {
@@ -429,6 +425,7 @@ class DataEntryForm extends FormBase
                   $actions[$vanid][$reportType]['cellPhone'] = $voter['cellPhone'];
                   $actions[$vanid][$reportType][$field] = $value;
                   break;
+                  
               }
               break;
             case 'value':    // New phone # or email, but may be a comment.
@@ -563,14 +560,11 @@ class DataEntryForm extends FormBase
   {
     $messenger = Drupal::messenger();
     $common = $actions[0];
-    //$contactType = $common['contact_method'];
-    //nlp_debug_msg('$actions',$actions);
     foreach ($actions as $vanid=>$action) {
       if(empty($vanid)) {continue;}
       foreach ($action as $actionId=>$value) {
         switch ($actionId) {
-
-          /*
+         /*
          * Survey question ----------------------------------------------------
          */
           case 'pledge2vote':
@@ -578,7 +572,6 @@ class DataEntryForm extends FormBase
             $contactType = $action['contact_method'];
             $turfIndex = $common['turfIndex'];
             $voter = $this->voters->getVoterById($vanid, $turfIndex);
-            //nlp_debug_msg('$voter',$voter);
             if($contactType == 'postcard') {
               $voterName = $voter['firstName'].' '.$voter['lastName'];
               $messenger->addWarning('If you received an answer from '.$voterName
@@ -587,29 +580,16 @@ class DataEntryForm extends FormBase
             }
 
             $rid = $value;
-            //$contactType = $action['contact_method'];
             $county = $common['county'];
             $mcid = $common['mcid'];
-            //$cid = $this->responseCodesObj->getCid($contactType);
-
             $config = $this->config('nlpservices.configuration');
-            //$apiKeys = $config->get('nlpservices-api-keys');
-            //$stateCommitteeKey = $apiKeys['State Committee'];
             $stateCommitteeKey = $common['stateCommitteeKey'];
             $currentResponseCodes = $config->get('nlpservices_canvass_response_codes');
-            //nlp_debug_msg('$currentResponseCodes',$currentResponseCodes);
             $cid = $currentResponseCodes[$contactType]['code'];
-
-            //$questionsArray = $this->surveyQuestion->getSurveyQuestions('pledge',$stateCommitteeKey);
-            //$questionArray = reset($questionsArray);
-
             $surveyQuestions = $config->get('nlpservices_survey_questions');
             $pledgeQuestion = $surveyQuestions['state'];
-            //nlp_debug_msg('$pledgeQuestion',$pledgeQuestion);
             $qid = $pledgeQuestion['surveyQuestionId'];
-            //$surveyResponseList = $this->surveyResponses->getSurveyResponseList($qid);
             $surveyResponseList = $pledgeQuestion['responses'];
-            //nlp_debug_msg('$rid',$rid);
             $result['value'] = str_replace(':fn',$voter['firstName'],$surveyResponseList[$rid]['name']);
             $result['text'] = $pledgeQuestion['name'];
             $result['qid'] = $qid;
@@ -626,7 +606,6 @@ class DataEntryForm extends FormBase
             $result['type'] = 'Survey';
             $result['rid'] = $rid;
             $result['cid'] = $cid;
-            //nlp_debug_msg('$result',$result);
             $rIndex = $this->reports->setNlReport($result);
             // Report the response to VoteBuilder.
             $surveyResponse['type'] = 'Survey';
@@ -634,18 +613,10 @@ class DataEntryForm extends FormBase
             $surveyResponse['qid'] = $qid;
             $surveyResponse['rid'] = $rid;
             $surveyResponse['cid'] = $cid;
-            //$dateTimeObj = new DateTime($date);
-            //$canvassDate = $dateTimeObj->format(DateTime::ATOM);
-
             $canvassDate = date(DATE_ATOM, strtotime($common['contactDate']));
-
-
             $surveyResponse['dateCanvassed'] = $canvassDate;
             $surveyResponse['ContactTypeCode'] = $cid;
-            //nlp_debug_msg('$surveyResponse',$surveyResponse);
-            //nlp_debug_msg('$apiSurveyQuestionObj',$apiSurveyQuestionObj);
             $this->apiSurveyQuestionObj->setApiSurveyResponse($stateCommitteeKey, $surveyResponse);
-            //nlp_debug_msg('$apiSurveyQuestionObj',$apiSurveyQuestionObj);
             // Mark this voter pledge response.
             $turfVoter = array();
             $turfVoter['vanid'] = $vanid;
@@ -653,7 +624,6 @@ class DataEntryForm extends FormBase
             $turfVoter['county'] = $county;
             $turfVoter['turfIndex'] = $common['turfIndex'];
             $turfVoter['pledgedToVote'] = $rIndex;
-            //nlp_debug_msg('$turfVoter',$turfVoter);
             $this->voters->updateTurfVoter($turfVoter);
 
             // This NL has reported results.
@@ -869,10 +839,9 @@ class DataEntryForm extends FormBase
               case 'BC':
                 $result['contactType'] = 'phone';
                 $result['text'] = $value['cellPhone'];
-                $result['value'] = 'Wrong number: '.$value['cellPhone'];
+                $result['value'] = 'Wrong number: ';
                 $result['rid'] = $value['wrongNumberCode'];
                 $result['cid'] = $value['cid'];
-                //nlp_debug_msg('result',$result);
                 $this->reports->setNlReport($result);
 
                 $newPhoneNumber = [
@@ -889,13 +858,20 @@ class DataEntryForm extends FormBase
                   $this->apiSurveyQuestionObj->setApiSurveyResponse($common['stateCommitteeKey'],$surveyResponse);
                 }
                 break;
+              case 'OO':
+                $result['contactType'] = 'phone';
+                $result['text'] = $value['cellPhone'];
+                $result['value'] = 'Opt out of texting: ';
+                $result['rid'] = NULL;
+                $result['cid'] = $value['cid'];
+                $this->reports->setNlReport($result);
+                break;
               case 'BH':
                 $result['contactType'] = 'phone';
                 $result['text'] = $value['homePhone'];
-                $result['value'] = 'Wrong number: '.$value['homePhone'];
+                $result['value'] = 'Wrong number: ';
                 $result['rid'] = $value['wrongNumberCode'];
                 $result['cid'] = $value['cid'];
-                //nlp_debug_msg('result',$result);
                 $this->reports->setNlReport($result);
 
                 $newPhoneNumber = [
@@ -914,7 +890,6 @@ class DataEntryForm extends FormBase
               case 'NC':
                 $result['value'] = 'New cell number';
                 $result['text'] = $value['new_phone_number'];
-                //nlp_debug_msg('result',$result);
                 $this->reports->setNlReport($result);
                 $newPhoneNumber = [
                   'cellPhone' => $value['new_phone_number'],
@@ -936,7 +911,6 @@ class DataEntryForm extends FormBase
               case 'NE':  // New email for voter.$result['type'] = 'New number';
                 $result['value'] = 'New email';
                 $result['text'] = $value['new_email'];
-                //nlp_debug_msg('result',$result);
                 $this->reports->setNlReport($result);
                 break;
             }
@@ -1122,12 +1096,9 @@ class DataEntryForm extends FormBase
     $attemptedCount = $turfInfo['attemptedCount'];
     $contactedCount = $turfInfo['contactedCount'];
     
-    $percentage = round($votedCount/$voterCount*100,1);
-    $attemptedPercentage = round($attemptedCount/$voterCount*100,1);
-    $contactedPercentage = round($contactedCount/$voterCount*100,1);
-    $voted = $votedCount.' &nbsp;('.$percentage.'%)';
-    $attemptedCount = $attemptedCount.' &nbsp;('.$attemptedPercentage.'%)';
-    $contactedCount = $contactedCount.' &nbsp;('.$contactedPercentage.'%)';
+    $percentage = '('.round($votedCount/$voterCount*100,1).'%)';
+    $attemptedPercentage = '('.round($attemptedCount/$voterCount*100,1).'%)';
+    $contactedPercentage = '('.round($contactedCount/$voterCount*100,1).'%)';
     
     $form_element['counts'] = [
       '#markup' => "  \n ".'<div class="no-white voter-counts">',
@@ -1137,16 +1108,20 @@ class DataEntryForm extends FormBase
       '#markup' => '<table class="table" ><tbody>',
     ];
     $form_element['row-voters'] = [
-      '#markup' => '<tr class="counts-row"><td  class="counts-name" >Voters</td><td class="counts-numbers" >'.$voterCount.'</td>',
+      '#markup' => '<tr class="counts-row"><td  class="counts-name" >Voters</td>
+<td class="counts-numbers" >'.$voterCount.'</td><td class="counts-percent"></td>',
     ];
     $form_element['row-voted'] = [
-      '#markup' => '<tr class="counts-row"><td class="counts-name">Voted</td><td class="counts-numbers">'.$voted.'</td>',
+      '#markup' => '<tr class="counts-row"><td class="counts-name">Voted</td>
+<td class="counts-numbers">'.$votedCount.'</td><td class="counts-percent">'.$percentage.'</td>',
     ];
     $form_element['row-attempted'] = [
-      '#markup' => '<tr class="counts-row"><td class="counts-name">Attempted</td><td class="counts-numbers">'.$attemptedCount.'</td>',
+      '#markup' => '<tr class="counts-row"><td class="counts-name">Attempted</td>
+<td class="counts-numbers">'.$attemptedCount.'</td><td class="counts-percent">'.$attemptedPercentage.'</td>',
     ];
     $form_element['row-contacted'] = [
-      '#markup' => '<tr class="counts-row"><td class="counts-name">Contacted</td><td class="counts-numbers">'.$contactedCount.'</td>',
+      '#markup' => '<tr class="counts-row"><td class="counts-name">Contacted</td>
+<td class="counts-numbers">'.$contactedCount.'</td><td class="counts-percent">'.$contactedPercentage.'</td>',
     ];
     $form_element['table-end'] = [
       '#markup' => '</tbody></table>',
@@ -1260,40 +1235,23 @@ class DataEntryForm extends FormBase
       $nameDisplay = $this->nlp_name_display($voter);
       $contactInfo = $this->contactInfoDisplay($voter);
       $pledge['vanid'] = $vanid;
-      //$pledge['firstVoter'] = $voterCount == 0;
       $pledge['nickname'] = $voter['nickname'];
       $pledge['questionArray'] = $surveyQuestions['state'];
       $pledge['defaultValue'] = 0;
       $pledge['selectedContactMethod'] = $selectedContactMethod;
-  
-      //$pledge['surveyResponseList'] = $surveyResponseList;
       $pledge2vote = $this->pledgeToVoteCell($pledge);
       
       $method['vanid'] = $vanid;
-      //$method['firstVoter'] = $voterCount == 0;
       $method['voterCount'] = $voterCount;
       $method['contactMethodOptions'] = $contactMethods;
-      /*
-      $method['selectedContactMethod'] = NULL;
-      if(!empty($selectedContactMethods[$vanid])) {
-        $method['selectedContactMethod'] = $selectedContactMethods[$vanid];
-      } elseif (!empty($buildInfo['preferredContactMethod'])) {
-        $method['selectedContactMethod'] = $buildInfo['preferredContactMethod'];
-      }
-      */
       $method['selectedContactMethod'] = $selectedContactMethod;
-      //nlp_debug_msg('$buildInfo',$buildInfo);
-      //nlp_debug_msg('$method',$method);
       $contactMethod = $this->contactMethodCell($method);
       
-      //$noVoterContact['firstVoter'] = $voterCount == 0;
       $noVoterContact['voterCount'] = $voterCount;
-  
       $noVoterContact['vanid'] = $vanid;
       $buildInfo['vanids'][$voterCount] = $vanid;
       $noVoterContact['historical'] = $voter['historic']['display'];
       $noVoterContact['historicalLines'] = $voter['historic']['displayLines'];
-      //$noVoterContact['contactMethod'] = $buildInfo['contactMethod'][$vanid];
       $noVoterContact['selectedContactMethod'] = NULL;
       if(!empty($selectedContactMethods[$vanid])) {
         $noVoterContact['selectedContactMethod'] = $selectedContactMethods[$vanid];
@@ -1308,25 +1266,17 @@ class DataEntryForm extends FormBase
         $countyQuestion['countyQuestionArray'] = $surveyQuestions[$buildInfo['county']];
       }
       
-      //$countyQuestion['countySurveyResponseList'] = $countySurveyResponseList;
-  
-      //nlp_debug_msg('$contactMethods',$contactMethods);
       $noVoterContact['contactResponseOptions'] = NULL;
       if(!empty($selectedContactMethods[$vanid])) {
         $voterContactMethod = $contactMethods[$selectedContactMethods[$vanid]];
         $noVoterContact['contactResponseOptions'] = $canvassResponseCodes[$voterContactMethod];
       } elseif (!empty($buildInfo['preferredContactMethod'])) {
-        //$noVoterContact['contactResponseOptions'] = $buildInfo['preferredContactMethod'];
         $voterContactMethod = $contactMethods[$buildInfo['preferredContactMethod']];
         $noVoterContact['contactResponseOptions'] = $canvassResponseCodes[$voterContactMethod];
       }
-
-      //nlp_debug_msg('$noVoterContact',$noVoterContact);
-      //$optionsDisplay = array('' => 'Select Method');
+      
       $optionsDisplay = NULL;
       if (!empty($noVoterContact['contactResponseOptions'])) {
-        //nlp_debug_msg('method: '.$noVoterContact['contactMethod'],$noVoterContact['contactResponseOptions']);
-
         $responses = $noVoterContact['contactResponseOptions']['responses'];
         $hidden = ['Deceased','Hostile','Moved'];
         foreach ($hidden as $hide) {
@@ -1334,20 +1284,10 @@ class DataEntryForm extends FormBase
         }
         $optionsDisplay = array_flip($responses);
         array_unshift($optionsDisplay, 'Select response');
-        //nlp_debug_msg('optionsDisplay',$optionsDisplay);
       }
       $noVoterContact['optionsDisplay'] = $optionsDisplay;
       $buildInfo['optionsDisplay'][$vanid] = $noVoterContact['optionsDisplay'];
-  
-  
-      //nlp_debug_msg('$noVoterContact',$noVoterContact);
-      
-      //$buildInfo['contactResponseOptions'][$vanid] = $noVoterContact['contactResponseOptions'];
-  
-      //$noVoterContact['contactResponseOptions'] = $selectedCodes;
       $noContact = $this->noContactCell($noVoterContact,$countyQuestion);
-      
-      //$notRight['firstVoter'] = $voterCount == 0;
       $notRight['vanid'] = $vanid;
       
       $notRight['deceased'] = $voter['status']['deceased'];
@@ -1649,7 +1589,7 @@ class DataEntryForm extends FormBase
     if (!empty($voter['homePhone'])) {
       $phones .= "H: ".$this->formatTelephone($voter['homePhone']);
       if($voter['preferredPhoneType'] == 'H') {
-        $phones .= ' <span style="font-size: xx-small; font-style: italic; ">Preferred</span>';
+        $phones .= ' <span class="voter-sms-status">Preferred</span>';
       }
     }
     if (!empty($voter['cellPhone'])) {
@@ -1658,8 +1598,10 @@ class DataEntryForm extends FormBase
       }
       $phones .= "C: ".$this->formatTelephone($voter['cellPhone']);
       if($voter['preferredPhoneType'] == 'C') {
-        $phones .= ' <span style="font-size: xx-small; font-style: italic; ">Preferred</span>';
+        $phones .= ' <span class="voter-sms-status">Preferred</span>';
       }
+      $optIn = (!empty($voter['smsOptInStatus']))?$voter['smsOptInStatus']:'Unknown';
+      $phones .= ' <br>&nbsp;<span class="voter-sms-status" >SMS Text Status: '.$optIn.'</span>';
     }
     return $addressString.$phones;
   }
@@ -1891,6 +1833,7 @@ and the response.  It can\'t be undone">',
     $contactUpdate = array(''=>'Report something');
     if(!empty($notRight['cellPhone'])) {
       $contactUpdate['BC'] = 'Bad No. '.$notRight['cellPhone'];
+      $contactUpdate['OO'] = 'Opt out of texting '.$notRight['cellPhone'];
     }
     if(!empty($notRight['homePhone'])) {
       $contactUpdate['BH'] = 'Bad No. '.$notRight['homePhone'];

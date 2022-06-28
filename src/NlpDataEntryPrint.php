@@ -187,10 +187,12 @@ household <br>has not yet voted and a reminder call might be helpful.</p>";
         }
         $householdNames .= '<br>&nbsp;&nbsp;';
         if(!empty($voter['homePhone'])) {
-          $householdNames .= "H: ".$this->formatTelephone($voter['homePhone']).' ';
+          $householdNames .= "H:".$this->formatTelephone($voter['homePhone']).' ';
         }
         if(!empty($voter['cellPhone'])) {
-          $householdNames .= "C: ".$this->formatTelephone($voter['cellPhone']);
+          $householdNames .= "C:".$this->formatTelephone($voter['cellPhone']);
+          $optIn = (!empty($voter['smsOptInStatus']))?$voter['smsOptInStatus']:'unknown';
+          $householdNames .= '<span class="voter-sms-status" > SMS Text Status: '.$optIn.'</span>';
         }
       }
       $voterAddress = $voter['address'];
