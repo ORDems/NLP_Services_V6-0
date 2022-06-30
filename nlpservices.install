@@ -54,12 +54,7 @@ function nlpservices_install()
     'status' => 1,
   ]);
   $node->set('body', array(
-    'value' => '<p><span style="font-size:16px;">Welcome to the login for the Neighborhood Leader Program website.
-&nbsp Up and to the right, click on the <u>Log in</u> link to either login as a Neighborhood Leader to report the 
-results of a canvass or login as a coordinator to assist our Neighborhood Leaders.</span></p>
-<p><em><span style="font-size:16px;">By logging in, you are agreeing to keep the information secure and not to share 
-it with any unauthorized person. </span></em></p>
-<!--break-->',
+    'value' => '<p><span style="font-size:16px;">The Neighborhood Leader Program website.</span></p><!--break-->',
     'format' => 'full_html',
   ));
 
