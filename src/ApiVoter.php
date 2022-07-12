@@ -262,7 +262,7 @@ class ApiVoter
     
     $voter['address'] = $voterAddress;
     
-    $voter['votingHistory'] = NULL;
+    //$voter['votingHistory'] = NULL;
     $voting = '';
     if(!empty($result['electionRecords'])) {
       $electionArrays =  $this->findVotingRecord($result['electionRecords']);
