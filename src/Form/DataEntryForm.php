@@ -2295,15 +2295,6 @@ It is not for general comments.">',
     }
     $form_state->set('canvassDate',$canvassDate);
   
-    // Verify we know this NL.
-    $nlsInfo = $this->nls->getNlById($sessionData['mcid']);
-    // Stop if we don't have this person in the database.
-    if (empty($nlsInfo)) {
-      $messenger->addWarning('You are not in the list of active Neighborhood Leaders, contact your coordinator.');
-      return FALSE;
-    }
-    $form_state->set('nlsStatus', $this->nls->getNlsStatus($sessionData['mcid'],$county));
-  
     //Do we have a turf?
     if(!empty($sessionData['turfIndex'] AND !empty($this->turfs->getTurf($sessionData['turfIndex'])))) {
       $turfIndex = $sessionData['turfIndex'];
@@ -2319,6 +2310,15 @@ It is not for general comments.">',
       $this->sessionDataObj->setUserSession($sessionData);
     }
     $form_state->set('turfIndex', $turfIndex);
+  
+    // Verify we know this NL.
+    $nlsInfo = $this->nls->getNlById($sessionData['mcid']);
+    // Stop if we don't have this person in the database.
+    if (empty($nlsInfo)) {
+      $messenger->addWarning('You are not in the list of active Neighborhood Leaders, contact your coordinator.');
+      return FALSE;
+    }
+    $form_state->set('nlsStatus', $this->nls->getNlsStatus($sessionData['mcid'],$county));
     
     // What page are we on?
     $currentPage = $tempSessionData->get('currentPage');

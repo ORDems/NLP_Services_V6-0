@@ -2,7 +2,7 @@
 
 namespace Drupal\nlpservices\Config;
 
-//use Drupal;
+use Drupal;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -29,19 +29,19 @@ class NlpResetForm extends FormBase {
   protected NlpTurfs $turfsObj;
   protected NlpMatchbacks $matchbackObj;
   protected ApiExportJobs $exportJobsObj;
-  protected NlpCrosstabCounts $ballotCountObj;
+  protected NlpCrosstabCounts $crosstabCountsObj;
   protected NlpInstructions $instructionsObj;
   protected Connection $connection;
   
   
-  public function __construct( $votersObj, $nlsObj, $turfsObj,$matchbackObj ,$exportJobsObj ,$ballotCountObj,
+  public function __construct( $votersObj, $nlsObj, $turfsObj,$matchbackObj ,$exportJobsObj ,$crosstabCountsObj,
                                $instructionsObj, $connection ) {
     $this->votersObj = $votersObj;
     $this->nlsObj = $nlsObj;
     $this->turfsObj = $turfsObj;
     $this->matchbackObj = $matchbackObj;
     $this->exportJobsObj = $exportJobsObj;
-    $this->ballotCountObj = $ballotCountObj;
+    $this->crosstabCountsObj = $crosstabCountsObj;
     $this->instructionsObj = $instructionsObj;
     $this->connection = $connection;
   
@@ -58,9 +58,9 @@ class NlpResetForm extends FormBase {
       $container->get('nlpservices.turfs'),
       $container->get('nlpservices.matchbacks'),
       $container->get('nlpservices.export_jobs'),
-      $container->get('nlpservices.ballot_count'),
+      $container->get('nlpservices.crosstab_counts'),
       $container->get('nlpservices.instructions'),
-      $container->get('nlpservices.database'),
+      $container->get('database'),
 
     );
   }
@@ -92,8 +92,10 @@ class NlpResetForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $values = $form_state->getValues();
-    nlp_debug_msg('$values',$values);
+    $messenger = Drupal::messenger();
+  
+    //$values = $form_state->getValues();
+    //nlp_debug_msg('$values',$values);
     
     $tablesToTruncate = [
       'voters' => $this->votersObj::VOTER_TBL,
@@ -107,7 +109,7 @@ class NlpResetForm extends FormBase {
   
       'turf' => $this->turfsObj::TURF_TBL,
   
-      'ballotCount' => $this->ballotCountObj::CROSSTAB_COUNTS_TBL,
+      'ballotCount' => $this->crosstabCountsObj::CROSSTAB_COUNTS_TBL,
       'matchback' => $this->matchbackObj::MATCHBACK_TBL,
       'exportJobs' => $this->exportJobsObj::EXPORT_JOBS_TBL,
       'instructions' => $this->instructionsObj::INSTRUCTIONS_TBL,
@@ -117,13 +119,78 @@ class NlpResetForm extends FormBase {
     foreach ($tablesToTruncate as $table) {
       try {
         $this->connection->truncate($table)->execute();
+        $messenger->addStatus('The '.$table.' database was emptied.');
       }
       catch (Exception $e) {
         nlp_debug_msg('e', $e->getMessage() );
       }
     }
+  
+    $nlpFilesDir = 'public://nlp_files';
+  
+    $counties = $this->getDirContent($nlpFilesDir);
+    //nlp_debug_msg('$counties',$counties);
+  
+    foreach ($counties['directories'] as $countyDir) {
+      $countyDir = $nlpFilesDir.'/'.$countyDir;
+      //nlp_debug_msg('$countyDir',$countyDir);
+      $countyDirContent = $this->getDirContent($countyDir);
+      //nlp_debug_msg('$countyDirContent',$countyDirContent);
     
+      foreach ($countyDirContent['files'] as $countyFile) {
+        $fileName = $countyDir.'/'.$countyFile;
+        //nlp_debug_msg('$fileName',$fileName);
+        /*
+        if(file_exists($fileName)) {
+          nlp_debug_msg('file exists',$fileName);
+        }
+        */
+        unlink($fileName);
+      }
     
+      foreach ($countyDirContent['directories'] as $countyContentDir) {
+        $countyContentDir = $countyDir.'/'.$countyContentDir;
+        //nlp_debug_msg('$countyContentDir',$countyContentDir);
+        $countyContentDirContent = $this->getDirContent($countyContentDir);
+        //nlp_debug_msg('$countyContentDirContent',$countyContentDirContent);
+      
+        foreach ($countyContentDirContent['files'] as $countyFile) {
+          $fileName = $countyContentDir.'/'.$countyFile;
+          //nlp_debug_msg('$fileName',$fileName);
+        /*
+          if(file_exists($fileName)) {
+            nlp_debug_msg('file exists',$fileName);
+          }
+          */
+          unlink($fileName);
+          
+        }
+      }
+    
+    }
+    
+  
+  }
+  
+  function getDirContent($dir): array
+  {
+    $results = ['files'=>[],'directories'=>[]];
+    if (!is_dir($dir)){
+      return $results;
+    }
+    if ($dh = opendir($dir)) {
+      while (($file = readdir($dh)) !== false) {
+        if ($file != '.' and $file != '..') {
+          if (is_dir($dir.'/'.$file)) {
+            $results['directories'][] = $file;
+          } else {
+            $results['files'][] = $file;
+          }
+        }
+      }
+      closedir($dh);
+    }
+    return $results;
   }
   
 }

@@ -6,7 +6,7 @@ dependencies:
       - nlpservices
 id: nlp_admin
 label: 'NLP Admin'
-weight: 3
+weight: 9
 is_admin: false
 permissions:
   - 'nlp administer'

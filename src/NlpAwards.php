@@ -41,7 +41,7 @@ class NlpAwards
     return TRUE;
   }
 
-  private function fetchAwardRecord($mcid): array
+  public function fetchAwardRecord($mcid): array
   {
     try {
       $query = $this->connection->select(self::AWARDS_TBL, 'n');
@@ -97,6 +97,7 @@ class NlpAwards
   {
     $award = $this->fetchAwardRecord($mcid);
     if (empty($award)) {
+      //$participationObj = (object) [$cycle=>TRUE,];
       $participationObj = (object) [$cycle=>TRUE,];
       $award['mcid'] = $mcid;
       $award['participation'] = $participationObj;

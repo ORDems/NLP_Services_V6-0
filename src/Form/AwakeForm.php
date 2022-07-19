@@ -5,10 +5,13 @@ namespace Drupal\nlpservices\Form;
 //use Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException;
 //use Drupal\Component\Plugin\Exception\PluginNotFoundException;
 //use Drupal\Core\Entity\EntityStorageException;
+use Drupal;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\File\FileSystemInterface;
+
 //use Drupal\node\Entity\Node;
 
 
@@ -21,6 +24,7 @@ class AwakeForm extends ConfigFormBase {
   protected $nlsApiObj;
   protected $nlpEncrypt;
   protected $awardsObj;
+  protected FileSystemInterface $filesObj;
 
 
   public function __construct(ConfigFactoryInterface $config_factory, $drupalUser, $nlsApiObj, $nlpEncrypt, $awardsObj) {
@@ -66,73 +70,49 @@ class AwakeForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
   
+    //$this->filesObj = Drupal::getContainer()->get('file_system');
+    
+    $nlpFilesDir = 'public://nlp_files';
   
+    $counties = $this->getDirContent($nlpFilesDir);
+    nlp_debug_msg('$counties',$counties);
+    
+    foreach ($counties['directories'] as $countyDir) {
+      $countyDir = $nlpFilesDir.'/'.$countyDir;
+      nlp_debug_msg('$countyDir',$countyDir);
+      $countyDirContent = $this->getDirContent($countyDir);
+      nlp_debug_msg('$countyDirContent',$countyDirContent);
   
-    $form['date_bar'] = [
-      '#markup' => '<div class="date-bar">',
-    ];
+      foreach ($countyDirContent['files'] as $countyFile) {
+        $fileName = $countyDir.'/'.$countyFile;
+        nlp_debug_msg('$fileName',$fileName);
+        if(file_exists($fileName)) {
+          nlp_debug_msg('file exists',$fileName);
+        }
+      }
+      
+      foreach ($countyDirContent['directories'] as $countyContentDir) {
+        $countyContentDir = $countyDir.'/'.$countyContentDir;
+        nlp_debug_msg('$countyContentDir',$countyContentDir);
+        $countyContentDirContent = $this->getDirContent($countyContentDir);
+        nlp_debug_msg('$countyContentDirContent',$countyContentDirContent);
+        
+        foreach ($countyContentDirContent['files'] as $countyFile) {
+          $fileName = $countyContentDir.'/'.$countyFile;
+          nlp_debug_msg('$fileName',$fileName);
   
-    $form['date_box'] = [
-      '#markup' => '<div class="date-box-left">',
-    ];
-    //nlp_debug_msg('$defaultDate',$defaultDate);
-  
-    $form['canvass_date'] = 'nice';
-    $form['date_box_end'] = [
-      '#markup' => '</div>',
-    ];
-    $form['counts_box'] = [
-      '#markup' => '<div class="counts-box-left">',
-    ];
-    //$form['voter_counts'] = $this->voterCounts($turfInfo['voterCount'],$turfInfo['votedCount']);
-  
+          if(file_exists($fileName)) {
+            nlp_debug_msg('file exists',$fileName);
+          }
+        }
+      }
+      
+    }
     
     
-    $form_element['counts'] = [
-      '#markup' => "  \n ".'<div class="no-white voter-counts">',
-    ];
+    //$files = $this->filesObj->scanDirectory($nlpFilesDir,'');
+    //nlp_debug_msg('$files',$files);
   
-    $form_element['table-start'] = [
-      '#markup' => '<table class="table" ><tbody>',
-    ];
-    $form_element['row-one'] = [
-      '#markup' => '<tr class="counts-row"><td  class="counts-name" >Name</td><td class="counts-numbers" ></td>',
-    ];
-    $form_element['row-two'] = [
-      '#markup' => '<tr class="counts-row"><td class="counts-name">Big Name</td><td class="counts-numbers">10 (5%)</td>',
-    ];
-    $form_element['row-three'] = [
-      '#markup' => '<tr class="counts-row"><td class="counts-name">Nameit</td><td class="counts-numbers">2 (1%)</td>',
-    ];
-    $form_element['table-end'] = [
-      '#markup' => '</tbody></table>',
-    ];
-    
-   
-    $form_element['counts-end'] = array (
-      '#markup' => " \n   ".'</div>',
-    );
-    $form['voter_counts'] = $form_element;
-    
-    
-    //$form['voter_counts'] = $this->voterCounts($turfInfo);
-    $form['date_counts_end'] = [
-      '#markup' => '</div>',
-    ];
-  
-   
-  
-    $form['date_bar_end'] = [
-      '#markup' => '</div><div class="end-big-box"></div>',
-    ];
-    
-
-    $form['awards'] = [
-      '#type' => 'file',
-      '#title' => $this->t('reports file'),
-      '#description' => $this->t('Simplified list.'),
-    ];
-
     $things = ['something','nothing'];
     
     $form['something_select'] = [
@@ -169,6 +149,29 @@ class AwakeForm extends ConfigFormBase {
     nlp_debug_msg('$elementClicked ',$elementClicked);
 
     parent::submitForm($form, $form_state);
+  }
+  
+  
+  function getDirContent($dir): array
+  {
+    $results = ['files'=>[],'directories'=>[]];
+    if (!is_dir($dir)){
+      return $results;
+    }
+  
+    if ($dh = opendir($dir)) {
+      while (($file = readdir($dh)) !== false) {
+        if ($file != '.' and $file != '..') {
+          if (is_dir($dir.'/'.$file)) {
+            $results['directories'][] = $file;
+          } else {
+            $results['files'][] = $file;
+          }
+        }
+      }
+      closedir($dh);
+    }
+    return $results;
   }
   
 }
