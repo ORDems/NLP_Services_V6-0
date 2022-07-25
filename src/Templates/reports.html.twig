@@ -1,0 +1,30 @@
+{#
+Links for functions to create reports.
+#}
+
+
+{% set importCrosstabs = path('nlpservices.import_crossstabs_form') %}
+{% set importMatchbacks = path('nlpservices.import_matchbacks_form') %}
+{% set resultsSummary = path('nlpservices.display_results_summary') %}
+{% set minivan = path('nlpservices.import_minivan_form') %}
+{% set nlsStatus = path('nlpservices.export_nls_status') %}
+{% set turfStatus = path('nlpservices.export_turf_status') %}
+
+{% trans %}
+
+    <h1>Reports to assess the status of the election</h1>
+    <ul>
+        <li><a href={{ nlsStatus }}>Export the status of NLs.</a></li>
+        <li><a href={{ turfStatus }}>Export the status of Turfs.</a></li>
+        <li><a href={{ resultsSummary }}>Display the election results summary.</a></li>
+    </ul>
+
+    <h1>Imports of information to track the progress of the election</h1>
+
+    <ul>
+        <li><a href={{ importCrosstabs }}>Import the the crosstabs file.</a></li>
+        <li><a href={{ importMatchbacks }}>Import the the matchbacks file.</a></li>
+        <li><a href={{ minivan }}>Import the NLP reports from Minivan users.</a></li>
+    </ul>
+
+{% endtrans %}

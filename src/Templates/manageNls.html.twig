@@ -1,0 +1,32 @@
+{#
+Links for functions to manage NLs.
+#}
+
+{% set syncNls = path('nlpservices.sync_nls_form') %}
+{% set displayNls = path('nlpservices.display_nls_form') %}
+{% set uploadInstructions = path('nlpservices.upload_instructions_form') %}
+{% set coordinators = path('nlpservices.coordinators_form') %}
+{% set fixes = path('nlpservices.legislative_fixes_form') %}
+{% set documents = path('nlpservices.documents_form') %}
+{% set turfMsg = path('nlpservices.turf_delivery_message_form') %}
+
+{% trans %}
+
+    <h1>Keep track of NLs</h1>
+
+    <ul>
+        <li><a href={{ displayNls }}>Display the list of active NLs.</a></li>
+        <li><a href={{ syncNls }}>Sync a new list of active NLs.</a></li>
+    </ul>
+
+    <h1>Set up the site for your county</h1>
+
+    <ul>
+        <li><a href={{ uploadInstructions }}>Upload the PDF of the instructions for NLs.</a></li>
+        <li><a href={{ coordinators }}>Define the coordinators for the county.</a></li>
+        <li><a href={{ fixes }}>Define substitutions for missing NL legislative districts.</a></li>
+        <li><a href={{ turfMsg }}>Edit the body of the email to deliver a turf to an NL.</a></li>
+        <li><a href={{ documents }}>Download the manuals for managing NLP.</a></li>
+    </ul>
+
+{% endtrans %}
