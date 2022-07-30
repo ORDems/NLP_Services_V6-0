@@ -71,7 +71,7 @@ question, select the response from the drop-down menu.  For some elections or vo
 secondary survey question.   The reply from the voter is recorded with a drop-down selection.';
     $output .= '<H5>No voter response</H5>If you tried but failed to contact a voter, select the response from the
 drop-down menu.  This menu changes based on the voter contact method you selected. ';
-    $output .= '<H3><u>Something went wrong</u></H3>When a voter contact is not possible, these options will change the 
+    $output .= '<H3><u>Important Updates</u></H3>When a voter contact is not possible, these options will change the
 voter database for future turfs. ';
     $output .= '<H5>Moved</H5>Check this box if you discover that the voter is no longer living at the address 
 on you list.  The address in the VoterFile will be marked as incorrect if it matches the one on your list.   Otherwise,

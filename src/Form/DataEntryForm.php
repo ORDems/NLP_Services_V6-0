@@ -1248,7 +1248,7 @@ class DataEntryForm extends FormBase
     );
     
     $form_element['turfName'] =  [
-      '#markup'=>" \n ".'<div class="turf-name"><b>You\'re working with turf named:</b></div>'.$turfName];
+      '#markup'=>" \n ".'<div class="turf-name"><b>You\'re working with turf named:</b></div>FF'.$turfName];
     
     $form_element['turf_name_end'] = array (
       '#type' => 'markup',
@@ -1937,7 +1937,7 @@ and the response.  It can\'t be undone.">',
     $vanid = $notRight['vanid'];
     $form_element = array();
     $form_element['title'] = array(
-      '#markup' => '<div><b>Something went wrong:</b> </div>',
+      '#markup' => '<div><b>Important Updates:</b> </div>',
     );
     $form_element["moved-$vanid-start"] = array(
       '#type' => 'checkbox',
