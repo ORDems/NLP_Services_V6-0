@@ -133,8 +133,8 @@ class DataEntryForm extends FormBase
     $county = $form_state->get('county');
     $state = $form_state->get('State');
     $canvassDate = $form_state->get('canvassDate');
-    $defaultVoterContactMethod = $form_state->get('$defaultVoterContactMethod');
-  
+    $defaultVoterContactMethod = $form_state->get('defaultVoterContactMethod');
+    //nlp_debug_msg('$defaultVoterContactMethod',$defaultVoterContactMethod);
     $mcid = $form_state->get('mcid');
     $turfIndex = $form_state->get('turfIndex');
   
@@ -147,10 +147,20 @@ class DataEntryForm extends FormBase
     $currentPage = $tempSessionData->get('currentPage');
     
     $contactMethods = $form_state->get('contactMethods');
-    $preferredContactMethod = array_search($defaultVoterContactMethod, $contactMethods);
+    $preferredContactMethod = 0;
+    if(!empty($defaultVoterContactMethod)) {
+      $preferredContactMethod = array_search($defaultVoterContactMethod, $contactMethods);
+    }
+    $methods = [
+      'contactMethods' => $contactMethods,
+      'preferredContactMethod' => $preferredContactMethod,
+    ];
+    //nlp_debug_msg('$defaultVoterContactMethod',$defaultVoterContactMethod);
+    //nlp_debug_msg('$contactMethods',$contactMethods);
+    //nlp_debug_msg('$methods',$methods);
   
     $awards = $this->awardsObj->getAward($mcid);
-    $form['dateBar'] = $this->createDateBar($canvassDate, $turfInfo, $awards, $currentPage);
+    $form['dateBar'] = $this->createDateBar($canvassDate, $turfInfo, $awards, $currentPage, $methods);
     
     $buildInfo['county'] = $county;
     $buildInfo['state'] = $state;
@@ -158,6 +168,8 @@ class DataEntryForm extends FormBase
     $buildInfo['preferredContactMethod'] = $preferredContactMethod;
     $buildInfo['contactMethods'] = $form_state->get('contactMethods');
     $buildInfo['selectedContactMethods'] = $form_state->get('selectedContactMethods');
+    $buildInfo['defaultVoterContactMethod'] = $defaultVoterContactMethod;
+  
     $buildInfo['canvassResponseCodes'] = $form_state->get('canvassResponseCodes');
     //$buildInfo['defaultValues'] = $form_state->get('defaultValues');
     $buildInfo['defaultValues'] = NULL;
@@ -179,10 +191,14 @@ class DataEntryForm extends FormBase
    */
   public function validateForm(array &$form, FormStateInterface $form_state)
   {
+    //$form_state->setRebuild();
+  
     $values = $form_state->getValues();
+    
     //nlp_debug_msg('$values',$values);
     //nlp_debug_msg('validate',time());
     
+    // Check if a voter contact method changed.
     foreach ($values as $valueId=>$value) {
       $valueIdParts = explode('-',$valueId);
       if ($valueIdParts[0] == 'contact_method') {
@@ -190,8 +206,45 @@ class DataEntryForm extends FormBase
         $selectedContactMethods = $form_state->get('selectedContactMethods');
         $selectedContactMethods[$vanid] = $value;
         $form_state->set('selectedContactMethods',$selectedContactMethods);
+        //nlp_debug_msg('$selectedContactMethods',$selectedContactMethods);
       }
     }
+  
+    $triggeringElement = $form_state->getTriggeringElement();
+    $elementClicked = $triggeringElement['#name'];
+    //nlp_debug_msg('$elementClicked '.time(),$elementClicked);
+    $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
+    if($elementClicked == 'default_method') {
+      // Set the new preferred contact method.
+      $contactMethods = $form_state->get('contactMethods');
+      $method = $contactMethods[$values['default_method']];
+      $form_state->set('defaultVoterContactMethod',$method);
+  
+      // Change the selected method to the new preferred value.
+      $selectedContactMethods = $form_state->get('selectedContactMethods');
+      //nlp_debug_msg('$selectedContactMethods',$selectedContactMethods);
+      foreach ($selectedContactMethods as $voterVanid => $selectedContactMethod) {
+        if(!empty($selectedContactMethod)) {
+          $selectedContactMethods[$voterVanid] = $values['default_method'];
+        }
+      }
+      $form_state->set('selectedContactMethods',$selectedContactMethods);
+      //nlp_debug_msg('$selectedContactMethods',$selectedContactMethods);
+  
+      try {
+        $tempSessionData->set('defaultVoterContactMethod', $method);
+      } catch (Drupal\Core\TempStore\TempStoreException $e) {
+        nlp_debug_msg('Temp store save error',$e->getMessage());
+      }
+      //$form_state->set('reenter',FALSE);
+      //$userInput = $form_state->getUserInput();
+      //nlp_debug_msg('$userInput',$userInput);
+      //$form_state->setUserInput(['contact_method-175159'=>$values['default_method'],]);
+      //$form_state->disableCache();
+      $form_state->setValue(array('contact_method-175159' , 0 , 'value'), $values['default_method']);
+  
+    }
+   
   }
   
   /**
@@ -241,16 +294,31 @@ class DataEntryForm extends FormBase
       //nlp_debug_msg('$valueId',$valueId);
       switch ($reportType) {
         case 'contact_method':
-          if(empty($value)) {break;}
           $vanid = $valueIdParts[1];
-          $contactMethod = $contactMethods[$value];
+          if(empty($value)) {
+            $selectedContactMethods = $form_state->get('selectedContactMethods');
+            //nlp_debug_msg('$selectedContactMethods',$selectedContactMethods);
+            if(!empty($selectedContactMethods[$vanid])) {
+              $contactMethod = $selectedContactMethods[$vanid];
+            } else {
+              $defaultVoterContactMethod = $form_state->get('defaultVoterContactMethod');
+              //nlp_debug_msg('$defaultVoterContactMethod',$defaultVoterContactMethod);
+              if (empty($defaultVoterContactMethod)) {
+                break;
+              }
+              $contactMethod = $defaultVoterContactMethod;
+            }
+          } else {
+            $contactMethod = $contactMethods[$value];
+          }
+          
           $actions[$vanid]['vanid'] = $vanid;
           $actions[$vanid][$reportType] = $contactMethod;
           $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
           break;
         case 'no_contact':
           if(empty($value)) {break;}
-          nlp_debug_msg('$valueId',$valueId);
+          //nlp_debug_msg('$valueId',$valueId);
           $voterIndex = $valueIdParts[1];
           $vanids = $form_state->get('displayedVanids');
           $vanid = $vanids[$voterIndex];
@@ -285,7 +353,6 @@ class DataEntryForm extends FormBase
           break;
         case 'pledge2vote':
           if(empty($value)) {break;}
-  
           $vanid = $valueIdParts[1];
           $actions[$vanid][$reportType] = $value;
           //nlp_debug_msg('$valueId',$valueId);
@@ -499,6 +566,7 @@ class DataEntryForm extends FormBase
     $navButtonParts = explode('-',$elementClicked);
     
     switch ($navButtonParts[0]) {
+     
       case 'save_reports':
         /**
         $pageCount = $form_state->get('pageCount');
@@ -1163,6 +1231,41 @@ class DataEntryForm extends FormBase
   }
   
   /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * defaultMethod
+   *
+   * @param $methods
+   * @return array
+   */
+  function defaultMethod($methods): array
+  {
+    $form_element['method_start'] =  [
+      '#markup'=>" \n ".'<div class="method"><div class="methods-box">'
+    ];
+    //nlp_debug_msg('$methods',$methods);
+    //$preferredContactMethod = $methods['preferredContactMethod'];
+    //$nlAward = '<div class="method-select-container">'.'xxx'.'</div>';
+  
+    $form_element["default_method"] = [
+      '#type' => 'select',
+      '#options' => $methods['contactMethods'],
+      '#default_value' => $methods['preferredContactMethod'],
+      '#title' => t('Select default method'),
+      //'#description' => t('Most common method.'),
+      '#prefix' => '<div class="method-select-container">',
+      '#suffix' => '</div></div>',
+      '#ajax' => array(
+        'callback' => '::formCallback',
+        'wrapper' => 'voterForm-div',
+      ),
+    ];
+    
+    $form_element['method_end'] =  [
+      '#markup'=>" \n ".'<div class="end-big-box"></div></div>'
+    ];
+    return $form_element;
+  }
+  
+  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
    * buildVoterTable
    *
    * Display the list of voters assigned to this NL and show previously
@@ -1245,6 +1348,8 @@ class DataEntryForm extends FormBase
       $method['voterCount'] = $voterCount;
       $method['contactMethodOptions'] = $contactMethods;
       $method['selectedContactMethod'] = $selectedContactMethod;
+      $method['defaultVoterContactMethod'] = $buildInfo['defaultVoterContactMethod'];
+      
       $contactMethod = $this->contactMethodCell($method);
       
       $noVoterContact['voterCount'] = $voterCount;
@@ -1614,54 +1719,48 @@ class DataEntryForm extends FormBase
    */
   function contactMethodCell($method): array
   {
+    //nlp_debug_msg('$method',$method);
     $vanid = $method['vanid'];
-    $form_element = array();
-    
-    $form_element['start'] = array(
+    $form_element['start'] =[
       '#markup' => " \n ".'<div><b>Contact Method</b> ',
-    );
-    /*
-    $form_element["contact_method-$vanid"] = array(
+    ];
+    $selectedContactMethod = $method['selectedContactMethod'];
+    //$title = 'Select a method of voter contact.';
+    if(!empty($selectedContactMethod)) {
+      $form_element['method_hint'] = [
+        '#markup' => '<div class="chosen-method">Chosen method: '. $method['contactMethodOptions'][$selectedContactMethod].'</div>',
+      ];
+      //$title = 'Or select a different method.';
+      $method['contactMethodOptions'][0] = t('Or, select another method');
+    } else {
+      $form_element['method_hint'] = [
+        '#markup' => " \n ".'<div><i>You must select a Contact Method <br>before you can report a voter contact response.</i></div> ',
+      ];
+    }
+    //$random = rand(0,9999);
+    $form_element["contact_method-$vanid"] = [
       '#type' => 'select',
       '#options' => $method['contactMethodOptions'],
-      '#ajax' => array(
-        'callback' => '::row'.$method['voterCount'].'Callback',
-        'wrapper' => 'no_contact_row'.$method['voterCount'].'_div',
-      ),
-    );
-    */
-    $form_element["contact_method-$vanid"] = array(
-      '#type' => 'select',
-      '#options' => $method['contactMethodOptions'],
-      '#ajax' => array(
+      '#ajax' => [
         'callback' => '::formCallback',
         'wrapper' => 'voterForm-div',
-      ),
-    );
-  
-  
+      ],
+    ];
+    
     $postcardSend = $this->reports->voterSentPostcard($vanid);
-    $form_element["postcardMailed-$vanid"] = array(
+    $form_element["postcardMailed-$vanid"] = [
       '#type' => 'checkbox',
       '#title' => 'A postcard was mailed.',
       '#default_value' => $postcardSend,
       '#prefix' => '<div class="line-spacer" title="Selecting this option is the same as selecting both the method
-and the response.  It can\'t be undone">',
+and the response.  It can\'t be undone.">',
       '#suffix' => '</div><div class="line-spacer"></div>',
-    );
-  
-  
-    if(!empty($method['selectedContactMethod'])) {
-      $form_element["contact_method-$vanid"]['#default_value'] =  $method['selectedContactMethod'];
-    } else {
-      $form_element['method_hint'] = array(
-        '#markup' => " \n ".'<div><i>You must select a Contact Method <br>
- before you can report a voter contact response.</i> ',
-      );
-    }
+    ];
+    
     $form_element['end'] = array(
       '#markup' => " \n ".'</div>',
     );
+    //nlp_debug_msg('$form_element',$form_element);
     return $form_element;
   }
   
@@ -2023,9 +2122,38 @@ It is not for general comments.">',
    * @param $turfInfo
    * @param $awards
    * @param $currentPage
+   * @param $methods
    * @return array
    */
-  function createDateBar($canvassDate, $turfInfo, $awards, $currentPage): array {
+  function createDateBar($canvassDate, $turfInfo, $awards, $currentPage, $methods): array {
+  
+  
+    $form['award_bar'] = [
+      '#markup' => '<div class="date-bar">',
+    ];
+  
+    $form['award2_box'] = [
+      '#markup' => '<div class="awards-box-left">',
+    ];
+    $form['award2'] = $this->awardDisplay($awards);
+    $form['award2_end'] = [
+      '#markup' => '</div>',
+    ];
+  
+    $form['voter2_counts_box'] = [
+      '#markup' => '<div class="counts-box-left">',
+    ];
+    //$form['voter_counts'] = $this->voterCounts($turfInfo['voterCount'],$turfInfo['votedCount']);
+    $form['voter2_counts'] = $this->voterCounts($turfInfo);
+    $form['voter2_counts_end'] = [
+      '#markup' => '</div>',
+    ];
+  
+    $form['award_bar_end'] = [
+      '#markup' => '</div><div class="end-big-box"></div>',
+    ];
+    
+    
     $form['date_bar'] = [
       '#markup' => '<div class="date-bar">',
     ];
@@ -2040,6 +2168,7 @@ It is not for general comments.">',
     $form['date_box_end'] = [
       '#markup' => '</div>',
     ];
+    /*
     $form['counts_box'] = [
       '#markup' => '<div class="counts-box-left">',
     ];
@@ -2056,7 +2185,17 @@ It is not for general comments.">',
     $form['award_end'] = [
       '#markup' => '</div>',
     ];
+  */
   
+    $form['method_box'] = [
+      '#markup' => '<div class="methods-box-left">',
+    ];
+    $form['method'] = $this->defaultMethod($methods);
+    $form['method_end'] = [
+      '#markup' => '</div>',
+    ];
+    
+    
     $form['search_box'] = [
       '#markup' => '<div class="search-box-left">',
     ];
@@ -2275,7 +2414,7 @@ It is not for general comments.">',
     $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
     $defaultVoterContactMethod = $tempSessionData->get('defaultVoterContactMethod');
     $form_state->set('defaultVoterContactMethod',$defaultVoterContactMethod);
-  
+    //nlp_debug_msg('$defaultVoterContactMethod',$defaultVoterContactMethod);
     $sessionData = $this->sessionDataObj->getUserSession();
     if(empty($sessionData['mcid'])) {
       $messenger->addWarning('The MCID is missing from your user login, contact your coordinator.');
@@ -2385,121 +2524,13 @@ It is not for general comments.">',
     $form_state->set('contactMethods',$contactMethods);
   return TRUE;
   }
-    
-      /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-       * @param $unused
-       * @param $form
-       * @return mixed
-       * @noinspection PhpUnusedParameterInspection
-       * @noinspection PhpUnused
-       */
-  function row0Callback($form, $unused) {
-    return $form['voters']['voterForm']["cell03-0-body"]['no_contact-0'];
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * @param $unused
-   * @param $form
-   * @return mixed
-   * @noinspection PhpUnusedParameterInspection
+ 
+  /**
+   * formCallback
    * @noinspection PhpUnused
    */
-  function row1Callback($form, $unused) {
-    return $form['voters']['voterForm']["cell03-1-body"]['no_contact-1'];
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * @param $unused
-   * @param $form
-   * @return mixed
-   * @noinspection PhpUnusedParameterInspection
-   * @noinspection PhpUnused
-   */
-  function row2Callback($form, $unused) {
-    return $form['voters']['voterForm']["cell03-2-body"]['no_contact-2'];
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * @param $unused
-   * @param $form
-   * @return mixed
-   * @noinspection PhpUnusedParameterInspection
-   * @noinspection PhpUnused
-   */
-  function row3Callback($form, $unused) {
-    return $form['voters']['voterForm']["cell03-3-body"]['no_contact-3'];
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * @param $unused
-   * @param $form
-   * @return mixed
-   * @noinspection PhpUnusedParameterInspection
-   * @noinspection PhpUnused
-   */
-  function row4Callback($form, $unused) {
-    return $form['voters']['voterForm']["cell03-4-body"]['no_contact-4'];
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * @param $unused
-   * @param $form
-   * @return mixed
-   * @noinspection PhpUnusedParameterInspection
-   * @noinspection PhpUnused
-   */
-  function row5Callback($form, $unused) {
-    return $form['voters']['voterForm']["cell03-5-body"]['no_contact-5'];
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * @param $unused
-   * @param $form
-   * @return mixed
-   * @noinspection PhpUnusedParameterInspection
-   * @noinspection PhpUnused
-   */
-  function row6Callback($form, $unused) {
-    return $form['voters']['voterForm']["cell03-6-body"]['no_contact-6'];
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * @param $unused
-   * @param $form
-   * @return mixed
-   * @noinspection PhpUnusedParameterInspection
-   * @noinspection PhpUnused
-   */
-  function row7Callback($form, $unused) {
-    return $form['voters']['voterForm']["cell03-7-body"]['no_contact-7'];
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * @param $unused
-   * @param $form
-   * @return mixed
-   * @noinspection PhpUnusedParameterInspection
-   * @noinspection PhpUnused
-   */
-  function row8Callback($form, $unused) {
-    return $form['voters']['voterForm']["cell03-8-body"]['no_contact-8'];
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * @param $unused
-   * @param $form
-   * @return mixed
-   * @noinspection PhpUnusedParameterInspection
-   * @noinspection PhpUnused
-   */
-  function row9Callback($form, $unused) {
-    return $form['voters']['voterForm']["cell03-9-body"]['no_contact-9'];
-  }
-  
-  /** @noinspection PhpUnusedParameterInspection
-   * @noinspection PhpUnused
-   */
-  function formCallback($form, $unused) {
+  function formCallback($form, FormStateInterface $form_state) {
+    //$form_state->setRebuild();
     return $form['voters']['voterForm'];
   }
   

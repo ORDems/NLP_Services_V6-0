@@ -166,7 +166,7 @@ is non-destructive and can be run multiple times.
 
 Step 1: Create and prep file folders.
 
-The first step is to create the file folders for informaiton for the counties.
+The first step is to create the file folders for information for the counties.
 A file of county names and associated house districts in a YAML for is needed.
 Locate the example YAML file and edit it for your state.
 

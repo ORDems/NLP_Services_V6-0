@@ -294,3 +294,4 @@ function strToHex($string): string
   return $hex;
 }
 
+
