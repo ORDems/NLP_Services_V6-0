@@ -59,7 +59,7 @@ div.medium-box-right {float: right; font-size:x-small; width: 400px; margin:0; p
 
 .name_box { width: 363px; margin:0; padding:5px; font-size:x-small; }
 .file_name { color:blue; font-size:x-small; font-weight:bold; }
-.nav_box { width: 361px; margin:0; padding:5px; border: 1px solid blue; border-radius: 5px; font-size:x-small; }
+.nav_box { width: 361px; margin:0; padding:5px; border: 1px solid red; border-radius: 5px; font-size:x-small; }
 .nav_div { width: 360px; background-image: none; padding:0; margin:0; border:1px; }
 .nav_back { width: 90px; float:left; text-align: center; padding: 0; }
 .nav_note { color:red; font-size:x-small; }
@@ -118,6 +118,8 @@ table.search { border-collapse:collapse; border-style:hidden; }
 td.search-name { width: 180px; font-size:small; }
 td.search-submit { width: 60px; font-size:small; }
 
-div.form-no-label { margin-top:0; margin-bottom:0; }
+section.turf-name-box {width: 361px; margin:0; padding:5px; border: 1px solid blue; border-radius: 5px; font-size:small;}
+div.turf-name { margin: 0 0 6px 0}
 
+div.form-no-label { margin-top:0; margin-bottom:0; }
 div.form-item { margin-top:0; margin-bottom:0; }

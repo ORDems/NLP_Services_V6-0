@@ -141,6 +141,8 @@ class DataEntryForm extends FormBase
     $form_state->set('defaultValues',NULL);
     
     $turfInfo = $this->fetchVoters($turfIndex,$voters);
+    nlp_debug_msg('$turfInfo',$turfInfo);
+    $turfInfo['turfIndex'] = $turfIndex;
     $form_state->set('voterCount',$turfInfo['voterCount']);
     $form_state->set('pageCount',$turfInfo['pageCount']);
     $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
@@ -1230,6 +1232,33 @@ class DataEntryForm extends FormBase
     return $form_element;
   }
   
+  
+  
+  function turf_name($turfIndex): array
+  {
+    nlp_debug_msg('$turfIndex',$turfIndex);
+    $turf = $this->turfs->getTurf($turfIndex);
+    nlp_debug_msg('$turf',$turf);
+    $turfNameStamp = $turf['turfName'];
+    $turfNameParts = explode('_',$turfNameStamp);
+    $turfName = $turfNameParts[0];
+    
+    $form_element['turf_name_box'] = array (
+      '#markup' => "  \n ".'<section class="turf-name-box no-white">',
+    );
+    
+    $form_element['turfName'] =  [
+      '#markup'=>" \n ".'<div class="turf-name"><b>You\'re working with turf named:</b></div>'.$turfName];
+    
+    $form_element['turf_name_end'] = array (
+      '#type' => 'markup',
+      '#markup' => " \n   ".'</section>',
+    );
+    return $form_element;
+  }
+  
+  
+  
   /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
    * defaultMethod
    *
@@ -2146,6 +2175,14 @@ It is not for general comments.">',
     //$form['voter_counts'] = $this->voterCounts($turfInfo['voterCount'],$turfInfo['votedCount']);
     $form['voter2_counts'] = $this->voterCounts($turfInfo);
     $form['voter2_counts_end'] = [
+      '#markup' => '</div>',
+    ];
+  
+    $form['turf_name_box'] = [
+      '#markup' => '<div class="nav-box-right">',
+    ];
+    $form['turf_name'] = $this->turf_name($turfInfo['turfIndex']);
+    $form['turf_name_end'] = [
       '#markup' => '</div>',
     ];
   
