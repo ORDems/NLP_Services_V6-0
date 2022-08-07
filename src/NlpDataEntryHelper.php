@@ -65,11 +65,11 @@ most important results is to record that you asked the voter to commit to vote a
 secondary importance is to make at least one attempt to contact the voter and record that attempt.  Your report of
 a voter contact should be done as soon as possible after the contact.  Our candidates and the coordinated campaign
 are relying on you to contact our base voters, and they need to see that the contact was attempted and/or successful. ';
-    $output .= '<H5>Voter responded</H5>The survey question is typically a "pledge to vote" question,
+    $output .= '<H5>Voter Contacted</H5>The survey question is typically a "pledge to vote" question,
 but it can be something else from time to time.   If you were able to contact the voter and get an answer to the
 question, select the response from the drop-down menu.  For some elections or voter contact projects, you will see a
 secondary survey question.   The reply from the voter is recorded with a drop-down selection.';
-    $output .= '<H5>No voter response</H5>If you tried but failed to contact a voter, select the response from the
+    $output .= '<H5>Voter Not Contacted</H5>If you tried but failed to contact a voter, select the response from the
 drop-down menu.  This menu changes based on the voter contact method you selected. ';
     $output .= '<H3><u>Important Updates</u></H3>When a voter contact is not possible, these options will change the
 voter database for future turfs. ';

@@ -141,7 +141,7 @@ class DataEntryForm extends FormBase
     $form_state->set('defaultValues',NULL);
     
     $turfInfo = $this->fetchVoters($turfIndex,$voters);
-    nlp_debug_msg('$turfInfo',$turfInfo);
+    //nlp_debug_msg('$turfInfo',$turfInfo);
     $turfInfo['turfIndex'] = $turfIndex;
     $form_state->set('voterCount',$turfInfo['voterCount']);
     $form_state->set('pageCount',$turfInfo['pageCount']);
@@ -193,13 +193,7 @@ class DataEntryForm extends FormBase
    */
   public function validateForm(array &$form, FormStateInterface $form_state)
   {
-    //$form_state->setRebuild();
-  
     $values = $form_state->getValues();
-    
-    //nlp_debug_msg('$values',$values);
-    //nlp_debug_msg('validate',time());
-    
     // Check if a voter contact method changed.
     foreach ($values as $valueId=>$value) {
       $valueIdParts = explode('-',$valueId);
@@ -208,13 +202,11 @@ class DataEntryForm extends FormBase
         $selectedContactMethods = $form_state->get('selectedContactMethods');
         $selectedContactMethods[$vanid] = $value;
         $form_state->set('selectedContactMethods',$selectedContactMethods);
-        //nlp_debug_msg('$selectedContactMethods',$selectedContactMethods);
       }
     }
-  
+    // Now check if the default contact method changed.
     $triggeringElement = $form_state->getTriggeringElement();
     $elementClicked = $triggeringElement['#name'];
-    //nlp_debug_msg('$elementClicked '.time(),$elementClicked);
     $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
     if($elementClicked == 'default_method') {
       // Set the new preferred contact method.
@@ -224,26 +216,18 @@ class DataEntryForm extends FormBase
   
       // Change the selected method to the new preferred value.
       $selectedContactMethods = $form_state->get('selectedContactMethods');
-      //nlp_debug_msg('$selectedContactMethods',$selectedContactMethods);
       foreach ($selectedContactMethods as $voterVanid => $selectedContactMethod) {
-        if(!empty($selectedContactMethod)) {
+        //if(!empty($selectedContactMethod)) {
           $selectedContactMethods[$voterVanid] = $values['default_method'];
-        }
+        //}
       }
       $form_state->set('selectedContactMethods',$selectedContactMethods);
-      //nlp_debug_msg('$selectedContactMethods',$selectedContactMethods);
-  
       try {
         $tempSessionData->set('defaultVoterContactMethod', $method);
       } catch (Drupal\Core\TempStore\TempStoreException $e) {
         nlp_debug_msg('Temp store save error',$e->getMessage());
       }
-      //$form_state->set('reenter',FALSE);
-      //$userInput = $form_state->getUserInput();
-      //nlp_debug_msg('$userInput',$userInput);
-      //$form_state->setUserInput(['contact_method-175159'=>$values['default_method'],]);
-      //$form_state->disableCache();
-      $form_state->setValue(array('contact_method-175159' , 0 , 'value'), $values['default_method']);
+      //$form_state->setValue(array('contact_method-175159' , 0 , 'value'), $values['default_method']);
   
     }
    
@@ -429,13 +413,10 @@ class DataEntryForm extends FormBase
           break;
         case 'contact_update':
           if(empty($value)) {break;}
-          //nlp_debug_msg('$actions',$actions);
           $vanid = $valueIdParts[1];
           $field = $valueIdParts[2];
-
           $voter = $this->voters->getVoterById($vanid,$turfIndex);
           $voterName = $voter['lastName'].', '.$voter['firstName'];
-
           switch ($field)
           {
             case 'type':  // A change in contact info.
@@ -450,6 +431,13 @@ class DataEntryForm extends FormBase
                     break;
                   }
                   $actions[$vanid][$reportType][$field] = $value;
+                  // Use "Walk" as contact method if the NL did not set a method.
+                  if(empty($actions[$vanid]['contact_method'])) {
+                    $contactMethod = 'Walk';
+                    $actions[$vanid]['vanid'] = $vanid;
+                    $actions[$vanid]['contact_method'] = $contactMethod;
+                    $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
+                  }
                   break;
                 case 'NC':  // New cell.
                   $newContactParts = $valueIdParts;
@@ -460,6 +448,12 @@ class DataEntryForm extends FormBase
                     break;
                   }
                   $actions[$vanid][$reportType][$field] = $value;
+                  if(empty($actions[$vanid]['contact_method'])) {
+                    $contactMethod = 'Walk';
+                    $actions[$vanid]['vanid'] = $vanid;
+                    $actions[$vanid]['contact_method'] = $contactMethod;
+                    $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
+                  }
                   break;
                 case 'NH':  // New home phone.
                   $newContactParts = $valueIdParts;
@@ -470,8 +464,14 @@ class DataEntryForm extends FormBase
                     break;
                   }
                   $actions[$vanid][$reportType][$field] = $value;
+                  if(empty($actions[$vanid]['contact_method'])) {
+                    $contactMethod = 'Walk';
+                    $actions[$vanid]['vanid'] = $vanid;
+                    $actions[$vanid]['contact_method'] = $contactMethod;
+                    $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
+                  }
                   break;
-                case 'BH':  // Bad cell.
+                case 'BH':  // Bad home phone.
                   $voter = $this->voters->getVoterById($vanid,$turfIndex);
                   $actions[$vanid][$reportType]['homePhoneId'] = NULL;
                   if(!empty($voter['homePhoneId'])) {
@@ -481,8 +481,14 @@ class DataEntryForm extends FormBase
                   $actions[$vanid][$reportType]['wrongNumberCode'] = $wrongNumber;
                   $actions[$vanid][$reportType]['homePhone'] = $voter['homePhone'];
                   $actions[$vanid][$reportType][$field] = $value;
+                  if(empty($actions[$vanid]['contact_method'])) {
+                    $contactMethod = 'Phone';
+                    $actions[$vanid]['vanid'] = $vanid;
+                    $actions[$vanid]['contact_method'] = $contactMethod;
+                    $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
+                  }
                   break;
-                case 'BC':  // Bad home phone.
+                case 'BC':  // Bad cell.
                 case 'OO':  // Opt out of texting.
                   $voter = $this->voters->getVoterById($vanid,$turfIndex);
                   $actions[$vanid][$reportType]['cellPhoneId'] = NULL;
@@ -493,12 +499,16 @@ class DataEntryForm extends FormBase
                   $actions[$vanid][$reportType]['wrongNumberCode'] = $wrongNumber;
                   $actions[$vanid][$reportType]['cellPhone'] = $voter['cellPhone'];
                   $actions[$vanid][$reportType][$field] = $value;
+                  if(empty($actions[$vanid]['contact_method'])) {
+                    $contactMethod = 'Phone';
+                    $actions[$vanid]['vanid'] = $vanid;
+                    $actions[$vanid]['contact_method'] = $contactMethod;
+                    $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
+                  }
                   break;
-                  
               }
               break;
             case 'value':    // New phone # or email, but may be a comment.
-
               if(empty($actions[$vanid][$reportType]['type'])) {
                 $messenger->addWarning('A comment is not permitted in the Update Contact Info text box, Voter is '.$voterName);
                 break;
@@ -1232,32 +1242,29 @@ class DataEntryForm extends FormBase
     return $form_element;
   }
   
-  
-  
+  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * turf_name
+   *
+   * @param $turfIndex
+   * @return array
+   */
   function turf_name($turfIndex): array
   {
-    nlp_debug_msg('$turfIndex',$turfIndex);
     $turf = $this->turfs->getTurf($turfIndex);
-    nlp_debug_msg('$turf',$turf);
     $turfNameStamp = $turf['turfName'];
     $turfNameParts = explode('_',$turfNameStamp);
     $turfName = $turfNameParts[0];
-    
     $form_element['turf_name_box'] = array (
       '#markup' => "  \n ".'<section class="turf-name-box no-white">',
     );
-    
     $form_element['turfName'] =  [
-      '#markup'=>" \n ".'<div class="turf-name"><b>You\'re working with turf named:</b></div>FF'.$turfName];
-    
+      '#markup'=>" \n ".'<div class="turf-name"><b>You\'re working with turf named:</b></div>'.$turfName];
     $form_element['turf_name_end'] = array (
       '#type' => 'markup',
       '#markup' => " \n   ".'</section>',
     );
     return $form_element;
   }
-  
-  
   
   /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
    * defaultMethod
@@ -1307,16 +1314,11 @@ class DataEntryForm extends FormBase
    */
   function buildVoterTable($voters, &$buildInfo): array
   {
-   
     $config = Drupal::config('nlpservices.configuration');
     $surveyQuestions = $config->get('nlpservices_survey_questions');
     $contactMethods = $buildInfo['contactMethods'];
     $selectedContactMethods = $buildInfo['selectedContactMethods'];
-    //nlp_debug_msg('$selectedContactMethods',$selectedContactMethods);
-  
     $canvassResponseCodes = $buildInfo['canvassResponseCodes'];
-    //$defaultValues = $buildInfo['defaultValues'];
-    
     $form_element['voterForm'] = array(
       '#prefix' => " \n" . '<div id="voterForm-div">' . " \n",
       '#suffix' => " \n" . '</div>' . " \n",
@@ -1331,12 +1333,10 @@ class DataEntryForm extends FormBase
       '#markup' => " \n" . '<!-- Data Entry Table -->' .
         " \n" . '<table class="voter-table">',
     );
-    
     // Start the body.
     $form_element['voterForm']['body-start'] = array(
       '#markup' => " \n" . '<tbody>',
     );
-    
     // Loop through the voters in the turf and create a row with contact
     // information and the data entry form elements.
     reset($voters);
@@ -1348,7 +1348,6 @@ class DataEntryForm extends FormBase
     }
     
     $voterCount = 0;
-    
     do {
       $voter = current($voters);
       if (empty($voter)) {
@@ -1748,25 +1747,21 @@ class DataEntryForm extends FormBase
    */
   function contactMethodCell($method): array
   {
-    //nlp_debug_msg('$method',$method);
     $vanid = $method['vanid'];
     $form_element['start'] =[
       '#markup' => " \n ".'<div><b>Contact Method</b> ',
     ];
     $selectedContactMethod = $method['selectedContactMethod'];
-    //$title = 'Select a method of voter contact.';
     if(!empty($selectedContactMethod)) {
       $form_element['method_hint'] = [
         '#markup' => '<div class="chosen-method">Chosen method: '. $method['contactMethodOptions'][$selectedContactMethod].'</div>',
       ];
-      //$title = 'Or select a different method.';
       $method['contactMethodOptions'][0] = t('Or, select another method');
     } else {
       $form_element['method_hint'] = [
         '#markup' => " \n ".'<div><i>You must select a Contact Method <br>before you can report a voter contact response.</i></div> ',
       ];
     }
-    //$random = rand(0,9999);
     $form_element["contact_method-$vanid"] = [
       '#type' => 'select',
       '#options' => $method['contactMethodOptions'],
@@ -1786,10 +1781,9 @@ and the response.  It can\'t be undone.">',
       '#suffix' => '</div><div class="line-spacer"></div>',
     ];
     
-    $form_element['end'] = array(
+    $form_element['end'] = [
       '#markup' => " \n ".'</div>',
-    );
-    //nlp_debug_msg('$form_element',$form_element);
+    ];
     return $form_element;
   }
   
@@ -1809,7 +1803,7 @@ and the response.  It can\'t be undone.">',
   
         $form_element['title'] = array(
           '#markup' => t(" \n "
-            . '<div class="response-title">Voter Responded<br></div>'
+            . '<div class="response-title">Voter Contacted<br></div>'
             . '<i>Select a Contact Method first.<br></i>' . '</div>'),
         );
       } else {
@@ -1818,7 +1812,7 @@ and the response.  It can\'t be undone.">',
           array(':fn' => $pledge['nickname'])));
         $form_element['title'] = array(
           '#markup' => t(" \n "
-            .'<div class="response-title">Voter Responded<br></div>'
+            .'<div class="response-title">Voter Contacted<br></div>'
             . $question . '</div>'),
         );
         $responseList = [0=>'Select Response'];
@@ -1878,7 +1872,7 @@ and the response.  It can\'t be undone.">',
     }
     $vanid = $noVoterContact['vanid'];
     $form_element['note'] = array(
-      '#markup' => '<b>No Voter Response</b>',
+      '#markup' => '<b>Voter Not Contacted</b><br>Select the best response',
     );
     if(empty($noVoterContact['optionsDisplay'])) {
       $voterCount = $noVoterContact['voterCount'];
