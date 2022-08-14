@@ -36,7 +36,7 @@ services:
     arguments: [ '@file_system' , '@nlpservices.paths' ]
   nlpservices.documents:
     class: Drupal\nlpservices\NlpDocuments
-    arguments: ['@database']
+    arguments: ['@database' , '@nlpservices.paths']
   nlpservices.nlp_config:
     class: Drupal\nlpservices\NlpConfig
     arguments: [ '@database' ]

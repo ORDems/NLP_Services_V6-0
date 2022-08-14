@@ -318,6 +318,14 @@ nlpservices.reports_menu:
   requirements:
     _permission: 'nlp tools access'
 
+nlpservices.documents_menu:
+  path: '/nlpservices-document-list'
+  defaults:
+    _controller: Drupal\nlpservices\Controller\DocumentsController::displayDocuments
+    _title: 'Documents Menu'
+  requirements:
+    _permission: 'nlp tools access'
+
 nlpservices.manage_nlp_users_accounts_menu:
   path: '/nlpservices-manage-nlp-users-accounts'
   defaults:

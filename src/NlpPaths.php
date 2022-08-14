@@ -2,6 +2,7 @@
 
 namespace Drupal\nlpservices;
 
+use Drupal;
 use Drupal\Core\File\FileSystemInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -54,7 +55,9 @@ class NlpPaths {
         $dir .= self::INSTRUCTIONS_DIR.'/';
         break;
       case 'DOCS':
-        $dir = 'public://'.self::NLP_DOCUMENTS."/";
+        //$dir = 'public://'.self::NLP_DOCUMENTS."/";
+        $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
+        $dir = $modulePath.'/docs/';
         break;
       case 'TURF':
         $dir .= self::TURF_MESSAGE_DIR.'/';

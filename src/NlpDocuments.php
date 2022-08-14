@@ -2,7 +2,9 @@
 
 namespace Drupal\nlpservices;
 
+use Drupal;
 use Drupal\Core\Database\Connection;
+use Drupal\nlpservices\NlpPaths;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Exception;
 
@@ -31,16 +33,19 @@ class NlpDocuments
       'defaultFilename' => 'TurfDelivery'),
   );
   
-  protected Connection $connection;
-  
-  public function __construct( $connection) {
-    $this->connection = $connection;
-  }
+    protected Connection $connection;
+    protected NlpPaths $paths;
+
+    public function __construct( $connection, $paths) {
+      $this->connection = $connection;
+      $this->paths = $paths;
+    }
   
   public static function create(ContainerInterface $container): NlpDocuments
   {
     return new static(
       $container->get('database'),
+      $container->get('nlpservices.paths'),
     );
   }
 
@@ -96,5 +101,69 @@ class NlpDocuments
     }
     return $displayList;
   }
-  
+
+
+    function buildDocumentDisplay(): array
+    {
+        $documents = $this->getDocuments();
+        if(empty($documents)) {
+            $page['documents'] = ['Error.'];
+        }
+        
+        $docPath = $this->paths->getPath('DOCS',NULL);
+        $page['document_form'] = array(
+            '#title' => 'Available NLP Documents.  (Right click the link to download the document.)',
+            '#type' => 'fieldset',
+            '#prefix' => '<div>',
+            '#suffix' => '</div>',
+        );
+
+        $header = [
+            'name' => t('Name'),
+            'description' => t('Description'),
+            'doc' => t('Doc'),
+            'pdf' => t('PDF')
+        ];
+
+        $rows = [];
+        foreach ($documents as $document) {
+
+            if(!empty($document['docFileName'])) {
+                $docxUri = $docPath . $document['docFileName'];
+                //$docUrl = file_create_url($docxUri);
+                $docUrl = Drupal::service('file_url_generator')->generateAbsoluteString($docxUri);
+                $doc = '(<a href="'.$docUrl.'">'.$document['docFileName'].'</a>) ';
+            } else {
+                $doc = '-';
+            }
+
+            if(!empty($document['pdfFileName'])) {
+                $pdfUri = $docPath . $document['pdfFileName'];
+                //$pdfUrl = file_create_url($pdfUri);
+                $pdfUrl = Drupal::service('file_url_generator')->generateAbsoluteString($pdfUri);
+                $pdf = '(<a href="'.$pdfUrl.'">'.$document['pdfFileName'].'</a>) ';
+            } else {
+                $pdf = '-';
+            }
+
+            $row = [
+                'name' => t($document['name']),
+                'description' => t($document['description']),
+                'doc' => t($doc),
+                'pdf' => t($pdf),
+            ];
+            $rows[$document['name']] = $row;
+        }
+        //nlp_debug_msg('$rows',$rows);
+
+        $page['document_form']['table'] = array(
+            '#type' => 'table',
+            '#header' => $header,
+            '#rows' => $rows,
+            '#empty' => t('No documents found.'),
+        );
+        return $page;
+    }
+
+
 }

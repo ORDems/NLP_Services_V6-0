@@ -85,7 +85,7 @@ class FoldersConfigurationForm extends ConfigFormBase {
   function prepareDocuments()
   {
     $messenger = Drupal::messenger();
-    $documentPath = $this->nlpPaths->getPath('DOCS', NULL);
+    //$documentPath = $this->nlpPaths->getPath('DOCS', NULL);
     $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
     $defaultDocuments = $this->nlpDocuments->nameList;
     $currentDocuments = $this->nlpDocuments->getDocuments();
@@ -114,12 +114,14 @@ class FoldersConfigurationForm extends ConfigFormBase {
     foreach ($defaultDocuments as $name => $defaultDocument) {
       $defaultFilename = $defaultDocument['defaultFilename'];
       if(isset($defaultFiles[$defaultFilename])) {
-        $from = $modulePath.'/docs/'.$defaultFiles[$defaultFilename];
-        $to = $documentPath.$defaultFiles[$defaultFilename];
-        $copy_docx = copy($from.'.docx',$to.'.docx');
-        $copy_pdf = copy($from.'.pdf',$to.'.pdf');
-        $doc = ($copy_docx)? $defaultFiles[$defaultFilename].'.docx' : NULL;
-        $pdf = ($copy_pdf)? $defaultFiles[$defaultFilename].'.pdf' : NULL;
+        //$from = $modulePath.'/docs/'.$defaultFiles[$defaultFilename];
+        //$to = $documentPath.$defaultFiles[$defaultFilename];
+        //$copy_docx = copy($from.'.docx',$to.'.docx');
+        //$copy_pdf = copy($from.'.pdf',$to.'.pdf');
+        //$doc = ($copy_docx)? $defaultFiles[$defaultFilename].'.docx' : NULL;
+        //$pdf = ($copy_pdf)? $defaultFiles[$defaultFilename].'.pdf' : NULL;
+        $doc = $defaultFiles[$defaultFilename].'.docx';
+        $pdf = $defaultFiles[$defaultFilename].'.pdf';
         $document = array(
           'name' => $name,
           'weight' => $defaultDocument['weight'],
@@ -148,7 +150,7 @@ class FoldersConfigurationForm extends ConfigFormBase {
     ksort($counties);
   
     $this->nlpPaths->createDir('TEMP',NULL);
-    $this->nlpPaths->createDir('DOCS',NULL);
+    //$this->nlpPaths->createDir('DOCS',NULL);
     $this->nlpPaths->createDir('NLP',NULL);
     $this->nlpPaths->createDir('TURF',NULL);
    

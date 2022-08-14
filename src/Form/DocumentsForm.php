@@ -72,10 +72,12 @@ class DocumentsForm extends FormBase
     ];
   
     $adminUser = $this->drupalUser->isNlpAdminUser();
+    /*
     $documents = $this->documents->getDocuments();
     if(!empty($documents)) {
       $form['documents'] = $this->buildDocumentDisplay($documents);
     }
+    */
   
     if($adminUser) {
       $form['new_documents'] = array(
@@ -145,6 +147,7 @@ class DocumentsForm extends FormBase
    * @param $documents
    * @return array
    */
+  /*
   function buildDocumentDisplay($documents): array
   {
     $docPath = $this->paths->getPath('DOCS',NULL);
@@ -202,7 +205,8 @@ class DocumentsForm extends FormBase
     );
     return $form_element;
   }
-  
+  */
+
   /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
    * updateDocumentsFile
    *
