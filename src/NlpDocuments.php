@@ -31,6 +31,8 @@ class NlpDocuments
       'defaultFilename' => 'CuttingTurf'),
     'deliverTurf' => array('description' =>'Sending a turf to an NL','weight'=>50,
       'defaultFilename' => 'TurfDelivery'),
+    'countyCoordinator' => array('description' =>'Sending a turf to an NL','weight'=>60,
+      'defaultFilename' => 'CountyCoordinator'),
   );
   
     protected Connection $connection;
