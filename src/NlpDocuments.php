@@ -25,14 +25,16 @@ class NlpDocuments
       'defaultFilename' => 'InstructionsCanvass'),
     'nlPostcard' => array('description' =>'Neighborhood Leader Instructions - postcard','weight'=>20,
       'defaultFilename' => 'InstructionsPostcard'),
-    'nlList' => array('description' =>'Managing the list of Potential NLs','weight'=>30,
-      'defaultFilename' => 'ProspectiveNLList'),
+    'nlList' => array('description' =>'Managing the list of Active NLs','weight'=>30,
+      'defaultFilename' => 'ActiveNLList'),
     'cutTurf' => array('description' =>'Cutting turf','weight'=>40,
       'defaultFilename' => 'CuttingTurf'),
     'deliverTurf' => array('description' =>'Sending a turf to an NL','weight'=>50,
       'defaultFilename' => 'TurfDelivery'),
     'countyCoordinator' => array('description' =>'Sending a turf to an NL','weight'=>60,
       'defaultFilename' => 'CountyCoordinator'),
+    'editEmail' => array('description' =>'Edit turf delivery email','weight'=>70,
+      'defaultFilename' => 'EditTurfDeliveryEmail'),
   );
   
     protected Connection $connection;
