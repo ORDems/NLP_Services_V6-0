@@ -112,17 +112,11 @@ address to notifications@nmysite.sfx.
 
 Install and enable nlpservices module
 
-First install the nlpservices module.  But don't enable it just yet.
-Use either FTP or the File Manager in CPanel to locate the
+First install the nlpservices module. Use either FTP or the File Manager in CPanel to locate the
 nlp_county_names_oregon.txt file.  Use this as a template to create the list
 of names of counties in the state with the list of state house districts in
 the county.   Save the result in a file called nlp_county_names.txt.   This
 file is needed to create the necessary fields for managing the user logins.
-
-Then enable the nlpservices module.   Enabling the module will
-create the permissions and additional user fields need to manage logins for
-the users of nlpservices.
-
 
 Now install the support modules.
 

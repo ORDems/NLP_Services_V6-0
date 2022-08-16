@@ -48,7 +48,7 @@ function nlpservices_install()
   // Create the Welcome page and stick to the front page.
   $node = Node::create([
     'type'        => 'page',
-    'title'       => 'Welcome',
+    'title'       => 'Home',
     'promote' => 1,
     'sticky' => 1,
     'status' => 1,
@@ -349,7 +349,7 @@ function nlpservices_schema(): array
       'homePhoneId' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, ),
       'cellPhone' => array( 'type' => 'varchar', 'length' => 32, ),
       'cellPhoneId' => array( 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, ),
-      'smsOptInStatus' => array( 'type' => 'char', 'length' => 1, ),
+      'smsOptInStatus' => array( 'type' => 'char', 'length' => 16, ),
       'preferredPhoneType' => array( 'type' => 'char', 'length' => 8, ),
       'votingHistory' => array( 'type' => 'varchar', 'length' => 64, 'description' => 'Voting history - last 4 general/primary.', ),
     ),

@@ -201,10 +201,11 @@ function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id
     case 'nlpservices_data_entry_form':
       $form['#attached']['library'][] = 'nlpservices/data-entry-table';
       break;
-      
+    
     case 'user_register_form':
       $form['#validate'][] = 'nlpservices_add_user_validate';
       break;
+    
   }
 }
 
@@ -217,8 +218,7 @@ function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id
  * @noinspection PhpUnused
  * @noinspection PhpUnusedParameterInspection
  */
-function nlpservices_user_create_access(AccountInterface $account,
-                                        array $context, $entity_bundle) {
+function nlpservices_user_create_access(AccountInterface $account, array $context, $entity_bundle) {
   if($context['entity_type_id'] != 'user') {return;}
   if(empty($_REQUEST['form_id']) OR $_REQUEST['form_id'] != 'user_register_form') {
     return;

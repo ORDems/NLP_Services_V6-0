@@ -69,7 +69,9 @@ class NlpExportUserAccounts
           $nl = $this->nls->getNlById($user['mcid']);
           if(empty($nl)) {
             $user['hd'] = '';
-            $user['password'] = 'unknown';
+            //$user['password'] = 'unknown';
+            $password = $this->magicWord->getMagicWord($user['mcid']);
+            $user['password'] = $password;
           } else {
             $user['hd'] = $nl['hd'];
             $password = $this->magicWord->getMagicWord($user['mcid']);

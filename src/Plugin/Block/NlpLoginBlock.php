@@ -41,16 +41,13 @@ class NlpLoginBlock extends BlockBase {
     $userCurrent = Drupal::currentUser();
     $roles = $userCurrent->getRoles();
     //nlp_debug_msg('$roles',$roles);
-    $nice = highlight_string("<?php\n\$values =\n" . var_export($roles, true) . ";\n?>", TRUE);
-    
-    //Drupal::logger('my_module')->notice($nice);
-    
+    /*
     if(in_array('anonymous',$roles)) {
       return AccessResult::allowedIfHasPermission($account, 'access content');
     }
-    return \Drupal\Core\Access\AccessResult::forbidden();
-    
-    //return AccessResult::allowedIfHasPermission($account, 'access content');
+    return AccessResult::forbidden();
+    */
+    return AccessResult::allowedIfHasPermission($account, 'access content');
   }
   
   /**

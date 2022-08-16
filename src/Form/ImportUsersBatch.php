@@ -20,11 +20,15 @@ function importUsersBatch($arg,&$context) {
 
   //$allRoles = \Drupal\user\Entity\Role::loadMultiple();
   //nlp_debug_msg('$allRoles',$allRoles);
-  $oldRoles = [
-    'nlp leader' => 'nlp_leader',
-    'nlp coordinator' => 'nlp_coordinator',
-    'nlp admin' => 'nlp_admin',
-  ];
+  
+  $drupalRoles = user_roles();
+  //nlp_debug_msg('$drupalRoles',$drupalRoles);
+  foreach ($drupalRoles as $drupalRole) {
+    $roleId = $drupalRole->get('id');
+    $roleLabel = $drupalRole->get('label');
+    $nlpRoles[$roleId] = $roleLabel;
+  }
+  //nlp_debug_msg('$nlpRoles',$nlpRoles);
 
   $fh = fopen($uri, "r");
   if ($fh == FALSE) {
@@ -49,8 +53,8 @@ function importUsersBatch($arg,&$context) {
     $fieldPos = $context['sandbox']['fieldPos'];
   }
   
-  $importFields = array('userName','email','created','access','login',
-    'firstName','lastName','phone','county','mcid','turfAccess');
+  $importFields = ['userName','email','created','access','login',
+    'firstName','lastName','phone','county','mcid','turfAccess'];
   
   $magicWordObj = Drupal::getContainer()->get('nlpservices.magic_word');
   $drupalUserObj = Drupal::getContainer()->get('nlpservices.drupal_user');
@@ -61,28 +65,28 @@ function importUsersBatch($arg,&$context) {
     if(empty($user)) {break;}
     //nlp_debug_msg('$user',$user);
     $loopCount++;
-    $roles = array();
+    $roles = [];
     $rolesString = $user[$fieldPos['roles']];
+    //nlp_debug_msg('$rolesString',$rolesString);
+    //$userRoles = json_decode($rolesString);
     $userRoles = explode(';', $rolesString);
     //nlp_debug_msg('$userRoles',$userRoles);
     foreach ($userRoles as $userRole) {
       if(empty($userRole)) {continue;}
-      if($userRole == 'authenticated') {continue;}
-      $roleParts = explode(':', $userRole);
-      $roleName = $roleParts[1];
-      $localRid = $roleParts[0];
-
-      if(!empty($oldRoles[$roleName])) {
-        $localRid = $oldRoles[$roleName];
+      $userRoleParts = explode(':',$userRole);
+      $userRoleId = $userRoleParts[1];
+      if($userRoleId == 'authenticated' OR $userRoleId == 'anonymous') {continue;}
+      if(!empty($nlpRoles[$userRoleId])) {
+        $roles[$userRoleId] = $nlpRoles[$userRoleId];
       }
-
-      $roles[$localRid] = $localRid;
     }
+    
     //nlp_debug_msg('$roles',$roles);
     $countyLc = strtolower($user[$fieldPos['county']]);
     $countyUcf = ucfirst($countyLc);
     
     $existingUser = $drupalUserObj->getUserByName($user[$fieldPos['userName']]);
+    //nlp_debug_msg('$existingUser',$existingUser);
     if(!empty($existingUser)) {
       // Avoid changing any admin account.
       if(in_array('administrator',$existingUser['roles'])) {
@@ -90,16 +94,20 @@ function importUsersBatch($arg,&$context) {
       }
       $mcid = $user[$fieldPos['mcid']];
       
-      $editUpdate = array(
+      $editUpdate = [
         'uid' => $existingUser['uid'],
-        'roles' => $roles,
+        //'roles' => $roles,
         'sharedEmail' => $user[$fieldPos['sharedEmail']],
         'county' => $countyUcf,
         'firstName' => $user[$fieldPos['firstName']],
         'lastName' => $user[$fieldPos['lastName']],
         'phone' => $user[$fieldPos['phone']],
         'mcid' => $mcid,
-      );
+      ];
+      if(!empty($roles)) {
+        $editUpdate['roles'] = $roles;
+      }
+      
       //nlp_debug_msg('$editUpdate',$editUpdate);
       $drupalUserObj->updateUser($editUpdate);
       
@@ -123,9 +131,9 @@ function importUsersBatch($arg,&$context) {
       $account['sharedEmail'] = $user[$fieldPos['sharedEmail']];
       $account['roles'] = $roles;
       $account['county'] = $countyUcf;
-      //nlp_debug_msg('$account',$account);
+      nlp_debug_msg('$account',$account);
       $newUser = $drupalUserObj->addUser($account);
-      
+      nlp_debug_msg('$newUser',$newUser);
       if($newUser['status'] == 'complete') {
         if(!empty($newUser['mcid'])) {
           $magicWordObj->setMagicWord($newUser['mcid'],$password);

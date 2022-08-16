@@ -2,6 +2,7 @@
 
 namespace Drupal\nlpservices\Controller;
 
+use Drupal;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\nlpservices\NlpExportUserAccounts;
@@ -25,6 +26,7 @@ class ExportUserAccountsController extends ControllerBase
 
   public function createUserAccountsFile(): array
   {
+    Drupal::service("page_cache_kill_switch")->trigger();
     return [
       '#markup' => $this->exportUserAccounts->getUserAccountsFile(),
     ];
