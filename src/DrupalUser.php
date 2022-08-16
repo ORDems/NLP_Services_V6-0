@@ -223,6 +223,7 @@ class DrupalUser {
           $user->setPassword($nlpValue);
           break;
         case 'roles':
+          //nlp_debug_msg('$nlpValue',$nlpValue);
           foreach ($nlpValue as $roleId=>$roleLabel) {
             if(empty($roleLabel)) {
               $user->removeRole($roleId);
@@ -248,15 +249,7 @@ class DrupalUser {
     $updatedUser['status'] = 'complete';
     return $updatedUser;
   }
-  /*
-  public function getRoleId($roleName) {
-    $roles =  user_roles();
-    nlp_debug_msg('$roles',$roles);
-    //nlp_debug_msg('$roleName',$roleName);
-    //nlp_debug_msg('rid',array_search($roleName, user_roles()));
-    return array_search($roleName, user_roles());
-  }
-  */
+  
   public function createDrupalAccount($userInfo): bool
   {
     $messenger = Drupal::messenger();

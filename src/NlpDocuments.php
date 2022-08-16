@@ -31,7 +31,7 @@ class NlpDocuments
       'defaultFilename' => 'CuttingTurf'),
     'deliverTurf' => array('description' =>'Sending a turf to an NL','weight'=>50,
       'defaultFilename' => 'TurfDelivery'),
-    'countyCoordinator' => array('description' =>'Sending a turf to an NL','weight'=>60,
+    'countyCoordinator' => array('description' =>'Defining the county coordinators','weight'=>60,
       'defaultFilename' => 'CountyCoordinator'),
     'editEmail' => array('description' =>'Edit turf delivery email','weight'=>70,
       'defaultFilename' => 'EditTurfDeliveryEmail'),
@@ -125,7 +125,7 @@ class NlpDocuments
         $header = [
             'name' => t('Name'),
             'description' => t('Description'),
-            'doc' => t('Doc'),
+            'doc' => t('Docx'),
             'pdf' => t('PDF')
         ];
 
