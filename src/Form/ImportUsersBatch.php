@@ -131,9 +131,9 @@ function importUsersBatch($arg,&$context) {
       $account['sharedEmail'] = $user[$fieldPos['sharedEmail']];
       $account['roles'] = $roles;
       $account['county'] = $countyUcf;
-      nlp_debug_msg('$account',$account);
+      //nlp_debug_msg('$account',$account);
       $newUser = $drupalUserObj->addUser($account);
-      nlp_debug_msg('$newUser',$newUser);
+      //nlp_debug_msg('$newUser',$newUser);
       if($newUser['status'] == 'complete') {
         if(!empty($newUser['mcid'])) {
           $magicWordObj->setMagicWord($newUser['mcid'],$password);
