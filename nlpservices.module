@@ -1,7 +1,7 @@
 <?php
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Session\AccountInterface;
+//use Drupal\Core\Session\AccountInterface;
 
 const NLP_MODULE = 'nlpservices';
 
@@ -56,6 +56,7 @@ function nlpservices_mail_alter(&$message) {
     case 'user':
       //nlp_debug_msg('message', $message);
       $accountObj = $message['params']['account'];
+      /** @noinspection PhpSwitchStatementWitSingleBranchInspection */
       switch ($message['key']) {
         case 'password_reset':
           if(!empty($accountObj->field_shared_email['und'][0]['value'])) {
@@ -205,27 +206,12 @@ function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id
     case 'user_register_form':
       $form['#validate'][] = 'nlpservices_add_user_validate';
       break;
-    
-  }
-}
-
-/** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * implements hook_user_create_access
- *
- * @param AccountInterface $account
- * @param array $context
- * @param $entity_bundle
- * @noinspection PhpUnused
- * @noinspection PhpUnusedParameterInspection
- */
-function nlpservices_user_create_access(AccountInterface $account, array $context, $entity_bundle) {
-  if($context['entity_type_id'] != 'user') {return;}
-  if(empty($_REQUEST['form_id']) OR $_REQUEST['form_id'] != 'user_register_form') {
-    return;
-  }
-  $magicWordObj = Drupal::getContainer()->get('nlpservices.magic_word');
-  if(!empty($_REQUEST['field_mcid'][0]['value'])) {
-    $magicWordObj->setMagicWord($_REQUEST['field_mcid'][0]['value'], $_REQUEST['pass']['pass1']);
+  
+    case 'user_form':
+      $form['#validate'][] = 'nlpservices_user_validate';
+      //$form['#submit'][] = 'nlpservices_user_submit';
+      $form['actions']['submit']['#submit'][] = 'nlpservices_user_submit';
+      break;
   }
 }
 
@@ -240,35 +226,114 @@ function nlpservices_user_create_access(AccountInterface $account, array $contex
 function nlpservices_add_user_validate(&$form, FormStateInterface $form_state) {
   $values = $form_state->getValues();
   //nlp_debug_msg('$values',$values);
+  $response = nlpservices_field_validate($values);
+  if($response['status'] ==  'err') {
+    $form_state->setErrorByName($response['field'], t($response['msg']));
+  }
+}
+
+/** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * nlpservices_user_validate
+ *
+ * @param $form
+ * @param FormStateInterface $form_state
+ * @return void
+ * @noinspection PhpUnusedParameterInspection
+ * @noinspection PhpUnused
+ */
+function nlpservices_user_validate(&$form, FormStateInterface $form_state) {
+  $values = $form_state->getValues();
+  $response = nlpservices_field_validate($values);
+  if($response['status'] ==  'err') {
+    $form_state->setErrorByName($response['field'], t($response['msg']));
+  }
+}
+
+/** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * nlpservices_field_validate
+ *
+ * @param $values
+ * @return array
+ */
+function nlpservices_field_validate($values): array
+{
+  $mcid = (empty($values['field_mcid'][0]['value'])) ? NULL: $values['field_mcid'][0]['value'];
+  $county = (empty($values['field_county'][0]['value'])) ? NULL: $values['field_county'][0]['value'];
   
-  $county = $values['field_county'][0]['value'];
   $config = Drupal::getContainer()->get('config.factory');
   $nlpConfig = $config->get('nlpservices.configuration');
   $countyNames = $nlpConfig->get('nlpservices-county-names');
   $countyNames = array_keys($countyNames);
   unset($countyNames[0]);
   if(!empty($county) AND !in_array($county,$countyNames)) {
-    $form_state->setErrorByName('field_county',t('Unknown county, check spelling.'));
+    return [
+      'status' => 'err',
+      'msg' => 'Unknown county, check spelling.',
+      'field' => 'field_county'
+    ];
   }
   
   $roles = $values['roles'];
   if(in_array(NLP_LEADER_ROLE_ID,$roles)) {
-    if(empty($values['field_mcid'][0]['value'])) {
-      $form_state->setErrorByName('field_mcid',
-        t('You must specify an MCID for an NLP Leader.'));
+    if(empty($mcid)) {
+      return [
+        'status' => 'err',
+        'msg' => 'You must specify an MCID for an NLP Leader.',
+        'field' => 'field_mcid'
+      ];
     }
-    if(empty($values['field_county'][0]['value'])) {
-      $form_state->setErrorByName('field_county',
-        t('You must specify a County for an NLP Leader.'));
+    if(empty($county)) {
+      return [
+        'status' => 'err',
+        'msg' => 'You must specify a County for an NLP Leader.',
+        'field' => 'field_county'
+      ];
     }
+    
   }
   if(in_array(NLP_COORDINATOR_ROLE_ID,$roles)) {
     if(empty($values['field_county'][0]['value'])) {
-      $form_state->setErrorByName('field_county',
-        t('You must specify a County for an NLP Coordinator.'));
+      return [
+        'status' => 'err',
+        'msg' => 'You must specify a County for an NLP Coordinator.',
+        'field' => 'field_county'
+      ];
+    }
+  }
+  return ['status' => 'ok',];
+}
+
+
+/** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * nlpservices_user_submit
+ *
+ * @param $form
+ * @param FormStateInterface $form_state
+ * @return void
+ * @noinspection PhpUnused
+ * @noinspection PhpUnusedParameterInspection
+ */
+function nlpservices_user_submit(&$form, FormStateInterface $form_state) {
+  //$values = $form_state->getValues();
+  //nlp_debug_msg('$values',$values);
+  $mcidValue = $form_state->getValue('field_mcid');
+  //nlp_debug_msg('$mcidValue',$mcidValue);
+  if(!empty($mcidValue[0]['value'])) {
+    $mcid = $mcidValue[0]['value'];
+    //nlp_debug_msg('$mcid',$mcid);
+    $pass = $form_state->getValue('pass');
+    //nlp_debug_msg('submit - $pass',$pass);
+    if(!empty($pass)) {
+      $magicWordObj = Drupal::getContainer()->get('nlpservices.magic_word');
+      $magicWord = $magicWordObj->getMagicWord($mcid);
+      //nlp_debug_msg('$magicWord',$magicWord);
+      if($magicWord != $pass) {
+        $magicWordObj->setMagicWord($mcid,$pass);
+      }
     }
   }
 }
+
 
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * This converts a string to hex for debugging
