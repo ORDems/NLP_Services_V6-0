@@ -57,9 +57,9 @@ class DeliverTurfForm extends FormBase
     $this->fileSystemObj = $fileSystemObj;
     $this->instructionsObj = $instructionsObj;
     $this->coordinatorsObj = $coordinatorsObj;
-    $this->magicWordObj = $magicWordObj;
+    $this->magicWordObj = $magicWordObj;    $this->htmlText = $htmlText;
+  
     $this->turfMsgObj = $turfMsgObj;
-    $this->htmlText = $htmlText;
     $this->languageManager = $languageManager;
     $this->mailManager = $mailManager;
 
@@ -143,7 +143,7 @@ class DeliverTurfForm extends FormBase
     if ($hdOptions) {
       // House Districts exists.
       if(empty($selectedHd)) {
-        reset($hdOptions);
+        //reset($hdOptions);
         $selectedHd = key($hdOptions);
         $form_state->set('selectedHd', $selectedHd);
       }
@@ -177,7 +177,7 @@ class DeliverTurfForm extends FormBase
       //nlp_debug_msg('$precinctOptions',$precinctOptions);
       $form_state->set('pctOptions', $precinctOptions);
       if(empty($selectedPrecinct)) {
-        reset($precinctOptions);
+        //reset($precinctOptions);
         $selectedPrecinct = key($precinctOptions);
         $form_state->set('selectedPrecinct',$selectedPrecinct);
       }
@@ -425,6 +425,7 @@ class DeliverTurfForm extends FormBase
    * @param $unused
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function precinctSelectedCallback($form, $unused) {
     //Rebuild the form to list the NLs in the precinct after the precinct is selected.
@@ -506,9 +507,9 @@ class DeliverTurfForm extends FormBase
     $sender = $emailInfo['coordinator']['email'];
 
     //nlp_debug_msg('params',$params);
-    $result = $this->mailManager->mail(NLP_MODULE, 'deliver_turf', $to, $languageCode, $params, $sender, TRUE);
+    $result = $this->mailManager->mail(NLP_MODULE, 'deliver_turf', $to, $languageCode, $params, $sender);
     //nlp_debug_msg('$result',$result);
-    if ($result['result'] != TRUE) {
+    if (!$result['result']) {
       $messenger->addError(t('There was a problem sending your message and it was not sent.'));
       return FALSE;
     }

@@ -46,7 +46,7 @@ nlpservices.data_entry_help_route:
   requirements:
     _permission: 'nlp data entry'
   options:
-    no_cache: 'TRUE'
+    no_cache: TRUE
 
 nlpservices.about_route:
   path: '/nlp-about'
@@ -56,7 +56,7 @@ nlpservices.about_route:
   requirements:
     _permission: 'access content'
   options:
-    no_cache: 'TRUE'
+    no_cache: TRUE
 
 nlpservices.data_entry_print:
   path: '/nlp-data-entry-print'
@@ -74,7 +74,7 @@ nlpservices.printable_calling_page:
   requirements:
     _permission: 'nlp data entry'
   options:
-    no_cache: 'TRUE'
+    no_cache: TRUE
 
 nlpservices.printable_mailing_page:
   path: '/nlp-printable-mailing-page/{turfIndex}'
@@ -84,7 +84,7 @@ nlpservices.printable_mailing_page:
   requirements:
     _permission: 'nlp data entry'
   options:
-    no_cache: 'TRUE'
+    no_cache: TRUE
 
 nlpservices.awake_form:
   path: '/nlp-awake-form'
@@ -443,5 +443,13 @@ nlpservices.reset_form:
   defaults:
     _form: Drupal\nlpservices\Config\NlpResetForm
     _title: 'Reset the NLP Services database for a new election.'
+  requirements:
+    _permission: 'nlp administer'
+
+nlpservices.email_replies:
+  path: '/nlp-email-replies'
+  defaults:
+    _controller: Drupal\nlpservices\Controller\EmailHandlerController::email_replies
+    _title: 'Process replies in notifications to forward to the coordinator.'
   requirements:
     _permission: 'nlp administer'

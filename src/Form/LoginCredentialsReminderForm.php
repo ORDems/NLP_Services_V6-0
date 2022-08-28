@@ -439,9 +439,9 @@ class LoginCredentialsReminderForm extends FormBase
     $params['List-Unsubscribe'] = "<mailto: ".$account['notificationEmail']."?subject=unsubscribe>";
     
     //nlp_debug_msg('params',$params);
-    $result = $this->mailManager->mail(NLP_MODULE, 'account_reminder', $to, $languageCode, $params, $sender, TRUE);
+    $result = $this->mailManager->mail(NLP_MODULE, 'account_reminder', $to, $languageCode, $params, $sender);
     //nlp_debug_msg('$result',$result);
-    if ($result['result'] != TRUE) {
+    if (!$result['result']) {
       $messenger->addError(t('There was a problem sending your message and it was not sent.'));
       return FALSE;
     }

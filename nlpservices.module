@@ -46,12 +46,10 @@ function nlpservices_mail_alter(&$message) {
           $notify_str = json_encode($notify).'<eor>';
           $message['headers']['x-nlpservices-notify'] = $notify_str;
           //$message['headers']['Reply-To'] = $params['replyTo'];
-
-          $message['headers']['List-Unsubscribe'] =
-            "<mailto: notifications@nlpservices.org?subject=unsubscribe>";
-
         }
       }
+      $message['headers']['List-Unsubscribe'] =
+        "<mailto: notifications@nlpservices.org?subject=unsubscribe>";
       break;
     case 'user':
       //nlp_debug_msg('message', $message);
@@ -88,6 +86,7 @@ function nlpservices_mail($key, &$message, $params) {
 
     case 'deliver_turf':
     case 'account_reminder':
+    case 'forward_nl_reply':
       $boundary = uniqid('np');
       $message['headers']['Content-Type'] = 'multipart/alternative; boundary="'. $boundary.'"';
       //$message['headers']['Reply-To:'] = $params['replyTo'];

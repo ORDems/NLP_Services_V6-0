@@ -144,3 +144,8 @@ services:
     arguments: [ '@language_manager' , '@nlpservices.html_text',
                  '@plugin.manager.mail', '@nlpservices.instructions',
                  '@nlpservices.turf_delivery_message' ]
+  nlpservices.email_replies:
+    class: Drupal\nlpservices\NlpReplies
+    arguments: [ '@config.factory', '@nlpservices.imap',
+                 '@language_manager' , '@plugin.manager.mail',
+                 '@nlpservices.html_text' ]
