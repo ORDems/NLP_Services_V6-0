@@ -157,6 +157,8 @@ class TurfDeliveryMessageForm extends FormBase
   {
     $form_state->set('reenter', TRUE);
     $form_state->setRebuild();
+    $messenger = Drupal::messenger();
+  
     $state = $form_state->get('state');
     $countyNames = $form_state->get('countyNames');
     
@@ -182,6 +184,12 @@ class TurfDeliveryMessageForm extends FormBase
     
       case 'edit_state':
         $stateMsg = $form_state->getValue('body')['value'];
+        $tagExists = strpos($stateMsg,'@coordinatorContactInfo');
+        if(!$tagExists) {
+          $messenger->addError('The @coordinatorContactInfo tag is missing.  This tag must be somewhere
+          in the body of the email message. ');
+          return;
+        }
         $this->turfMsg->putTurfMsg(NULL,$stateMsg);
         $form_state->set('page', 'county_select');
         break;
@@ -189,6 +197,12 @@ class TurfDeliveryMessageForm extends FormBase
       case 'edit_county':
         $countySelected = $form_state->get('county_selected');
         $countyMsg = $form_state->getValue('body')['value'];
+        $tagExists = strpos($countyMsg,'@coordinatorContactInfo');
+        if(!$tagExists) {
+          $messenger->addError('The @coordinatorContactInfo tag is missing.  This tag must be somewhere
+          in the body of the email message. ');
+          return;
+        }
         $this->turfMsg->putTurfMsg($countySelected,$countyMsg);
         if($form_state->get('admin')) {
           $form_state->set('page', 'county_select');
