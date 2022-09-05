@@ -366,14 +366,15 @@ class DeliverTurfForm extends FormBase
       'magicWord' => $magicWord,
       'userName' => $userName,
     ];
-
+/*
     $coordinator = [
       'firstName' => $currentUser['firstName'],
       'lastName' => $currentUser['lastName'],
       'email' => $currentUser['email'],
       'phone' => $currentUser['phone'],
     ];
-
+*/
+    
     $region = [
       'hd'=>$nl['hd'],
       'pct'=>$nl['precinct'],
@@ -382,14 +383,17 @@ class DeliverTurfForm extends FormBase
     $region['coordinators'] = $this->coordinatorsObj->getAllCoordinators();
     $nlCoordinator = $this->coordinatorsObj->getCoordinator($region);
     //nlp_debug_msg('$nlCoordinator',$nlCoordinator);
-    if (!empty($coordinator)) {
-      $coordinator = [
-        'firstName' => $nlCoordinator['firstName'],
-        'lastName' => $nlCoordinator['lastName'],
-        'email' => $nlCoordinator['email'],
-        'phone' => $nlCoordinator['phone'],
-      ];
+    if (empty($coordinator)) {
+      $messenger->addError('A coordinator for the county must be assigned before you can send a
+      notification of a turf to an NL.');
+      return;
     }
+    $coordinator = [
+      'firstName' => $nlCoordinator['firstName'],
+      'lastName' => $nlCoordinator['lastName'],
+      'email' => $nlCoordinator['email'],
+      'phone' => $nlCoordinator['phone'],
+    ];
     $notificationEmail = $form_state->get('notificationEmail');
 
     // Construct the message.
