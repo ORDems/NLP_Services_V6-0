@@ -17,12 +17,13 @@ class NlpReplies
   protected HtmlText $htmlText;
   
   protected array $specialMessages = [
-    'failed' => 'Mail delivery failed',
-    'undelivered' => 'Undelivered Mail Returned',
-  ];
-  protected array $bodyParts = [
-    'failed' => ['Notification','Delivery report'],
-    'undelivered' => ['Notifications','Delivery report'],
+    'bounce' => [
+      'failed'=>['subject'=>'Mail delivery failed','bodyParts'=>['Notification','Delivery report'],],
+      'undelivered'=>['subject'=>'Undelivered Mail Returned','bodyParts'=>['Notification','Delivery report'],],
+      ],
+    'reply' => [
+      'turf'=>['subject'=>' ','bodyParts'=>[' '],],
+    ],
   ];
   
   public function __construct( $configObj, $imapObj, $languageManagerObj, $mailManagerObj, $htmlText ) {
@@ -74,95 +75,109 @@ class NlpReplies
     $messenger = Drupal::messenger();
   
     $connection = $this->imapObj->getImapConnection('notifications');
-    //nlp_debug_msg('connection', $connection);
-    if (empty($connection)) { return 'not done'; }
+    if (empty($connection)) { return "Can\'t connect to email server."; }
     
     $newNotificationReplies = $this->imapObj->getNewNotificationReplies($connection);
-    //nlp_debug_msg('$newNotificationReplies', $newNotificationReplies);
-    if (empty($newNotificationReplies)) { return 'not done'; }
-    
+    if (empty($newNotificationReplies)) { return "No new emails to process."; }
+  
     foreach ($newNotificationReplies as $emailNumber => $info) {
-      
-      $msg = $this->imapObj->getMsg($connection, $emailNumber);
-      if (empty($msg)) { continue; }
-      nlp_debug_msg('$msg', $msg);
-      
+      $message = $this->imapObj->getMessage($connection, $emailNumber);
+      if (empty($message)) { continue; }
+      //nlp_debug_msg('$message', $message);
+  
+      $targetType = '';
       $targetMessage = NULL;
-      foreach ($this->specialMessages as $targetId=>$targetSubject) {
+      foreach ($this->specialMessages['bounce'] as $targetId=>$target) {
         //if(in_array($targetSubject,$msg['subject'])) {
-         if(strpos($msg['subject'],$targetSubject) !== FALSE) {
+        if(strpos($message['subject'],$target['subject']) !== FALSE) {
           $targetMessage = $targetId;
+          $targetType = 'bounce';
           break;
         }
       }
-      nlp_debug_msg('$targetMessage', $targetMessage);
+      //nlp_debug_msg('$targetMessage', $targetMessage);
       if(empty($targetMessage)) { continue; }
   
-      $email = $body = '';
+      $email = $recipientEmail = $body = $forwardText = '';
       switch ($targetMessage) {
         case 'failed':
-          $email = $this->senderSearch($msg);
-          $body .= $this->getBodyParts($msg, $this->bodyParts[$targetMessage]);
-          break;
         case 'undelivered':
+          $email = $this->senderSearch($message);
+          $recipientEmail = $this->recipientSearch($message);
+          $body = $this->getBodyParts($message, $this->specialMessages[$targetType][$targetMessage]['bodyParts']);
+          $forwardText = 'An email you sent has bounced, you may need to contact the NL to get a <br>valid email or add the
+          NLP Admin to their address book.';
+          break;
+        default:
           break;
       }
-      
-      //nlp_debug_msg('$email',$email);
-      //nlp_debug_msg('$body',$body);
-      if (empty($email)) { continue; }
+      $forwardText .= "<br><b>".'TESTING - This email was not delivered for the primary.<br>It may indicate a problem
+      for the upcoming general election. The email address that bounced <br>should be somewhere in this message'."</b>";
   
-      //if($email != 'idiot') { continue; }
-      //$email = $this->extractCoordinatorEmail($msg['htmlmsg']);
+      if (empty($email)) {
+        nlp_debug_msg('no email found', $message);
+        continue;
+      }
       //nlp_debug_msg('email', $email);
-      $messenger->addMessage('Email set to: ' . $email);
+      $messenger->addMessage('Email set to: ' . $email . ', Bounced email was: '.$recipientEmail);
       $to = $email;
-      //$sendingEmail = variable_get('nlp_email', 'notifications@nlpservices.org');
-  
-      //$config = $this->configObj('nlpservices.configuration');
       $config = $this->configObj->get('nlpservices.configuration');
-  
       $emailConfiguration = $config->get('nlpservices-email-configuration');
       $sendingEmail = $emailConfiguration['notifications']['email'];
-      
-      
+  
       $from = 'NLP Admin<' . $sendingEmail . '>';
       $languageCode = $this->languageManagerObj->getDefaultLanguage()->getId();
-      
+  
       $params = [];
-      $params['subject'] = 'FW: ' . $msg['subject'];
-      
-      $forwardMsg = "<p>This reply should have been sent to you.<br />NLP Admin<br /><hr></p>";
-      //$params['message'] = $forwardMsg . $msg['htmlmsg'];
-      //$body = '';
+      $params['subject'] = $message['subject'];
+  
+      $forwardMsg = "<p>".$forwardText."<br />NLP Admin<br /><hr></p>";
       $params['message'] = $forwardMsg . $body;
   
       $this->htmlText->setHtml($params['message']);
       $params['plainText'] = $this->htmlText->getText();
   
-      nlp_debug_msg('$params',$params);
-      //$result = [];
+      //nlp_debug_msg('$params',$params);
       $result = $this->mailManagerObj->mail(NLP_MODULE, 'forward_nl_reply', $to, $languageCode, $params, $from);
-      
-      if (!$result['result']) {
+      //$result = NULL;
+      if (empty($result['result'])) {
         nlp_debug_msg('result', $result);
       }
+  
     }
-    return 'done';
+    
+    return "All emails processed.";
   }
   
-  private function senderSearch($msg): string
+  /**
+   * @param $message
+   * @return string
+   */
+  private function senderSearch($message): string
   {
-    foreach ($msg as $parts) {
-      //nlp_debug_msg('$parts[partNo]',$parts['partNo']);
-      if(!empty($parts['plainText'])) {
-        $sender = $this->senderPresent($parts['plainText']);
-        if(!empty($sender)) { return $sender; };
+    foreach ($message as $parts) {
+      //nlp_debug_msg('$parts',$parts);
+      if(!empty($parts['data'])) {
+        
+        if(!is_string($parts['data'])) {
+          //nlp_debug_msg('$parts',$parts);
+          continue;
+        }
+        
+        $sender = $this->senderPresent($parts['data']);
+        if(!empty($sender)) {
+          //nlp_debug_msg('sender',$parts['data']);
+          return $sender;
+        }
       }
     }
     return '';
   }
   
+  /**
+   * @param $plainText
+   * @return false|string
+   */
   private function senderPresent($plainText) {
     $posEmail = strrpos($plainText, 'Email:');
     //nlp_debug_msg('$posEmail: ' . $posEmail, '');
@@ -172,24 +187,102 @@ class NlpReplies
     $emailFragment = substr($plainText, $posEmail + 6, $endPos - $posEmail - 6);
     $emailStart = strpos($emailFragment, 'mailto:');
     if ($emailStart === FALSE) { return ''; }
-    return substr($emailFragment, $emailStart + 7);
+    
+    $email = substr($emailFragment, $emailStart + 7);
+    if(filter_var($email, FILTER_VALIDATE_EMAIL) !== false) {
+      return $email;
+    }
+    
+    $textStart = strpos($plainText,'>',$posEmail + 7);
+    $endPos = strpos($plainText, "<", $textStart);
+    $email = substr($plainText, $textStart+1,$endPos-$textStart-1);
+    nlp_debug_msg('$email',$email);
+    if(filter_var($email, FILTER_VALIDATE_EMAIL) !== false) {
+      return $email;
+    }
+    return '';
   }
   
-  private function getBodyParts($msg, $partDescriptions): string
+  /**
+   * @param $message
+   * @param $partDescriptions
+   * @return string
+   */
+  private function getBodyParts($message, $partDescriptions): string
   {
+    //nlp_debug_msg('$partDescriptions',$partDescriptions);
     $body = '';
-    foreach ($msg as $parts) {
-      $description = $parts['description'];
+    foreach ($message as $parts) {
+      if(empty($parts['data'])) { continue;}
+      $description = (!empty($parts['description']))?$parts['description']:'';
+      if (empty($description)) {
+        if($parts['type'] == 'Text' AND strtolower($parts['subtype']) == 'plain') {
+          $description = 'Notification';
+        } elseif ($parts['type'] == 'Plain' AND strtolower($parts['subtype']) == 'delivery-status') {
+          $description = 'Delivery report';
+        }
+      }
+      
+      //nlp_debug_msg('$parts',$parts);
+      //nlp_debug_msg('$description',$description);
       if(in_array($description,$partDescriptions)) {
-        //nlp_debug_msg('body', strToHex($parts['plainText']));
+        //nlp_debug_msg('body', strToHex($parts['data']));
         //$description = str_replace (array("\r\n", "\n", "\r"), ' <br>', $parts['description']);
         $body .= "<p><b>".$description."</b></p><p>".
-          str_replace (array("\r\n", "\n", "\r"), ' <br>', $parts['plainText'])."</p>";
-  
+          str_replace (array("\r\n", "\n", "\r"), ' <br>', $parts['data'])."</p>";
+        //nlp_debug_msg('$body',$body);
         //$body .= "<p>".$description."</p><p>".$parts['plainText']."</p>";
       }
     }
     return $body;
+  }
+  
+  /**
+   * @param $message
+   * @return string
+   */
+  private function recipientSearch($message): string
+  {
+    foreach ($message as $parts) {
+      if(!empty($parts['data'])) {
+        if(!is_string($parts['data'])) { continue; }
+        $recipient = $this->recipientPresent($parts['data']);
+        if(!empty($recipient)) {
+          return $recipient;
+        }
+      }
+    }
+    return '';
+  }
+  
+  /**
+   * @param $plainText
+   * @return string
+   */
+  private function recipientPresent($plainText): string
+  {
+    $recipientPos = strrpos($plainText, 'Original-Recipient:');
+    //nlp_debug_msg('$recipientPos',$recipientPos);
+    $lengthId = 19;
+    if ($recipientPos === FALSE) {
+      $recipientPos = strrpos($plainText, 'Final-Recipient:');
+      $lengthId = 16;
+      if ($recipientPos === FALSE) {
+        return '';
+      }
+    }
+    $emailPos = strpos($plainText, ";", $recipientPos + $lengthId)+1;
+   
+    $endPos = strpos($plainText, "\r", $emailPos);
+    //nlp_debug_msg('$endPos',$endPos);
+    if ($endPos === FALSE) { return ''; }
+    $email = substr($plainText, $emailPos, $endPos-$emailPos);
+    $email = trim($email);
+   
+    if(filter_var($email, FILTER_VALIDATE_EMAIL) === FALSE) {
+      return '';
+    }
+    return $email;
   }
   
 }

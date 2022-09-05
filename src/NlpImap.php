@@ -23,6 +23,12 @@ class NlpImap
   
   public array $matchbackSubject = ['matchback' => 'matchback',];
   
+  /**
+   * Don't retrieve a message part larger than this size in bytes, as it's
+   * unlikely to be text, and we're only interested in text.
+   */
+  const MAXMAILPARTSIZEBYTES = 20480;
+  
   protected ConfigFactoryInterface $config;
   
   public function __construct( $config ) {
@@ -53,7 +59,7 @@ class NlpImap
     if(empty($connection)) {
       $error = imap_last_error();
       $messenger->addError('connection: '. $error);
-      nlp_debug_msg('$error',$error);
+      nlp_debug_msg('imap_open error',$error);
       return NULL;
     }
     return $connection;
@@ -221,9 +227,11 @@ class NlpImap
   public function getMsg($connection, $emailNumber): ?array
   {
     $overview = imap_fetch_overview($connection,$emailNumber);
+    //nlp_debug_msg('$overview',$overview);
     $subject = $overview[0]->subject;
     //nlp_debug_msg('$subject',$subject);
     $emailObj = imap_fetchstructure($connection,$emailNumber);
+    //nlp_debug_msg('$emailObj',$emailObj);
     //$parts = $this->getParts($connection, $emailObj, $emailNumber, 0);
   
     if (!$emailObj->parts)  // simple
@@ -339,75 +347,229 @@ class NlpImap
   }
   
   /**
+   * Return an array containing data from the various message parts.
+   *
+   * The results look much like this for a single part email, with the
+   * message headers in raw and parsed form contained in the first array field.
+   *
+   * Array (
+   *   [0] => Array (
+   *     [charset] => us-ascii
+   *     [raw] => Return-Path:
+   *               Delivered-To: account@domain.com
+   *               Reply-To:
+   *               From: "That Guy"
+   *               To:
+   *               Subject: test 1
+   *               Date: Mon, 7 Feb 2011 19:37:07 -0800
+   *               Message-ID:
+   *               MIME-Version: 1.0
+   *               Content-Type: text/plain;
+   *               charset="us-ascii"
+   *               Content-Transfer-Encoding: 7bit
+   *               Content-Language: en-us
+   *     [data] => Array(
+   *       [Return-Path] =>
+   *       [Delivered-To] => account@domain.com
+   *       [Reply-To] =>
+   *       [From] => "That Guy"
+   *       [To] =>
+   *       [Subject] => test 1
+   *       [Date] => Mon, 7 Feb 2011 19:37:07 -0800
+   *       [Message-ID] =>
+   *       [MIME-Version] => 1.0
+   *       [Content-Type] => text/plain;charset="us-ascii"
+   *       [Content-Transfer-Encoding] => 7bit
+   *     )
+   *   )
+   *   [1] => Array (
+   *     [charset] => us-ascii
+   *     [data] => example mail body, probably much longer in reality
+   *   )
+   * )
+   *
+   * Multipart mails will contain more array entries of data, one for each
+   * part or file attachment.
+   *
    * @param $connection
-   * @param $emailObj
-   * @param $emailNumber
-   * @param $partNo
+   * @param  $message_number
+   *   The message identifier.
+   *
+   * @return array
+   *   The email.
+   */
+  public function getMessage($connection, $message_number): array
+  {
+  
+    $overview = imap_fetch_overview($connection,$message_number);
+    $subject = $overview[0]->subject;
+    
+    $mail = imap_fetchstructure($connection, $message_number, NULL);
+    if (!is_object($mail)) {
+      nlp_debug_msg('imap_fetchstructure',t('Failed to retrieve message structure for message number = %id',
+        ['%id' => $message_number]));
+      return [];
+    }
+    
+    // $this->mailGetParts() will chase down all the components of a
+    // multipart mail, but only return the headers of a single part mail.
+    $mail = $this->mailGetParts($connection, $message_number, $mail, '0');
+    $mail[0]['raw'] = $mail[0]['data'];
+    $mail[0]['data'] = $this->parseMailHeadersIntoArray($mail[0]['raw']);
+    if (!isset($mail[0]['charset'])) {
+      // Probably wrong, but better than nothing.
+      $mail[0]['charset'] = 'utf-8';
+    }
+    
+    // So if it is only a single part mail, we have to go and fetch the body.
+    if (count($mail) == 1) {
+      //$body = $this->imapBody($message_number);
+      $body = imap_body($connection, $message_number, NULL);
+      if (!is_string($body)) {
+        //$this->watchdogLastImapError(t('Failed to retrieve message body for message number = %id', array('%id' => $message_number)));
+        nlp_debug_msg('imap_body',t('Failed to retrieve message body for message number = %id',
+          ['%id' => $message_number]));
+      }
+      $mail[] = array(
+        'data' => $body,
+        'charset' => $mail[0]['charset'],
+      );
+    }
+    $mail['subject'] = $subject;
+    return $mail;
+  }
+  
+  /**
+   * Return the parts of a multipart mail.
+   *
+   * Recursively walk through the parts, obtaining the content for each part,
+   * and return the whole as nested arrays.
+   *
+   * @param  $connection
+   * @param  $message_number
+   *   The identifier for the message.
+   * @param  $part
+   *   A message part.
+   * @param  $prefix
+   *   Describing the position in the structure.
+   *
+   * @return array
+   *   The parts of the mail as an array.
+   */
+  protected function mailGetParts($connection, $message_number, $part, $prefix): array
+  {
+    $attachments = [];
+    $attachments[$prefix] = $this->mailDecodePart($connection,$message_number, $part, $prefix);
+    if (isset($part->parts)) {
+      // This is multipart.
+      $prefix = ($prefix == '0') ? '' : $prefix . '.';
+      foreach ($part->parts as $index => $subpart) {
+        $attachments = array_merge(
+          $attachments,
+          // The $index below should be 0-based, but what needs to be passed
+          // into the server is 1-based, hence the + 1.
+          $this->mailGetParts($connection, $message_number, $subpart, $prefix . ($index + 1))
+        );
+      }
+    }
+    return $attachments;
+  }
+  
+  /**
+   * @param $connection
+   * @param $message_number
+   * @param $part
+   * @param $prefix
    * @return array
    */
-  function getParts($connection,  $emailObj, $emailNumber, $partNo)
+  protected function mailDecodePart($connection,$message_number, $part, $prefix): array
   {
-    if (empty($emailObj->parts)) {
-      $parts['type'] = $emailObj->type;
-      if(!empty($parts['ifsubtype'])) {
-        $parts['subtype'] = $emailObj->subtype;
-      }
-      if(!empty($emailObj->ifdescription)){
-        $parts['description'] = $emailObj->description;
-      }
-      if ($emailObj->ifparameters) {
-        foreach ($emailObj->parameters as $x) {
-          $params[strtolower($x->attribute)] = $x->value;
+    //nlp_debug_msg('$part',$part);
+    $attachment = [];
+  
+    $type = $part->type;
+    $attachment['type'] = (!empty($this->messageType[$type]))?$this->messageType[$type]:$part->type;
+    $subType = 'UNKNOWN';
+    if(!empty($part->ifsubtype)) {
+      $attachment['subtype'] = $part->subtype;
+    }
+    if(!empty($partObj->ifdescription)){
+      $attachment['description'] = $part->description;
+    }
+    
+    
+    if (isset($part->ifdparameters) && $part->ifdparameters) {
+      foreach ($part->dparameters as $object) {
+        $attachment[mb_strtolower($object->attribute)] = $object->value;
+        if (mb_strtolower($object->attribute) == 'filename') {
+          $attachment['is_attachment'] = TRUE;
+          $attachment['filename'] = $object->value;
         }
       }
-      if(!empty($params['charset'])) {
-        $parts['charset'] = $params['charset'];
-      }
-      
-      if ($emailObj->type==0) {
-        $body = imap_fetchbody($emailObj,$emailNumber,$partNo);
-        if ($emailObj->encoding==4) {
-          $body = quoted_printable_decode($body);
-        } elseif ($emailObj->encoding==3) {
-          $body = base64_decode($body);
+    }
+    
+    if (isset($part->ifparameters) && $part->ifparameters) {
+      foreach ($part->parameters as $object) {
+        $attachment[mb_strtolower($object->attribute)] = $object->value;
+        if (mb_strtolower($object->attribute) == 'name') {
+          $attachment['is_attachment'] = TRUE;
+          $attachment['name'] = $object->value;
         }
-        $parts['body'] = $body;
-      }
-      
-      //$parts['parts'] = NULL;
-      
-      return $parts;
-    }
-    
-    //nlp_debug_msg('$emailObj->parts',$emailObj->parts);
-    $parts['type'] = $emailObj->type;
-    if(!empty($parts['ifsubtype'])) {
-      $parts['subtype'] = $emailObj->subtype;
-    }
-    if(!empty($emailObj->ifdescription)){
-      $parts['description'] = $emailObj->description;
-    }
-    if ($emailObj->ifparameters) {
-      foreach ($emailObj->parameters as $x) {
-        $params[strtolower($x->attribute)] = $x->value;
       }
     }
-    if(!empty($params['charset'])) {
-      $parts['charset'] = $params['charset'];
+  
+    
+    // If this thing is large, just return a string saying it is large. Large
+    // items are generally not what we are looking for when searching for
+    // bounce-related information.
+    //
+    // Note that if it has sub-parts, the byte count should be a sum of subpart
+    // byte counts, so ignore it.
+    if (!isset($part->parts) && isset($part->bytes) && $part->bytes > $this::MAXMAILPARTSIZEBYTES) {
+      $attachment['data'] = t('Mail part too large to consider: @bytes bytes', array('@bytes' => $part->bytes));
+      return $attachment;
     }
     
-    foreach ($emailObj->parts as $partNo=>$partInfoObj) {
-      //nlp_debug_msg('$partInfo',$partInfoObj);
-      
-      $part = $this->getParts($connection, $partInfoObj,$emailNumber, $partNo);
-      $parts['parts'][] = $part;
+    $data = imap_fetchbody($connection, $message_number, $prefix);
+    if (!is_string($data)) {
+      nlp_debug_msg(t('Failed to retrieve message structure for message number = %id',
+        ['%id' => $message_number]),'');
+      $attachment['data'] = '';
     }
-    
-    
-    
-    
-    //$parts['parts'] = $this->getParts($connection, $parts, $emailObj->parts, $emailNumber);
-    return $parts;
+    else {
+      if (isset($part->encoding)) {
+        // 3 = BASE64.
+        if ($part->encoding == 3) {
+          $data = base64_decode($data);
+        }
+        // 4 = QUOTED-PRINTABLE.
+        elseif ($part->encoding == 4) {
+          $data = quoted_printable_decode($data);
+        }
+      }
+      $attachment['data'] = $data;
+    }
+    return $attachment;
+  }
+  
+  /**
+   * Parse a message header into an associative array of name-value pairs.
+   *
+   * @param  $headers
+   *   The email headers as a string.
+   *
+   * @return array
+   *   An associated array of name-value pairs.
+   */
+  protected function parseMailHeadersIntoArray($headers): array
+  {
+    $headers = preg_replace('/\r\n\s+/m', '', $headers);
+    preg_match_all('/([^: ]+): (.+?(?:\r\n\s(?:.+?))*)?\r\n/m', $headers, $matches);
+    $result = array();
+    foreach ($matches[1] as $key => $value) {
+      $result[$value] = $matches[2][$key];
+    }
+    return $result;
   }
   
 }

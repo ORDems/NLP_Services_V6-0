@@ -75,13 +75,10 @@ function nlpservices_mail_alter(&$message) {
  * @noinspection PhpUnused
  */
 function nlpservices_mail($key, &$message, $params) {
-  //nlp_debug_msg('$message',$message);
-  //nlp_debug_msg('$params',$params);
-
+ 
   $options = [
     'langcode' => $message['langcode'],
   ];
-  //nlp_debug_msg('$key',$key);
   switch ($key) {
 
     case 'deliver_turf':
@@ -89,11 +86,15 @@ function nlpservices_mail($key, &$message, $params) {
     case 'forward_nl_reply':
       $boundary = uniqid('np');
       $message['headers']['Content-Type'] = 'multipart/alternative; boundary="'. $boundary.'"';
-      //$message['headers']['Reply-To:'] = $params['replyTo'];
-      $message['subject'] = t('Neighborhood Leader Materials - @county County',
-        array('@county' => $params['county']), $options);
-
-      $message['body'] =  array();
+      
+      if($key == 'forward_nl_reply') {
+        $message['subject'] = $params['subject'];
+      } else {
+        $message['subject'] = t('Neighborhood Leader Materials - @county County',
+          array('@county' => $params['county']), $options);
+      }
+      
+      $message['body'] =  [];
       $msgPlain = "--" . $boundary . "\n";
       $msgPlain .= 'Content-Type: text/plain; charset=UTF-8'."\n";
       $msgPlain .= $params['plainText'];
@@ -114,7 +115,6 @@ function nlpservices_mail($key, &$message, $params) {
       break;
 
   }
-  //nlp_debug_msg('$message',$message);
 }
 
 /**
