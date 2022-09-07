@@ -3,7 +3,6 @@
 namespace Drupal\nlpservices\Form;
 
 use Drupal;
-//use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -16,14 +15,12 @@ use Drupal\nlpservices\MagicWord;
  */
 class AddDrupalAccountForm extends FormBase
 {
-  //protected ConfigFactoryInterface $config;
   protected DrupalUser $drupalUser;
   protected NlpNls $nls;
   protected MagicWord $magicWord;
   
   public function __construct( $drupalUser, $nls, $magicWord)
   {
-    //$this->config = $config;
     $this->drupalUser = $drupalUser;
     $this->nls = $nls;
     $this->magicWord = $magicWord;
@@ -55,19 +52,14 @@ class AddDrupalAccountForm extends FormBase
    */
   public function buildForm(array $form, FormStateInterface $form_state): array
   {
-    //$messenger = Drupal::messenger();
-    //$messenger->addStatus('time:  '.time());
     if (empty($form_state->get('reenter'))) {
       $form_state->set('reenter', TRUE);
       $form_state->set('page', 'addUser');
-
       $sessionObj = Drupal::getContainer()->get('nlpservices.session_data');
       $county = $sessionObj->getCounty();
       $form_state->set('county',$county);
-
       $adminRole = $this->drupalUser->isNlpAdminUser();
       $form_state->set('admin',$adminRole);
-
     }
     
     $county = $form_state->get('county');
@@ -127,13 +119,11 @@ class AddDrupalAccountForm extends FormBase
           '#name' => 'add-selected',
           '#value' => t('Select User'),
         );
-
         $form['go_back'] = array(
           '#type' => 'submit',
           '#name' => 'go-back',
           '#value' => t('Not found, go back'),
         );
-
         break;
       
       case 'displayUserAdd':
@@ -175,22 +165,18 @@ class AddDrupalAccountForm extends FormBase
             email.  A fictitious one is suggested here if you choose to create an account.</p>"
           ];
         }
-       
         $form['add_user_submit'] = array(
           '#type' => 'submit',
           '#name' => 'add-user-submit',
           '#value' => t('Add User'),
         );
-
         $form['go_back2'] = array(
           '#type' => 'submit',
           '#name' => 'go-back2',
           '#value' => t('Go back'),
         );
-        
         break;
     }
-    
     return $form;
   }
 
@@ -205,26 +191,19 @@ class AddDrupalAccountForm extends FormBase
     $form_state->set('reenter', TRUE);
     $form_state->setRebuild();
     $county = $form_state->get('county');
-
-
+    
     $triggering_element = $form_state->getTriggeringElement();
     $element_clicked = $triggering_element['#name'];
-    //nlp_debug_msg('$element_clicked',$element_clicked);
-
-    
     switch ($element_clicked) {
       
       case 'add-submit':
         $needle = $form_state->getValue('needle');
-        //nlp_debug_msg('$county',$county);
         $nlList = $this->nls->searchNls($county,$needle);
         //nlp_debug_msg('$nlList',$nlList);
-
         if(empty($nlList)) {
           $messenger->addStatus('No NLs found.');
           return;
         }
-
         $form_state->set('nlList', $nlList);
         $form_state->set('page', 'userSelect');
         return;
@@ -236,7 +215,6 @@ class AddDrupalAccountForm extends FormBase
 
       case 'add-selected':
         $selectedMcid = $form_state->getValue('user_select');
-
         $loginExists = $form_state->get('loginExists');
         if($loginExists[$selectedMcid]) {
           $messenger->addWarning('This NL already has an account.');
@@ -317,9 +295,6 @@ class AddDrupalAccountForm extends FormBase
     );
     
     $form_element['add']['mcid'] = [
-      '#markup' => 'MCID: '.$user['mcid'],
-    ];
-    $form_element['add']['mcid'] = [
       '#type' => 'hidden',
       '#value' => $user['mcid']
     ];
@@ -387,132 +362,4 @@ class AddDrupalAccountForm extends FormBase
     return $form_element;
   }
   
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * userChoice
-   *
-   * Create the form to select a user from the list of prospective NLs.
-   *
-   * @param  $county
-   * @param  $defaultHd
-   * @param  $defaultPct
-   * @param  $save
-   * @return array
-   */
-  function userChoice($county,$defaultHd,$defaultPct,&$save): array
-  {
-    $messenger = Drupal::messenger();
-    // Get the list of HDs with existing turfs.
-    $optionsHd = $this->nls->getHdList($county);
-    //nlp_debug_msg('$optionsHd',$optionsHd);
-    //$hdKeys = array_keys($optionsHd);
-    //$hd = $hdKeys[0];  // first HD.
-    //nlp_debug_msg('$defaultHd',$defaultHd);
-    if(empty($optionsHd)) {
-      $messenger->addWarning('No house districts are known.');
-      $form_element['msg'] = ['#markup' => 'No house districts are known.',];
-      return $form_element;
-    }
-
-    // House Districts exists.
-    $form_element['residence_hd'] = array(
-      '#type' => 'select',
-      '#title' => t('House District where the user resides.'),
-      '#options' => $optionsHd,
-      '#default_value' => $defaultHd,
-      '#ajax' => array(
-        'callback' => '::nlp_user_hd_selected_callback',
-        'wrapper' => 'hdChangeWrapper',
-      )
-    );
-
-    // Put a container around both the pct and the NL selection, they both
-    // reset and have to be redrawn with a change in the HD.
-    $form_element['hdChange'] = array(
-      '#prefix' => '<div id="hdChangeWrapper">',
-      '#suffix' => '</div>',
-      '#type' => 'fieldset',
-    );
-    
-    $defaultHdName = $optionsHd[$defaultHd];
-    $pctOptions = $this->nls->getPctList($county,$defaultHdName);
-    //nlp_debug_msg('$pctOptions', $pctOptions);
-    
-    $save['pctOptions'] = $pctOptions;
-    if (!$pctOptions) {
-      $messenger->addError("No turfs exist");
-    } else {
-      
-      $form_element['hdChange']['residence_pct'] = array(
-        '#type' => 'select',
-        '#title' => t("Coordinator's Precinct"),
-        '#options' => $pctOptions,
-        '#default_value' => $defaultPct,
-        '#ajax' => array(
-          'callback' => '::nlp_user_pct_selected_callback',
-          'wrapper' => 'pctChangeWrapper',
-          'effect' => 'fade',
-        ),
-      );
-    }
-    
-    $selectedPctName = $pctOptions[$defaultPct];
-    $userOptions = $this->nls->getNlList($county,$selectedPctName);
-    foreach ($userOptions['options'] as $mcid => $userDisplay) {
-      $userObj = $this->drupalUser->getUserByMcid($mcid);
-      if(!empty($userObj)) {
-        $userOptions['options'][$mcid] = $userDisplay.' *';
-      }
-    }
-    //nlp_debug_msg('$userOptions',$userOptions);
-
-    $save['mcid_array'] = $userOptions['mcidArray'];
-    $save['nls_choices'] = $userOptions['options'];
-    // Offer a set of radio buttons for selection of an NL.
-    $form_element['hdChange']['nls-select'] = array(
-      '#title' => t('Select the coordinator'),
-      '#type' => 'radios',
-      '#default_value' => 0,
-      '#prefix' => '<div id="pctChangeWrapper">',
-      '#suffix' => '</div>',
-      '#options' => $userOptions['options'],
-    );
-    $form_element['hdChange']['note'] = array(
-      '#markup' => "* This user already has an account. <br><br>",
-    );
-    //nlp_debug_msg('$form_element',$form_element);
-    return $form_element;
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * nlp_user_hd_selected_callback
-   *
-   * AJAX call back for the selection of the coordinator's residence HD.
-   *
-   * @param $form
-   * @param $form_state
-   * @return array
-   * @noinspection PhpUnused
-   * @noinspection PhpUnusedParameterInspection
-   */
-  function nlp_user_hd_selected_callback ($form,$form_state): array
-  {
-    return $form['userChoice']['hdChange'];
-  }
-
-  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * nlp_user_pct_selected_callback
-   *
-   * AJAX callback for the selection of an NL to associate with a turf.
-   *
-   * @param $form
-   * @param $form_state
-   * @return array
-   * @noinspection PhpUnused
-   * @noinspection PhpUnusedParameterInspection
-   */
-  function nlp_user_pct_selected_callback ($form,$form_state): array
-  {
-    //Rebuild the form to list the NLs in the precinct after the precinct is selected.
-    return $form['userChoice']['hdChange']['nls-select'];
-  }
 }

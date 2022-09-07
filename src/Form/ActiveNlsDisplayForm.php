@@ -114,46 +114,41 @@ class ActiveNlsDisplayForm extends FormBase
     $cycle = $form_state->get('cycle');
     //nlp_debug_msg('$page', $page);
     $form = [];
-    switch ($page) {
-      case 'data_entry':
-        
-        // Select the HD to display.
-        //$hd = $form_state->get('hd');
-        $currentHd = $tempSessionData->get('currentHd');
-        //nlp_debug_msg('$hd',$hd);
-        $hdOptions = $form_state->get('hd-options');
-        $sortable = $form_state->get('sortable');
-  
-        $form['county-name'] = [
-          '#markup' => "<h1>".$county." County</h1>",
-        ];
-  
-        // Add the line for selecting an HD and CSV download.
-        $form['options_display'] = $this->nlp_options_display($hdOptions,$currentHd,$sortable);
-
-        // Fetch the list of NL names and contact information.
-        if(empty($form_state->get('nl-records'))) {
-          $nlRecords = $this->nlsObj->getNls($county,$currentHd);
-          //nlp_debug_msg('$nlRecords',$nlRecords);
-          $nlKeys = array_keys($nlRecords);
-          //nlp_debug_msg('$nlKeys',$nlKeys);
-          foreach ($nlKeys as $mcid) {
-            $nlRecords[$mcid]['progress']  = $this->nlp_get_progress($mcid,$cycle);
-          }
-          $form_state->set('nl-records', $nlRecords);
-        } else {
-          $nlRecords = $form_state->get('nl-records');
-        }
+    // Select the HD to display.
+    //$hd = $form_state->get('hd');
+    if ($page == 'data_entry') {
+      $currentHd = $tempSessionData->get('currentHd');
+      //nlp_debug_msg('$hd',$hd);
+      $hdOptions = $form_state->get('hd-options');
+      $sortable = $form_state->get('sortable');
+    
+      $form['county-name'] = [
+        '#markup' => "<h1>" . $county . " County</h1>",
+      ];
+    
+      // Add the line for selecting an HD and CSV download.
+      $form['options_display'] = $this->nlp_options_display($hdOptions, $currentHd, $sortable);
+    
+      // Fetch the list of NL names and contact information.
+      if (empty($form_state->get('nl-records'))) {
+        $nlRecords = $this->nlsObj->getNls($county, $currentHd);
         //nlp_debug_msg('$nlRecords',$nlRecords);
-        $lists['askList'] = $this->nlsObj->askList;
-        $lists['contactList'] = $this->nlsObj->contactList;
-        $form_state->set('optionLists', $lists);
-        
-        // Build the table of NLs names and status.
-        $form['nls_table'] = $this->nlp_build_nls_table($nlRecords,$lists);
-        
-        break;
-   
+        $nlKeys = array_keys($nlRecords);
+        //nlp_debug_msg('$nlKeys',$nlKeys);
+        foreach ($nlKeys as $mcid) {
+          $nlRecords[$mcid]['progress'] = $this->nlp_get_progress($mcid, $cycle);
+        }
+        $form_state->set('nl-records', $nlRecords);
+      } else {
+        $nlRecords = $form_state->get('nl-records');
+      }
+      //nlp_debug_msg('$nlRecords',$nlRecords);
+      $lists['askList'] = $this->nlsObj->askList;
+      $lists['contactList'] = $this->nlsObj->contactList;
+      $form_state->set('optionLists', $lists);
+    
+      // Build the table of NLs names and status.
+      $form['nls_table'] = $this->nlp_build_nls_table($nlRecords, $lists);
     }
     return $form;
   }
@@ -242,8 +237,7 @@ class ActiveNlsDisplayForm extends FormBase
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
     $form_state->setRebuild();
-    $values = $form_state->getValues();
-    //('submit',$values);
+    //$values = $form_state->getValues();
     $triggering_element = $form_state->getTriggeringElement();
     //nlp_debug_msg('$triggering_element',$triggering_element);
     $element_clicked = $triggering_element['#name'];

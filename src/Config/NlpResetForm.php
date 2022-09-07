@@ -94,9 +94,6 @@ class NlpResetForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $messenger = Drupal::messenger();
   
-    //$values = $form_state->getValues();
-    //nlp_debug_msg('$values',$values);
-    
     $tablesToTruncate = [
       'voters' => $this->votersObj::VOTER_TBL,
       'voterStatus' => $this->votersObj::VOTER_STATUS_TBL,
@@ -139,12 +136,6 @@ class NlpResetForm extends FormBase {
     
       foreach ($countyDirContent['files'] as $countyFile) {
         $fileName = $countyDir.'/'.$countyFile;
-        //nlp_debug_msg('$fileName',$fileName);
-        /*
-        if(file_exists($fileName)) {
-          nlp_debug_msg('file exists',$fileName);
-        }
-        */
         unlink($fileName);
       }
     
@@ -157,21 +148,19 @@ class NlpResetForm extends FormBase {
         foreach ($countyContentDirContent['files'] as $countyFile) {
           $fileName = $countyContentDir.'/'.$countyFile;
           //nlp_debug_msg('$fileName',$fileName);
-        /*
-          if(file_exists($fileName)) {
-            nlp_debug_msg('file exists',$fileName);
-          }
-          */
           unlink($fileName);
           
         }
       }
-    
     }
-    
-  
   }
   
+  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * getDirContent
+   *
+   * @param $dir
+   * @return array|array[]
+   */
   function getDirContent($dir): array
   {
     $results = ['files'=>[],'directories'=>[]];
