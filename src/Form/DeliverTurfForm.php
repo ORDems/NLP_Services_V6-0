@@ -381,9 +381,10 @@ class DeliverTurfForm extends FormBase
       'county'=>$county,
     ];
     $region['coordinators'] = $this->coordinatorsObj->getAllCoordinators();
+    //nlp_debug_msg('$region',$region);
     $nlCoordinator = $this->coordinatorsObj->getCoordinator($region);
     //nlp_debug_msg('$nlCoordinator',$nlCoordinator);
-    if (empty($coordinator)) {
+    if (empty($nlCoordinator)) {
       $messenger->addError('A coordinator for the county must be assigned before you can send a
       notification of a turf to an NL.');
       return;
