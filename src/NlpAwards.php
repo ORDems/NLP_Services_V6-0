@@ -2,8 +2,10 @@
 
 namespace Drupal\nlpservices;
 
+use Drupal;
 use Drupal\Core\Database\Connection;
 //use stdClass;
+//use Drupal\nlpservices\NlpNls;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Exception;
 
@@ -60,7 +62,15 @@ class NlpAwards
   {
     $award = $this->fetchAwardRecord($mcid);
     if(empty($award)) {return [];}
-    $award['participation'] = json_decode($award['participation']);
+    $award['participation'] = (array) json_decode($award['participation']);
+    //nlp_debug_msg('$award',$award);
+    $electionCount = count($award['participation']);
+    if($award['electionCount'] != $electionCount) {
+      $award['electionCount'] = $electionCount;
+      $this->mergeAward($award);
+    }
+    //nlp_debug_msg('$electionCount',$electionCount);
+    $award['electionCount'] = $electionCount;
     return $award;
   }
 
@@ -95,18 +105,29 @@ class NlpAwards
 */
   public function awardsLevelUp($mcid,$cycle): array
   {
+    $nlsObj = Drupal::getContainer()->get('nlpservices.nls');
+  
     $award = $this->fetchAwardRecord($mcid);
     if (empty($award)) {
-      //$participationObj = (object) [$cycle=>TRUE,];
-      $participationObj = (object) [$cycle=>TRUE,];
+      $nl = $nlsObj->getNlById($mcid);
+      $participation[$cycle] = TRUE;
       $award['mcid'] = $mcid;
-      $award['participation'] = $participationObj;
+      $award['nickname'] = $nl['nickname'];
+      $award['lastName'] = $nl['lastName'];
+      $award['participation'] = $participation;
       $award['electionCount'] = 1;
     } else {
-      $participationObj = (object) json_decode($award['participation']);
-      $participationObj->$cycle=TRUE;
-      $award['participation'] = $participationObj;
-      $award['electionCount']++;
+      $participation = (array) json_decode($award['participation']);
+      if(empty($participation[$cycle])) {
+        $participation[$cycle] = TRUE;
+        if(empty($award['nickname'])) {
+          $nl = $nlsObj->getNlById($mcid);
+          $award['nickname'] = $nl['nickname'];
+          $award['lastName'] = $nl['lastName'];
+        }
+        $award['participation'] = $participation;
+        $award['electionCount']++;
+      }
     }
     $this->mergeAward($award);
     return $award;
@@ -141,10 +162,11 @@ class NlpAwards
       nlp_debug_msg('e', $e->getMessage() );
       return [];
     }
-    if(!$result->fetchAssoc()) {return [];}
+    //if(!$result->fetchAssoc()) {return [];}
     $list =[];
     do {
       $nl = $result->fetchAssoc();
+      //nlp_debug_msg('$nl',$nl);
       if(empty($nl)) {break;}
       $list[] = $nl['mcid'];
     } while (TRUE);

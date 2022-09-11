@@ -45,12 +45,13 @@ class NlpExportAwardStatus
     $fh = fopen($tempFileName,"w");
     fputcsv($fh, $header);
     $mcids = $this->nlpAwards->getNlList();
+    //nlp_debug_msg('$mcids',$mcids);
     if (empty($mcids)) {return FALSE;}
     foreach ($mcids as $mcid) {
       $award = $this->nlpAwards->fetchAwardRecord($mcid);
       //nlp_debug_msg('$award',$award);
       //return TRUE;
-      if (empty($award)) {break;}
+      if (empty($award)) {continue;}
       fputcsv($fh, $award);
     }
     fclose($fh);
