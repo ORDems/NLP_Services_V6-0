@@ -73,14 +73,9 @@ class DeleteTurfForm extends FormBase
     $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
     
     if (empty($form_state->get('reenter'))) {
-      /*
-      $factory = Drupal::service('tempstore.private');
-      $store = $factory->get('nlpservices.session_data');
-      $county = $store->get('County');
-      */
+      
       $sessionObj = Drupal::getContainer()->get('nlpservices.session_data');
       $county = $sessionObj->getCounty();
-  
       $form_state->set('county',$county);
   
       $config = $this->config('nlpservices.configuration');
@@ -93,33 +88,38 @@ class DeleteTurfForm extends FormBase
       $stateCommitteeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $stateCommitteeKey['API Key']);
       $form_state->set('stateCommitteeKey',$stateCommitteeKey);
       
-      $hdSaved = $pctSaved = 0;
-      $currentHd = $tempSessionData->get('currentHd');
-      //nlp_debug_msg('$currentHd',$currentHd);
-      $currentPct = $tempSessionData->get('currentPct');
-      //nlp_debug_msg('$currentPct',$currentPct);
+      $selectedHd = $selectedPrecinct = 0;
+      $currentHd = $tempSessionData->get('currentHd');  // Text name of HD.
+      //nlp_debug_msg('temp session $currentHd',$currentHd);
+      $currentPct = $tempSessionData->get('currentPct');  // Text name of precinct.
+      //nlp_debug_msg('temp session $currentPct',$currentPct);
   
-      $hdOptions = $this->turfs->getTurfHD($county);
+      $hdOptions = $this->turfs->getTurfHD($county); // HDs with turfs.
+      //nlp_debug_msg('$hdOptions',$hdOptions);
       if(empty($currentHd)) {
         $currentHd = $hdOptions[0];
         $pctOptions = $this->turfs->getTurfPct($county, $currentHd);
         $currentPct = $pctOptions[0];
       } else {
-        $hdSaved = array_search($currentHd,$hdOptions);
-        if($hdSaved === FALSE) {
-          $hdSaved = 0;
+        $selectedHd = array_search($currentHd,$hdOptions);
+        //nlp_debug_msg('in array $selectedHd',$selectedHd);
+        if($selectedHd === FALSE) {
+          $selectedHd = 0;
           $currentHd = $hdOptions[0];
           $pctOptions = $this->turfs->getTurfPct($county, $currentHd);
           $currentPct = $pctOptions[0];
         } else {
           $pctOptions = $this->turfs->getTurfPct($county, $currentHd);
-          $pctSaved = array_search($currentPct,$pctOptions);
-          if($pctSaved === FALSE) {
-            $pctSaved = 0;
+          $selectedPrecinct = array_search($currentPct,$pctOptions);
+          if($selectedPrecinct === FALSE) {
+            $selectedPrecinct = 0;
             $currentPct = $pctOptions[0];
           }
         }
       }
+      //nlp_debug_msg('set $currentHd',$currentHd);
+      //nlp_debug_msg('set $currentPct',$currentPct);
+  
       try {
         $tempSessionData->set('currentHd', $currentHd);
         $tempSessionData->set('currentPct', $currentPct);
@@ -127,32 +127,15 @@ class DeleteTurfForm extends FormBase
         nlp_debug_msg('Temp store save error',$e->getMessage());
       }
       
-      $form_state->set('hd-saved',$hdSaved);
-      $form_state->set('pct-saved',$pctSaved);
-      //nlp_debug_msg('$hdSaved',$hdSaved);
-      //nlp_debug_msg('$pctSaved',$pctSaved);
-      $form_state->set('reenter', TRUE);
+      $form_state->set('selectedHd',$selectedHd);
+      $form_state->set('selectedPrecinct',$selectedPrecinct);
+      
     }
     $county = $form_state->get('county');
-    $hdSaved = $form_state->get('hd-saved');
+    $selectedHd = $form_state->get('selectedHd');
+    //nlp_debug_msg('form state $selectedHd',$selectedHd);
+    $selectedPrecinct = $form_state->get('selectedPrecinct');
     
-    // Request the user select either an HD or a Precinct.
-    if (empty($form_state->getValue('hd'))) {
-      $selectedHd = $previousHd = $hdSaved;
-      $form_state->set('PreviousHD',$hdSaved);
-    } else {
-      $selectedHd = $form_state->getValue('hd');
-      try {
-        $tempSessionData->set('currentHd', $selectedHd);
-      } catch (Drupal\Core\TempStore\TempStoreException $e) {
-        nlp_debug_msg('Temp store save error',$e->getMessage());
-      }
-      $previousHd = $form_state->get('PreviousHD');
-    }
-    // If the user changed the HD, then reset the pct to zero.
-    if ($selectedHd != $previousHd ) {
-      $form_state->set('PreviousHD', $selectedHd);
-    }
     // Get the list of HDs with existing turfs.
     $hdOptions = $this->turfs->getTurfHD($county);
     //nlp_debug_msg('$hdOptions',$hdOptions);
@@ -160,7 +143,6 @@ class DeleteTurfForm extends FormBase
     if(empty($hdOptions[$selectedHd])) { // Last turf of an HD was deleted.
       $selectedHd = 0;
     }
-  
     if (empty($hdOptions)) {
       $messenger->addStatus(t("No turfs exist"));
     } else {
@@ -169,97 +151,134 @@ class DeleteTurfForm extends FormBase
         '#markup' => "<h1>".$county." County</h1>",
       ];
       // House Districts exist.
-      $form_state->set('hd_options', $hdOptions);
+      $form_state->set('hdOptions', $hdOptions);
       //nlp_debug_msg('$hdOptions',$hdOptions);
       //nlp_debug_msg('$selectedHd',$selectedHd);
-      $form['hd'] = array(
+      $form['hd'] = [
         '#type' => 'select',
         '#title' => t('House District Number'),
         '#options' => $hdOptions,
         '#default_value' => $selectedHd,
-        '#ajax' => array(
+        '#ajax' => [
           'callback' => '::nlp_hd_selected_callback',
           'wrapper' => 'hd-change-wrapper',
-        )
-      );
+        ]
+      ];
       // Put a container around both the pct and the NL selection, they both
       // reset and have to be redrawn with a change in the HD.
-      $form['hd-change'] = array(
+      $form['hd-change'] = [
         '#prefix' => '<div id="hd-change-wrapper">',
         '#suffix' => '</div>',
         '#type' => 'fieldset',
-        '#attributes' => array('style' => array('background-image: none; border: 0px; width: 550px; padding:0px; margin:0px; background-color: rgb(255,255,255);'),),
-      );
-      $savedPct = $form_state->get('pct-saved');
-      //nlp_debug_msg('$savedPct',$savedPct);
-      $selectedPct = (!empty($form_state->getValue('pct')))?$form_state->getValue('pct'):$savedPct;
-      //nlp_debug_msg('$selectedPct',$selectedPct);
-  
+        //'#attributes' => array('style' => array('background-image: none; border: 0px; width: 550px; padding:0px; margin:0px; background-color: rgb(255,255,255);'),),
+      ];
+      
       $selectedHdName = $hdOptions[$selectedHd];
       $pctOptions = $this->turfs->getTurfPct($county, $selectedHdName);
       //nlp_debug_msg('$pctOptions',$pctOptions);
-      $form_state->set('pct_options', $pctOptions);
-  
-      if($savedPct != $selectedPct) {
-        $form_state->set('pct-saved',$savedPct);
-        try {
-          $tempSessionData->set('currentPct', $pctOptions[$selectedPct]);
-        } catch (Drupal\Core\TempStore\TempStoreException $e) {
-          nlp_debug_msg('Temp store save error',$e->getMessage());
-        }
-      }
+      $form_state->set('pctOptions', $pctOptions);
       
       if (!$pctOptions) {
         $messenger->addStatus(t("No turfs exist"));
       } else {
-        if (empty($pctOptions[$selectedPct])) {
-          $selectedPct = 0;  // turf was deleted.
+        if (empty($pctOptions[$selectedPrecinct])) {
+          $selectedPrecinct = 0;  // turf was deleted.
         }
         //nlp_debug_msg('$selectedPct',$selectedPct);
         // Precincts exist.
-        $form_state->set('pct_options', $pctOptions);
-        $form['hd-change']['pct'] = array(
+        $form_state->set('pctOptions', $pctOptions);
+        $form['hd-change']['pct'] = [
           '#type' => 'select',
           '#title' => t('Precinct Number'),
           '#options' => $pctOptions,
-          '#default_value' => $selectedPct,
-          '#ajax' => array(
+          '#default_value' => $selectedPrecinct,
+          '#ajax' => [
             'callback' => '::nlp_pct_selected_callback',
             'wrapper' => 'ajax-turf-replace',
             'effect' => 'fade',
-          ),
-        );
+          ],
+        ];
       }
       // The user selected a precinct, now create the list of turfs
       $turfReq['county'] = $county;
-      $turfReq['pct'] = $pctOptions[$selectedPct];
+      $turfReq['pct'] = $pctOptions[$selectedPrecinct];
       //nlp_debug_msg('$turfReq',$turfReq);
   
       $turfArray = $this->turfs->getTurfs($turfReq);
       //nlp_debug_msg('$turfArray',$turfArray);
-
       if (!empty($turfArray)) {
         $turfDisplay = $this->turfs->createTurfDisplay($turfArray);
         $form_state->set('turfs', $turfArray);
         $turfChoices = $turfDisplay;
-        $form['hd-change']['turf-select'] = array(
+        $form['hd-change']['turf-select'] = [
           '#title' => t('Select the turf(s) to delete'),
           '#type' => 'checkboxes',
           '#options' => $turfChoices,
           '#prefix' => '<div id="ajax-turf-replace">',
           '#suffix' => '</div>',
           '#description' => t('Remember, this delete is permanent.')
-        );
+        ];
       } else {
         $messenger->addStatus(t('There are no turfs for this selection'));
       }
       // add a submit button to delete the selected turf or turfs.
-      $form['submit'] = array(
+      $form['submit'] = [
         '#type' => 'submit',
         '#value' => 'Delete Selected Turf(s) >>',
-      );
+      ];
     }
     return $form;
+  }
+  
+    /**
+     * {@inheritdoc}
+     */
+    public function validateForm(array &$form, FormStateInterface $form_state)
+  {
+    $form_state->set('reenter',TRUE);
+    $triggeringElement = $form_state->getTriggeringElement();
+    //nlp_debug_msg('validate - $triggering_element',$triggeringElement);
+    $elementClicked = $triggeringElement['#name'];
+    //nlp_debug_msg('$element_clicked',$elementClicked);
+    //nlp_debug_msg('value',$triggeringElement['#value']);
+    $tempSessionData = $this->privateTempstoreObj->get('nlpservices.session_data');
+  
+    switch ($elementClicked) {
+      case 'hd';
+        $selectedHd = (empty($triggeringElement['#value']))?0:$triggeringElement['#value'];
+        $form_state->set('selectedHd',$selectedHd);
+        $form_state->set('selectedPrecinct',0);
+        $hdOptions = $form_state->get('hdOptions');
+        //nlp_debug_msg('$hdOptions',$hdOptions);
+        $currentHd = $hdOptions[$selectedHd];
+        //$pctOptions = $form_state->get('pctOptions');
+        $county = $form_state->get('county');
+        $pctOptions = $this->turfs->getTurfPct($county, $currentHd);
+        $currentPct = $pctOptions[0];
+        //nlp_debug_msg('new $currentHd',$currentHd);
+        //nlp_debug_msg('new $currentPct',$currentPct);
+        try {
+          $tempSessionData->set('currentHd', $currentHd);
+          $tempSessionData->set('currentPct', $currentPct);
+        } catch (Drupal\Core\TempStore\TempStoreException $e) {
+          nlp_debug_msg('Temp store save error',$e->getMessage());
+        }
+        break;
+        
+      case 'pct';
+        $selectedPrecinct = (empty($triggeringElement['#value']))?0:$triggeringElement['#value'];
+        //nlp_debug_msg('validate $selectedPrecinct',$selectedPrecinct);
+        $form_state->set('selectedPrecinct',$selectedPrecinct);
+        $pctOptions = $form_state->get('pctOptions');
+        $currentPct = $pctOptions[$selectedPrecinct];
+        //nlp_debug_msg('validate $currentPct',$currentPct);
+        try {
+          $tempSessionData->set('currentPct', $currentPct);
+        } catch (Drupal\Core\TempStore\TempStoreException $e) {
+          nlp_debug_msg('Temp store save error',$e->getMessage());
+        }
+        break;
+    }
   
   }
   
@@ -269,29 +288,27 @@ class DeleteTurfForm extends FormBase
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
     $messenger = Drupal::messenger();
-  
-    $nlpVoter = $form_state->get('nlpVoter');
-    //nlp_debug_msg('$nlpVoter',$nlpVoter);
-    $stateCommitteeKey = $form_state->get('stateCommitteeKey');
-    
     $form_state->set('reenter', TRUE);
     $form_state->setRebuild();  // form_state will persist
-    //nlp_debug_msg('form state', $form_state);
+    
+    $nlpVoter = $form_state->get('nlpVoter');  // Nlp Voter activist code.
+    //nlp_debug_msg('$nlpVoter',$nlpVoter);
+    $stateCommitteeKey = $form_state->get('stateCommitteeKey');
     $county = $form_state->get('county');
     // From the list of turfs in the list, find the ones to be deleted.
     $turfSelect = $form_state->getValue('turf-select');
-  
+    //nlp_debug_msg('$turfSelect',$turfSelect);
     foreach ($turfSelect as $key => $turfOption) {
       if (!empty($turfOption)) {
         $turfDelete = $key;
         $turfs = $form_state->get('turfs');
         $turfChoice = $turfs[$turfDelete];
-        // Clear the assigned flag in each voter record
         $nickname = $turfChoice['nickname'];
         $lastName = $turfChoice['nlLastName'];
         $turfName = $turfChoice['turfName'];
         $mcid = $turfChoice['mcid'];
         $turfIndex = $turfChoice['turfIndex'];
+        
         $turf['county'] = $county;
         $turf['turfIndex'] = $turfIndex;
         $status = $this->turfs->removeTurf($turf);
@@ -299,6 +316,7 @@ class DeleteTurfForm extends FormBase
           $messenger->addError(t('Turf remove failed'));
           return;
         }
+        
         $surveyResponse['type'] = 'Activist';
         $surveyResponse['contactType'] = $this->surveyQuestion::CONTACT_TYPE_WALK;
         $surveyResponse['dateCanvassed'] = NULL;
@@ -338,6 +356,7 @@ class DeleteTurfForm extends FormBase
    * @param $unused
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function nlp_hd_selected_callback ($form,$unused) {
     //Rebuild the form to list the NLs in the precinct after the precinct is selected.
@@ -353,6 +372,7 @@ class DeleteTurfForm extends FormBase
    * @param $unused
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function nlp_pct_selected_callback ($form,$unused) {
     //Rebuild the form to list the NLs in the precinct after the precinct is selected.
