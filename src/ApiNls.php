@@ -61,7 +61,7 @@ class ApiNls {
     } catch (Exception $e) {
       //$messenger->addStatus( $this->t('An error occurred. Please contact the Administrator.'));
       $code = $e->getCode();
-      nlp_debug_msg('$code',$code);
+      //nlp_debug_msg('$code',$code);
       if($code == 404) {return [];}
       nlp_debug_msg('Error message',$e->getMessage());
       return [];

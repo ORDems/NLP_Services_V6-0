@@ -297,7 +297,7 @@ class DataEntryForm extends FormBase
           } else {
             $contactMethod = $contactMethods[$value];
           }
-          
+          if($contactMethod == 'Select method') {break;}
           $actions[$vanid]['vanid'] = $vanid;
           $actions[$vanid][$reportType] = $contactMethod;
           $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
@@ -2446,6 +2446,10 @@ It is not for general comments.">',
     $defaultVoterContactMethod = $tempSessionData->get('defaultVoterContactMethod');
     $form_state->set('defaultVoterContactMethod',$defaultVoterContactMethod);
     //nlp_debug_msg('$defaultVoterContactMethod',$defaultVoterContactMethod);
+  
+    $county = $this->sessionDataObj->getCounty();
+    $form_state->set('county',$county);
+    
     $sessionData = $this->sessionDataObj->getUserSession();
     if(empty($sessionData['mcid'])) {
       $messenger->addWarning('The MCID is missing from your user login, contact your coordinator.');
@@ -2456,9 +2460,6 @@ It is not for general comments.">',
     $form_state->set('mcid', $mcid);
     $form_state->set('sessionData',$sessionData);
   
-    $county = $this->sessionDataObj->getCounty();
-    $form_state->set('county',$county);
-  
     $canvassDate = $tempSessionData->get('canvassDate');
     if(empty($canvassDate)) {
       $canvassDate = date('Y-m-d',time());  // Today.
@@ -2466,12 +2467,14 @@ It is not for general comments.">',
     $form_state->set('canvassDate',$canvassDate);
   
     //Do we have a turf?
-    if(!empty($sessionData['turfIndex'] AND !empty($this->turfs->getTurf($sessionData['turfIndex'])))) {
+    if(!empty($sessionData['turfIndex']) AND !empty($this->turfs->getTurf($sessionData['turfIndex']))) {
       $turfIndex = $sessionData['turfIndex'];
     } else {
       $turfArray = $this->turfs->turfExists($mcid,$county);
       $form_state->set('turfArray', $turfArray);
       if (empty($turfArray)) {
+        //nlp_debug_msg('$mcid',$mcid);
+        //nlp_debug_msg('$county',$county);
         $messenger->addWarning("You do not have a turf assigned");
         return FALSE;
       }
