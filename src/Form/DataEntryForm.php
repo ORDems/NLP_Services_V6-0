@@ -139,8 +139,9 @@ class DataEntryForm extends FormBase
     $turfIndex = $form_state->get('turfIndex');
   
     $form_state->set('defaultValues',NULL);
-    
-    $turfInfo = $this->fetchVoters($turfIndex,$voters);
+  
+    $cycle = $form_state->get('cycle');
+    $turfInfo = $this->fetchVoters($turfIndex, $cycle, $voters);
     //nlp_debug_msg('$turfInfo',$turfInfo);
     $turfInfo['turfIndex'] = $turfIndex;
     $form_state->set('voterCount',$turfInfo['voterCount']);
@@ -1591,10 +1592,11 @@ class DataEntryForm extends FormBase
    * these are the numbers.
    *
    * @param $turfIndex
+   * @param $cycle
    * @param $voters
    * @return array - of voter information for this turf or FALSE if error.
    */
-  function fetchVoters($turfIndex,&$voters): array
+  function fetchVoters($turfIndex, $cycle, &$voters): array
   {
     //nlp_debug_msg('$turfIndex',$turfIndex);
     $votersInTurf = $this->voters->fetchVotersByTurf($turfIndex);
@@ -1617,6 +1619,7 @@ class DataEntryForm extends FormBase
         foreach ($voterContactList as $voterContact) {
           //nlp_debug_msg('$voterContact',$voterContact);
           //nlp_debug_msg('$voterContact[type]',$voterContact['type']);
+          if(!empty($cycle) AND $voterContact['cycle'] != $cycle) {continue;}
           if($voterContact['type'] == $this->reports::SURVEY) {
             $attempted = $contacted = TRUE;
             break;
@@ -2405,7 +2408,7 @@ It is not for general comments.">',
    * @return array
    */
   function voterSearch(int $turfIndex, string $needle): array {
-    $this->fetchVoters($turfIndex,$voters);
+    $this->fetchVoters($turfIndex, NULL, $voters);
     $lcNeedle = strtolower($needle);
     //nlp_debug_msg('$lcNeedle',$lcNeedle);
     $voterIndex = $page = 0;
