@@ -29,16 +29,28 @@ class NlpSessionData
   {
     $sessionData = $this->userSession->get('nlpservices.session_data');
     $county = $sessionData->get('County');
+    $currentUser = $this->drupalUser->getCurrentUser();
+  
     if(empty($county)) {
-      $currentUser = $this->drupalUser->getCurrentUser();
       //nlp_debug_msg('$currentUser',$currentUser);
       $county = $currentUser['county'];
       $this->setCounty($county);
     }
+  
+    $userSession = $sessionData->get('userSession');
+    $sessionMcid = (empty($userSession['mcid']))?NULL:$userSession['mcid'];
+    //nlp_debug_msg('$sessionMcid',$sessionMcid);
+    $userMcid = $currentUser['mcid'];
+    //nlp_debug_msg('$userMcid',$userMcid);
+    if ($sessionMcid != $userMcid) {
+      $userSession['mcid'] = $userMcid;
+      $this->setUserSession($userSession);
+    }
+  
     return $county;
   }
 
-  public function setCounty($county) {
+  private function setCounty($county) {
     //nlp_debug_msg('set',$county);
     $factory = Drupal::service('tempstore.private');
     $store = $factory->get('nlpservices_session_data');
@@ -53,7 +65,9 @@ class NlpSessionData
   public function getUserSession($force=FALSE): array
   {
     $sessionData = $this->userSession->get('nlpservices.session_data');
-    $county = $sessionData->get('County');
+    //$county = $sessionData->get('County');
+    $county = $this->getCounty();
+  
     //nlp_debug_msg('$county',$county);
     $userSession = $sessionData->get('userSession');
     //nlp_debug_msg('$userSession',$userSession);
@@ -61,6 +75,9 @@ class NlpSessionData
       //$userSession = $sessionData->get('userSession');
       if(empty($userSession)) {
         $userSession = [];
+      }
+      if(empty($userSession['county'])) {
+        $userSession['county'] = $county;
       }
       //nlp_debug_msg('$userSession',$userSession);
     } else {

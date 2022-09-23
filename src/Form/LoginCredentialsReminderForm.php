@@ -240,6 +240,8 @@ class LoginCredentialsReminderForm extends FormBase
         if(!empty($nl)) {
           $users[$uid]['hd'] = $nl['hd'];
           $hdOptions[$nl['hd']] = $nl['hd'];
+        } else {
+          $users[$uid]['hd'] = $hdOptions[0] = '';
         }
       }
     }
