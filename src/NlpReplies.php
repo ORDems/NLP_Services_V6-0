@@ -6,6 +6,7 @@ use Drupal;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Mail\MailManagerInterface;
+use Exception;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class NlpReplies
@@ -22,7 +23,7 @@ class NlpReplies
       'undelivered'=>['subject'=>'Undelivered Mail Returned','bodyParts'=>['Notification','Delivery report'],],
       ],
     'reply' => [
-      'turf'=>['subject'=>' ','bodyParts'=>[' '],],
+      'turf'=>['subject'=>'Neighborhood Leader Materials','bodyParts'=>['html',],],
     ],
   ];
   
@@ -69,6 +70,7 @@ class NlpReplies
    * emailForward
    *
    * @return string
+   * @throws Exception
    */
   function emailForward(): string
   {
@@ -78,26 +80,31 @@ class NlpReplies
     if (empty($connection)) { return "Can\'t connect to email server."; }
     
     $newNotificationReplies = $this->imapObj->getNewNotificationReplies($connection);
+    //nlp_debug_msg('$newNotificationReplies',$newNotificationReplies);
     if (empty($newNotificationReplies)) { return "No new emails to process."; }
   
+    $messenger->addMessage('Time: ',time());
     foreach ($newNotificationReplies as $emailNumber => $info) {
       $message = $this->imapObj->getMessage($connection, $emailNumber);
-      if (empty($message)) { continue; }
       //nlp_debug_msg('$message', $message);
+      if (empty($message)) { continue; }
   
       $targetType = '';
       $targetMessage = NULL;
-      foreach ($this->specialMessages['bounce'] as $targetId=>$target) {
-        //if(in_array($targetSubject,$msg['subject'])) {
-        if(strpos($message['subject'],$target['subject']) !== FALSE) {
-          $targetMessage = $targetId;
-          $targetType = 'bounce';
-          break;
+      foreach ($this->specialMessages as $targetType=>$targetInfo) {
+        foreach ($targetInfo as $targetId=>$target) {
+          //if(in_array($targetSubject,$msg['subject'])) {
+          if(strpos($message['subject'],$target['subject']) !== FALSE) {
+            $targetMessage = $targetId;
+            break;
+          }
         }
       }
+      
       //nlp_debug_msg('$targetMessage', $targetMessage);
       if(empty($targetMessage)) { continue; }
-  
+      nlp_debug_msg('$targetType',$targetType);
+      
       $email = $recipientEmail = $body = $forwardText = '';
       switch ($targetMessage) {
         case 'failed':
@@ -108,18 +115,29 @@ class NlpReplies
           $forwardText = 'An email you sent has bounced, you may need to contact the NL to get a <br>valid email or add the
           NLP Admin to their address book.';
           break;
+        case 'turf':
+          $email = $this->senderSearch($message);
+          //nlp_debug_msg('$email',$email);
+          $forwardText = 'This email should have been sent to you.<br>.';
+          $body = $this->getBodyParts($message, $this->specialMessages[$targetType][$targetMessage]['bodyParts']);
+          //nlp_debug_msg('body',$body);
+          //$email = '';
+          break;
         default:
           break;
       }
-      $forwardText .= "<br><b>".'TESTING - This email was not delivered for the primary.<br>It may indicate a problem
-      for the upcoming general election. The email address that bounced <br>should be somewhere in this message'."</b>";
-  
+    
       if (empty($email)) {
-        nlp_debug_msg('no email found', $message);
+        //nlp_debug_msg('no email found', $message);
+        $messenger->addMessage('No email found.');
         continue;
       }
       //nlp_debug_msg('email', $email);
-      $messenger->addMessage('Email set to: ' . $email . ', Bounced email was: '.$recipientEmail);
+      if(empty($recipientEmail)) {
+        $messenger->addMessage('Email forwarded to: ' . $email);
+      } else {
+        $messenger->addMessage('Email sent to: ' . $email . ', Bounced email was: '.$recipientEmail);
+      }
       $to = $email;
       $config = $this->configObj->get('nlpservices.configuration');
       $emailConfiguration = $config->get('nlpservices-email-configuration');
@@ -158,12 +176,10 @@ class NlpReplies
     foreach ($message as $parts) {
       //nlp_debug_msg('$parts',$parts);
       if(!empty($parts['data'])) {
-        
         if(!is_string($parts['data'])) {
           //nlp_debug_msg('$parts',$parts);
           continue;
         }
-        
         $sender = $this->senderPresent($parts['data']);
         if(!empty($sender)) {
           //nlp_debug_msg('sender',$parts['data']);
@@ -215,23 +231,32 @@ class NlpReplies
     foreach ($message as $parts) {
       if(empty($parts['data'])) { continue;}
       $description = (!empty($parts['description']))?$parts['description']:'';
+      $subType = strtolower($parts['subtype']);
+      //nlp_debug_msg('$subType',$subType);
       if (empty($description)) {
-        if($parts['type'] == 'Text' AND strtolower($parts['subtype']) == 'plain') {
+        if($parts['type'] == 'Text' AND $subType == 'plain') {
           $description = 'Notification';
-        } elseif ($parts['type'] == 'Plain' AND strtolower($parts['subtype']) == 'delivery-status') {
+        } elseif ($parts['type'] == 'Plain' AND $subType == 'delivery-status') {
           $description = 'Delivery report';
+        } elseif ($parts['type'] == 'Text' AND $subType == 'html') {
+          if(in_array($subType,$partDescriptions)) {
+            $description = 'html';
+          }
         }
       }
-      
-      //nlp_debug_msg('$parts',$parts);
-      //nlp_debug_msg('$description',$description);
-      if(in_array($description,$partDescriptions)) {
-        //nlp_debug_msg('body', strToHex($parts['data']));
-        //$description = str_replace (array("\r\n", "\n", "\r"), ' <br>', $parts['description']);
-        $body .= "<p><b>".$description."</b></p><p>".
-          str_replace (array("\r\n", "\n", "\r"), ' <br>', $parts['data'])."</p>";
-        //nlp_debug_msg('$body',$body);
-        //$body .= "<p>".$description."</p><p>".$parts['plainText']."</p>";
+      if($description == 'html') {
+        $body .= $parts['data'];
+      } else {
+        //nlp_debug_msg('$parts',$parts);
+        //nlp_debug_msg('$description',$description);
+        if(in_array($description,$partDescriptions)) {
+          //nlp_debug_msg('body', strToHex($parts['data']));
+          //$description = str_replace (array("\r\n", "\n", "\r"), ' <br>', $parts['description']);
+          $body .= "<p><b>".$description."</b></p><p>".
+            str_replace (array("\r\n", "\n", "\r"), ' <br>', $parts['data'])."</p>";
+          //nlp_debug_msg('$body',$body);
+          //$body .= "<p>".$description."</p><p>".$parts['plainText']."</p>";
+        }
       }
     }
     return $body;
