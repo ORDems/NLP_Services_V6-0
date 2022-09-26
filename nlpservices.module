@@ -124,6 +124,9 @@ function nlpservices_mail($key, &$message, $params) {
 function nlpservices_user_login(Drupal\user\Entity\User $account)
 {
   $user = $account::load(Drupal::currentUser()->id());
+  if(empty($user->get('field_county')->getValue()[0]['value'])) {
+    return;
+  }
   $county = $user->get('field_county')->getValue()[0]['value'];
   //nlp_debug_msg('$county',$county);
   $factory = Drupal::service('tempstore.private');

@@ -182,6 +182,16 @@ class CoordinatorsForm extends FormBase
             if(empty($form_state->getValue('pct-list'))) {
               $form_state->setErrorByName('pct-list',t('You must name at least one precinct.'));
             }
+            $hdSelect = $form_state->getValue('hd-assigned');
+            if(empty($hdSelect)) {
+              $form_state->setErrorByName('hd-assigned',t('You must select an HD to be managed.'));
+            }
+            break;
+          case 'hd':
+            $hdSelect = $form_state->getValue('hd-assigned');
+            if(empty($hdSelect)) {
+              $form_state->setErrorByName('hd-assigned',t('You must select an HD to be managed.'));
+            }
             break;
         }
         break;
@@ -207,14 +217,14 @@ class CoordinatorsForm extends FormBase
           case 'precinct':
             $precincts = strip_tags(filter_var($form_state->getValue('pct-list'), FILTER_SANITIZE_STRING));
             $hdChoices = $form_state->get('county-hd-choices');
-            $hdAssigned = $hdChoices[$form_state->getValue('hd-assigned')];
-            //$form_state['nlp']['assigned']['hd'] = $hd;
+            $hdAssigned = $hdChoices[$form_state->getValue('hd-assigned')-1];
+            //nlp_debug_msg('$hdAssigned',$hdAssigned);
             break;
           // For a coordinator owning a whole HD, only the number is needed.
           case 'hd':
             $hdChoices = $form_state->get('county-hd-choices');
-            $hdAssigned = $hdChoices[$form_state->getValue('hd-assigned')];
-            //$form_state['nlp']['hd'] = $hd;
+            $hdAssigned = $hdChoices[$form_state->getValue('hd-assigned')-1];
+            //nlp_debug_msg('$hdAssigned',$hdAssigned);
             break;
         }
         // Add the new coordinator.
@@ -349,12 +359,12 @@ class CoordinatorsForm extends FormBase
    * coordinator.  This form uses and AJAX function to change the other entries
    * based on scope.
    *
-   * @param $scope
+   * @param string $scope
    * @param $options
-   * @param $hdArray
+   * @param array $hdArray
    * @return array
    */
-  function buildScope($scope,$options,$hdArray): array
+  function buildScope(string $scope,$options,array $hdArray): array
   {
     //nlp_debug_msg('$scope',$scope);
     $form_element['scope-select'] = array(
@@ -371,7 +381,6 @@ class CoordinatorsForm extends FormBase
       '#prefix' => '<div id="scope-wrapper">',
       '#suffix' => '</div>',
       '#type' => 'fieldset',
-      '#attributes' => ['style' => ['border: 0px;'], ],
     );
     //nlp_debug_msg('scope: '.$scope, '');
     if($scope=='precinct') {
@@ -383,11 +392,14 @@ class CoordinatorsForm extends FormBase
         '#required' => TRUE,
       );
     }
+    
+    $hdOptions = $hdArray;
+    array_unshift($hdOptions , 'Select an HD');
     if($scope=='hd' OR $scope=='precinct') {
       $form_element['scope']['hd-assigned'] = array(
         '#type' => 'select',
         '#title' => t('Select the HD to be managed by the new HD coordinator.'),
-        '#options' => array($hdArray),
+        '#options' => $hdOptions,
       );
     }
     return $form_element;
@@ -568,6 +580,7 @@ class CoordinatorsForm extends FormBase
    * @param $unused
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function precinctSelectedCallback ($form,$unused) {
     //Rebuild the form to list the NLs in the precinct after the precinct is selected.
@@ -583,6 +596,7 @@ class CoordinatorsForm extends FormBase
    * @param $unused
    * @return mixed
    * @noinspection PhpUnusedParameterInspection
+   * @noinspection PhpUnused
    */
   function scopeSelectedCallback ($form,$unused) {
     //Rebuild the form to list the NLs in the precinct after the precinct is

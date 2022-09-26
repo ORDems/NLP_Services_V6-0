@@ -6,14 +6,6 @@ nlpservices.awake:
   requirements:
     _permission: 'access content'
 
-nlpservices.render_test:
-  path: '/nlp-render-test'
-  defaults:
-    _controller: Drupal\nlpservices\Controller\AwakeController::render_test
-    _title: 'NLP Render Test'
-  requirements:
-    _permission: 'access content'
-
 nlpservices.export_nls_status:
   path: '/nlp-export-nls-status'
   defaults:
