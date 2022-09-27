@@ -34,24 +34,28 @@ class NlpDataEntryHelper
   /** @noinspection PhpUnused */
   public function dataEntryHelp(): string
   {
+    $output = '';
     $session = $this->sessionData->getUserSession();
     $nlsInfo = $this->nlsObj->getNlById($session['mcid']);
-    $region = array(
-      'hd'=>$nlsInfo['hd'],
-      'pct'=>$nlsInfo['precinct'],
-      'county'=>$nlsInfo['county'],
-    );
-    $region['coordinators'] = $this->coordinators->getAllCoordinators();
-    //nlp_debug_msg('$region',$region);
-    $co = $this->coordinators->getCoordinator($region);
-    //nlp_debug_msg('$co',$co);
-    
-    $coordinatorDisplay = '<p class="help-indent"><span class="help-bold">'.
-      $co['firstName'].' '.$co['lastName'].'<br>'.
-      $co['email'].'<br>'.$co['phone'].'<br></span></p>';
-    $output = '<H1>Your Coordinator</H1>If you need help with entering your results of voter contact, you can contact 
+    if(!empty($nlsInfo)) {
+      $region = array(
+        'hd'=>$nlsInfo['hd'],
+        'pct'=>$nlsInfo['precinct'],
+        'county'=>$nlsInfo['county'],
+      );
+      $region['coordinators'] = $this->coordinators->getAllCoordinators();
+      //nlp_debug_msg('$region',$region);
+      $co = $this->coordinators->getCoordinator($region);
+      //nlp_debug_msg('$co',$co);
+  
+      $coordinatorDisplay = '<p class="help-indent"><span class="help-bold">'.
+        $co['firstName'].' '.$co['lastName'].'<br>'.
+        $co['email'].'<br>'.$co['phone'].'<br></span></p>';
+      $output .= '<H1>Your Coordinator</H1>If you need help with entering your results of voter contact, you can contact
 your NLP Coordinator.';
-    $output .= '<p style="margin-left:5px">'.$coordinatorDisplay.'</p>';
+      $output .= '<p style="margin-left:5px">'.$coordinatorDisplay.'</p>';
+    }
+    
     $output .= '<H1>Helpful hints</H1>';
     $output .= '<H3><u>Date of voter contact</u></H3>You should start your data entry by selecting the date of the voter 
 contacts you are reporting.  If you do not enter a date, the report will use today\'s date.';
