@@ -124,9 +124,9 @@ class NlpResultsSummary
     $rows = [];
     foreach ($rowType as $type=>$title) {
       $row['type'] = $title;
-      $row['registered'] = $countyCounts[$type];
-      $row['voted'] = $countyCounts[$type.'-br'];
-      $row['participation'] = $countyCounts[$type.'-pc'];
+      $row['registered'] = (empty($countyCounts[$type]))?0:$countyCounts[$type];
+      $row['voted'] = (empty($countyCounts[$type.'-br']))?0:$countyCounts[$type.'-br'];
+      $row['participation'] = (empty($countyCounts[$type.'-pc']))?'0%':$countyCounts[$type.'-pc'];
       $rows[] = $row;
     }
     return  [
@@ -182,6 +182,7 @@ class NlpResultsSummary
     }
 
     $counts = $this->crosstabsObj->fetchCrosstabCounts();
+    //nlp_debug_msg('$counts',$counts);
     $countyCounts = $this->getBallotCounts($counts);
     $output = [];
     foreach ($counties as $county) {
