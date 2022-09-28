@@ -310,6 +310,14 @@ nlpservices.reports_menu:
   requirements:
     _permission: 'nlp tools access'
 
+nlpservices.api_key_verification:
+  path: '/nlpservices-api-verification'
+  defaults:
+    _controller: Drupal\nlpservices\Controller\ConfigurationController::verify_api_keys
+    _title: 'Verify API Keys'
+  requirements:
+    _permission: 'nlp tools access'
+
 nlpservices.documents_menu:
   path: '/nlpservices-document-list'
   defaults:

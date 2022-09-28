@@ -88,6 +88,8 @@ services:
   nlpservices.logger.channel.nlpservices:
     parent: logger.channel_base
     arguments: [ 'nlpservices' ]
+  nlpservices.api_key_verification:
+    class: Drupal\nlpservices\ApiKeyVerification
   nlpservices.encryption:
     class: Drupal\nlpservices\NlpEncryption
   nlpservices.create_frontpage:

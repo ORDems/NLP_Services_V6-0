@@ -46,7 +46,7 @@ class ApiNls {
     );
   }
   
-  private function nlApiCall($committeeKey,$mcid,$expandOptions)
+  private function nlApiCall($committeeKey,$mcid,$expandOptions,$errorStatus=FALSE)
   {
     $apiKey = $committeeKey['API Key'];
     $apiURL = $committeeKey['Url'];
@@ -63,6 +63,9 @@ class ApiNls {
       $code = $e->getCode();
       //nlp_debug_msg('$code',$code);
       if($code == 404) {return [];}
+      if($errorStatus AND $code==401) {
+        return ['Invalid key'];
+      }
       nlp_debug_msg('Error message',$e->getMessage());
       return [];
     }
@@ -70,12 +73,13 @@ class ApiNls {
   }
 
   /** @noinspection PhpUnused */
-  public function getApiNls($committeeKey, $mcid): array
+  public function getApiNls($committeeKey, $mcid, $errorStatus=FALSE): array
   {
     $expandOptions = '?$expand=phones,emails,addresses,districts,preferences';
-    $result = $this->nlApiCall($committeeKey,$mcid,$expandOptions);
+    $result = $this->nlApiCall($committeeKey,$mcid,$expandOptions, $errorStatus);
     //nlp_debug_msg('$result',$result);
     if(empty($result)) {return [];}
+    if(!empty($result[0]) AND $result[0] == 'Invalid key') {return $result;};
     $nl = array();
     $nl['mcid'] = $result['vanId'];
     $nl['firstName'] = $result['firstName'];
