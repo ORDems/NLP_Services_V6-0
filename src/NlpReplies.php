@@ -83,7 +83,7 @@ class NlpReplies
     //nlp_debug_msg('$newNotificationReplies',$newNotificationReplies);
     if (empty($newNotificationReplies)) { return "No new emails to process."; }
   
-    $messenger->addMessage('Time: ',time());
+    //$messenger->addMessage('Time: '.date('l jS \of F Y h:i:s A',time()));
     foreach ($newNotificationReplies as $emailNumber => $info) {
       $message = $this->imapObj->getMessage($connection, $emailNumber);
       //nlp_debug_msg('$message', $message);
@@ -102,8 +102,14 @@ class NlpReplies
       }
       
       //nlp_debug_msg('$targetMessage', $targetMessage);
-      if(empty($targetMessage)) { continue; }
-      nlp_debug_msg('$targetType',$targetType);
+      if(empty($targetMessage)) {
+        $messenger->addMessage('Not a target message, Subject: '.$message['subject'] );
+        if(!$this->imapObj->setUnread($connection, $emailNumber)) {
+          nlp_debug_msg('Opps', $emailNumber);
+        }
+        continue;
+      }
+      //nlp_debug_msg('$targetType',$targetType);
       
       $email = $recipientEmail = $body = $forwardText = '';
       switch ($targetMessage) {
@@ -129,14 +135,15 @@ class NlpReplies
     
       if (empty($email)) {
         //nlp_debug_msg('no email found', $message);
-        $messenger->addMessage('No email found.');
+        $messenger->addMessage('No email found. , Subject: '.$message['subject']);
+        $this->imapObj->setUnread($connection, $emailNumber);
         continue;
       }
       //nlp_debug_msg('email', $email);
       if(empty($recipientEmail)) {
-        $messenger->addMessage('Email forwarded to: ' . $email);
+        $messenger->addMessage('Email forwarded to: ' . $email.', Subject: '.$message['subject']);
       } else {
-        $messenger->addMessage('Email sent to: ' . $email . ', Bounced email was: '.$recipientEmail);
+        $messenger->addMessage('Email sent to: ' . $email . ', Bounced email was: '.$recipientEmail.', Subject: '.$message['subject']);
       }
       $to = $email;
       $config = $this->configObj->get('nlpservices.configuration');

@@ -245,6 +245,13 @@ class NlpImap
     return $parts;
   }
   
+  /** @noinspection PhpUnused */
+  public function setUnread($connection, $emailNumber): bool
+  {
+    //return imap_clearflag_full($connection, $emailNumber, '\\Seen', ST_UID);
+    return imap_clearflag_full($connection, $emailNumber, '\\Seen');
+  }
+  
   /**
    * @param $connection
    * @param $messageId

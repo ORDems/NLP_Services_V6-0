@@ -1,9 +1,10 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 namespace Drupal\nlpservices\Controller;
 
 use Drupal;
 use Drupal\Core\Controller\ControllerBase;
+use Exception;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 use Drupal\nlpservices\NlpReplies;
@@ -30,6 +31,12 @@ class EmailHandlerController extends ControllerBase
   public function email_replies(): array
   {
     Drupal::service("page_cache_kill_switch")->trigger();
-    return ['#markup' => $this->repliesObj->emailForward(), ];
+    try {
+      $emailStatus = $this->repliesObj->emailForward();
+    }
+    catch (Exception $e) {
+      return ['#markup' => 'huh', ];
+    }
+    return ['#markup' => $emailStatus, ];
   }
 }

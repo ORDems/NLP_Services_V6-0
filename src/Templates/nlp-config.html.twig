@@ -16,6 +16,8 @@ Links for functions to configure NLP services.
 {% set ExportUsers = path('nlpservices.export_user_accounts_file') %}
 {% set exportReports = path('nlpservices.export_voter_contact_reports_form') %}
 {% set exportAwards = path('nlpservices.export_awards_file') %}
+{% set forwardEmails = path('nlpservices.email_replies') %}
+
 
 {% trans %}
 
@@ -41,6 +43,13 @@ Links for functions to configure NLP services.
         <li><a href={{ importReports }}>Step 8: Import historical voter contact reports.</a></li>
         <li><a href={{ importAwards }}>Step 9: Import NL Awards file.</a></li>
         <li><a href={{ importUsers }}>Step 10: Import Drupal user accounts.</a></li>
+    </ul>
+
+    <h1>Assist the Admin email</h1>
+    <p>Manage common issues with the site email, typically NLs asking for help.</p>
+
+    <ul>
+        <li><a href={{ forwardEmails }}>Forward replies and bounced email notifications to the coordinator.</a></li>
     </ul>
 
     <h1>Archive election</h1>
