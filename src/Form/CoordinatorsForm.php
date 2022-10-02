@@ -120,6 +120,15 @@ class CoordinatorsForm extends FormBase
     $form['scope_selection'] = $this->buildScope($scope,
       $form_state->get('scope-options'),$form_state->get('county-hd-choices'));
     
+    $form['altEmail'] = [
+      '#type' => 'textfield',
+      '#title' => t('Alternate email address'),
+      '#size' => 30,
+      '#maxlength' => 60,
+      '#description' => t('Specify an alternate email for the coordinator only if it is to be different from
+      that specified in the MyCampaign record.  This should be a rare situation.')
+      ];
+    
     $form['submit-co'] = array(
       '#type' => 'submit',
       '#value' => t('Add this Coordinator.'),
@@ -174,8 +183,7 @@ class CoordinatorsForm extends FormBase
         break;
       case 'add_coordinator':
         $scope = $form_state->get('scope');
-        switch ($scope) {
-          case 'unknown':
+        switch ($scope) {case 'unknown':
             $form_state->setErrorByName('scope',t('You must select a scope.'));
             break;
           case 'precinct':
@@ -193,6 +201,12 @@ class CoordinatorsForm extends FormBase
               $form_state->setErrorByName('hd-assigned',t('You must select an HD to be managed.'));
             }
             break;
+        }
+        
+        $altEmail = $form_state->getValue('altEmail');
+        //nlp_debug_msg('$altEmail',$altEmail);
+        if(!empty($altEmail) AND !\Drupal::service('email.validator')->isValid($altEmail)) {
+          $form_state->setErrorByName('altEmail',t('Email format is invalid.'));
         }
         break;
     }
@@ -229,20 +243,24 @@ class CoordinatorsForm extends FormBase
         }
         // Add the new coordinator.
         $mcid = $form_state->getValue('nls-select');
+        $altEmail = $form_state->getValue('altEmail');
+  
         //$nlsObj = new NlpNls();
         $nlsRecord = $this->nls->getNlById($mcid);
-        if(empty($nlsRecord['email'])) {
+        if(empty($nlsRecord['email']) AND empty($nlsRecord)) {
           $messenger = Drupal::messenger();
           $messenger->addWarning(t('This selection does not have an email.  An email is required to be a coordinator.'));
           return;
         }
 
+        $email = (empty($altEmail))?$nlsRecord['email']:$altEmail;
+        //nlp_debug_msg('$email',$email);
         $req = array(
           'county' => $form_state->get('county'),
           'mcid' => $mcid,
           'firstName' => $nlsRecord['firstName'],
           'lastName' => $nlsRecord['lastName'],
-          'email' => $nlsRecord['email'],
+          'email' => $email,
           'phone' => $nlsRecord['phone'],
           'scope' => $form_state->get('scope'),
           'hd' => $hdAssigned,
@@ -251,6 +269,8 @@ class CoordinatorsForm extends FormBase
         //nlp_debug_msg('$req',$req);
         $this->coordinators->createCoordinator($req);
   
+        $req['email'] = $nlsRecord['email'];
+        //nlp_debug_msg('$req',$req);
         $this->createCoordinatorAccount($req);
         break;
   
@@ -367,7 +387,14 @@ class CoordinatorsForm extends FormBase
   function buildScope(string $scope,$options,array $hdArray): array
   {
     //nlp_debug_msg('$scope',$scope);
-    $form_element['scope-select'] = array(
+    
+    //Build a wrapper around the part that will change with input.
+    $form_element['scope'] = array(
+      '#prefix' => '<div id="scope-wrapper">',
+      '#suffix' => '</div>',
+      '#type' => 'fieldset',
+    );
+    $form_element['scope']['scope-select'] = array(
       '#type' => 'select',
       '#title' => t('Select the scope.'),
       '#options' => $options,
@@ -375,12 +402,6 @@ class CoordinatorsForm extends FormBase
         'callback' => '::scopeSelectedCallback',
         'wrapper' => 'scope-wrapper',
       )
-    );
-    //Build a wrapper around the part that will change with input.
-    $form_element['scope'] = array(
-      '#prefix' => '<div id="scope-wrapper">',
-      '#suffix' => '</div>',
-      '#type' => 'fieldset',
     );
     //nlp_debug_msg('scope: '.$scope, '');
     if($scope=='precinct') {
@@ -455,7 +476,13 @@ class CoordinatorsForm extends FormBase
     );
     return $form_element;
   }
-
+  
+  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * removeCoordinatorRole
+   *
+   * @param $coordinator
+   * @return void
+   */
   function removeCoordinatorRole($coordinator) {
     $messenger = Drupal::messenger();
     //$mcid = $coordinator['mcid'];
@@ -491,7 +518,7 @@ class CoordinatorsForm extends FormBase
     }
     $userAccount = $this->drupalUser->getUserByEmail($email);
     if(!empty($userAccount)) {
-      $messenger->addStatus(t('This coordinator has an account already.'));
+      //$messenger->addStatus(t('This coordinator has an account already.'));
       //nlp_debug_msg('user', $mcidAccount);
       if($mcid != $userAccount['mcid'] AND !empty($userAccount['mcid'])) {
         $messenger->addWarning(t('The MCID of the Drupal account does not
