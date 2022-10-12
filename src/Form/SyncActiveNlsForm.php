@@ -70,9 +70,10 @@ class SyncActiveNlsForm extends FormBase {
     $committeeKey['API Key'] = $this->nlpEncrypt->encrypt_decrypt('decrypt', $committeeKey['API Key']);
     //nlp_debug_msg('$committeeKey',$committeeKey);
     $form_state->set('committeeKey',$committeeKey);
-  
-    $legislativeFixes = $config->get('nlpservices-legislative-fixes');
-    $form_state->set('legislativeFixes',$legislativeFixes);
+    
+    //$legislativeFixes = $config->get('nlpservices-legislative-fixes');
+    //$form_state->set('legislativeFixes',$legislativeFixes);
+    //nlp_debug_msg('$legislativeFixes',$legislativeFixes);
     
     $countyNames = $config->get('nlpservices-county-names');
     $form_state->set('state',$countyNames['State']);
@@ -84,6 +85,11 @@ class SyncActiveNlsForm extends FormBase {
     $sessionObj = Drupal::getContainer()->get('nlpservices.session_data');
     $county = $sessionObj->getCounty();
     $form_state->set('county',$county);
+  
+    $legislativeFixesObj = Drupal::getContainer()->get('nlpservices.legislative_fixes');
+    $legislativeFixes = $legislativeFixesObj->getLegFixes($county);
+    $form_state->set('legislativeFixes',$legislativeFixes);
+    //nlp_debug_msg('$legislativeFixes',$legislativeFixes);
   
     $form['county-name'] = [
       '#markup' => "<h1>".$county." County</h1>",

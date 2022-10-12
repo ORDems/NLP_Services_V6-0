@@ -75,7 +75,7 @@ function syncActiveNlsBatch($arg,&$context) {
       if (isset ($fixes[$mcid]))  {
         // Use the fixes for HD and Pct.
         $nlHd = $fixes[$mcid]['hd'];
-        $pct = trim($fixes[$mcid]['pct']);
+        $pct = trim($fixes[$mcid]['precinct']);
         $messenger->addWarning( "HD and Pct repaired for ".$nlRecord['nickname']." ". $nlRecord['lastName']);
       } else {
         $messenger->addWarning( "HD or Pct is missing for ".$nlRecord['nickname']." ". $nlRecord['lastName']);
