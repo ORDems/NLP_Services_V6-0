@@ -37,6 +37,7 @@ class NlpDataEntryHelper
     $output = '';
     $session = $this->sessionData->getUserSession();
     $nlsInfo = $this->nlsObj->getNlById($session['mcid']);
+    //nlp_debug_msg('$nlsInfo',$nlsInfo);
     if(!empty($nlsInfo)) {
       $region = array(
         'hd'=>$nlsInfo['hd'],
@@ -47,13 +48,14 @@ class NlpDataEntryHelper
       //nlp_debug_msg('$region',$region);
       $co = $this->coordinators->getCoordinator($region);
       //nlp_debug_msg('$co',$co);
-  
-      $coordinatorDisplay = '<p class="help-indent"><span class="help-bold">'.
-        $co['firstName'].' '.$co['lastName'].'<br>'.
-        $co['email'].'<br>'.$co['phone'].'<br></span></p>';
-      $output .= '<H1>Your Coordinator</H1>If you need help with entering your results of voter contact, you can contact
-your NLP Coordinator.';
-      $output .= '<p style="margin-left:5px">'.$coordinatorDisplay.'</p>';
+      if(!empty($co)) {
+        $coordinatorDisplay = '<p class="help-indent"><span class="help-bold">'.
+          $co['firstName'].' '.$co['lastName'].'<br>'.
+          $co['email'].'<br>'.$co['phone'].'<br></span></p>';
+        $output .= '<H1>Your Coordinator</H1>If you need help with entering your results of voter contact,
+you can contact your NLP Coordinator.';
+        $output .= '<p style="margin-left:5px">'.$coordinatorDisplay.'</p>';
+      }
     }
     
     $output .= '<H1>Helpful hints</H1>';
