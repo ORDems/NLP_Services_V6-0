@@ -86,7 +86,9 @@ class NlpDocuments
       if(empty($record)) {break;}
       $doc = array();
       foreach ($record as $dbKey => $value) {
-        $doc[$dbList[$dbKey]] = $value;
+        if(!empty($dbList[$dbKey])) {
+          $doc[$dbList[$dbKey]] = $value;
+        }
       }
       $docs[$doc['name']] = $doc;
     } while (TRUE);
