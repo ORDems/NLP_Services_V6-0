@@ -494,7 +494,6 @@ class DeliverTurfForm extends FormBase
 
     $params['func'] = 'deliver_turf';
     $params['subject'] =  t('Neighborhood Leader Materials - @county County',['@county' => $county]);
-    $params['message'] = $message;
     $params['sender']['firstName'] = $emailInfo['sender']['firstName'];
     $params['sender']['lastName'] = $emailInfo['sender']['lastName'];
     $params['sender']['email'] = $emailInfo['sender']['email'];
@@ -502,17 +501,20 @@ class DeliverTurfForm extends FormBase
     $params['recipient']['firstName'] = $emailInfo['recipient']['firstName'];
     $params['recipient']['lastName'] = $emailInfo['recipient']['lastName'];
     $params['recipient']['email'] = $emailInfo['recipient']['email'];
-    $params['plainText'] = $plainText;
-    $params['replyTo'] = $emailInfo['sender']['email'];
-
+    //$params['replyTo'] = $emailInfo['coordinator']['email'];
     $params['List-Unsubscribe'] = "<mailto: ".$emailInfo['notificationEmail']."?subject=unsubscribe>";
+    $params['message'] = $message;
+    $params['plainText'] = $plainText;
 
     $to = $emailInfo['recipient']['email'];
     $languageCode = $this->languageManager->getDefaultLanguage()->getId();
-    $sender = $emailInfo['coordinator']['email'];
+    $reply = $emailInfo['coordinator']['email'];
+    //nlp_debug_msg('$reply',$reply);
 
     //nlp_debug_msg('params',$params);
-    $result = $this->mailManager->mail(NLP_MODULE, 'deliver_turf', $to, $languageCode, $params, $sender);
+    $result = $this->mailManager->mail(NLP_MODULE, 'deliver_turf', $to, $languageCode, $params, $reply);
+    //$result = $this->mailManager->mail(NLP_MODULE, 'deliver_turf', $to, $languageCode, $params);
+  
     //nlp_debug_msg('$result',$result);
     if (!$result['result']) {
       $messenger->addError(t('There was a problem sending your message and it was not sent.'));

@@ -103,7 +103,7 @@ class NlpReplies
       
       //nlp_debug_msg('$targetMessage', $targetMessage);
       if(empty($targetMessage)) {
-        $messenger->addMessage('Not a target message, Subject: '.$message['subject'] );
+        $messenger->addMessage('Not a target message, Subject: '.$message['subject'],TRUE );
         if(!$this->imapObj->setUnread($connection, $emailNumber)) {
           nlp_debug_msg('Opps', $emailNumber);
         }
@@ -118,13 +118,14 @@ class NlpReplies
           $email = $this->senderSearch($message);
           $recipientEmail = $this->recipientSearch($message);
           $body = $this->getBodyParts($message, $this->specialMessages[$targetType][$targetMessage]['bodyParts']);
-          $forwardText = 'An email you sent has bounced, you may need to contact the NL to get a <br>valid email or add the
-          NLP Admin to their address book.';
+          $forwardText = 'This is an automated message sent from the NLP Services website.  An email you sent has
+bounced, you may need to contact the NL to get a <br>valid email or add the NLP Admin to their address book.';
           break;
         case 'turf':
           $email = $this->senderSearch($message);
           //nlp_debug_msg('$email',$email);
-          $forwardText = 'This email should have been sent to you.<br>.';
+          $forwardText = 'This is an automated message sent from the NLP Services website.  This email likely should
+have been sent to you.<br>.';
           $body = $this->getBodyParts($message, $this->specialMessages[$targetType][$targetMessage]['bodyParts']);
           //nlp_debug_msg('body',$body);
           //$email = '';
@@ -135,15 +136,15 @@ class NlpReplies
     
       if (empty($email)) {
         //nlp_debug_msg('no email found', $message);
-        $messenger->addMessage('No email found. , Subject: '.$message['subject']);
+        $messenger->addMessage('No email found. , Subject: '.$message['subject'],TRUE);
         $this->imapObj->setUnread($connection, $emailNumber);
         continue;
       }
       //nlp_debug_msg('email', $email);
       if(empty($recipientEmail)) {
-        $messenger->addMessage('Email forwarded to: ' . $email.', Subject: '.$message['subject']);
+        $messenger->addMessage('Email forwarded to: ' . $email.', Subject: '.$message['subject'],TRUE);
       } else {
-        $messenger->addMessage('Email sent to: ' . $email . ', Bounced email was: '.$recipientEmail.', Subject: '.$message['subject']);
+        $messenger->addMessage('Email sent to: ' . $email . ', Bounced email was: '.$recipientEmail.', Subject: '.$message['subject'],TRUE);
       }
       $to = $email;
       $config = $this->configObj->get('nlpservices.configuration');

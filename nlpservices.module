@@ -45,11 +45,12 @@ function nlpservices_mail_alter(&$message) {
           ];
           $notify_str = json_encode($notify).'<eor>';
           $message['headers']['x-nlpservices-notify'] = $notify_str;
-          //$message['headers']['Reply-To'] = $params['replyTo'];
+          //$message['headers']['Reply-to'] = $params['replyTo'];
         }
       }
       $message['headers']['List-Unsubscribe'] =
         "<mailto: notifications@nlpservices.org?subject=unsubscribe>";
+      //nlp_debug_msg('headers', $message['headers']);
       break;
     case 'user':
       //nlp_debug_msg('message', $message);
@@ -75,7 +76,7 @@ function nlpservices_mail_alter(&$message) {
  * @noinspection PhpUnused
  */
 function nlpservices_mail($key, &$message, $params) {
- 
+  //nlp_debug_msg('$message',$message);
   $options = [
     'langcode' => $message['langcode'],
   ];
@@ -86,7 +87,13 @@ function nlpservices_mail($key, &$message, $params) {
     case 'forward_nl_reply':
       $boundary = uniqid('np');
       $message['headers']['Content-Type'] = 'multipart/alternative; boundary="'. $boundary.'"';
-      
+      //nlp_debug_msg('$params',$params);
+  /*
+      if(!empty($params['replyTo'])) {
+        $message['headers']['Reply-to'] = $params['replyTo'];
+      }
+  */
+      //nlp_debug_msg('headers',$message['headers']);
       if($key == 'forward_nl_reply') {
         $message['subject'] = $params['subject'];
       } else {
@@ -305,7 +312,6 @@ function nlpservices_field_validate($values): array
   return ['status' => 'ok',];
 }
 
-
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * nlpservices_user_submit
  *
@@ -336,7 +342,6 @@ function nlpservices_user_submit(&$form, FormStateInterface $form_state) {
   }
 }
 
-
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * This converts a string to hex for debugging
  *
@@ -360,5 +365,3 @@ function strToHex($string): string
   }
   return $hex;
 }
-
-
