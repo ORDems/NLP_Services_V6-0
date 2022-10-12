@@ -4,7 +4,6 @@ namespace Drupal\nlpservices;
 
 use Drupal;
 use Drupal\Core\Database\Connection;
-use Drupal\nlpservices\NlpPaths;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Exception;
 
