@@ -583,7 +583,9 @@ class NlpVoters {
     do {
       $record = $result->fetchAssoc();
       if(empty($record)) {break;}
-      $countyNames[] = $record['county'];
+      if(!empty($record['county'])) {
+        $countyNames[] = $record['county'];
+      }
     } while (TRUE);
     return $countyNames;
   }
