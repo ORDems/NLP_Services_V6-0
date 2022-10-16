@@ -92,14 +92,26 @@ class CoordinatorsForm extends FormBase
       $form_state->set('scope-options',$options);
   
     }
+  
+    $form['help'] = [
+      '#type' => 'markup',
+      '#markup' => t("<p>There can be any number of people with the coordinator role for the county.
+The role permits access to the functions to manage NLs, mange turfs, and other such functions.
+The function identifies another role for a coordinator.  Specifically, the additional role identifies who receives
+the email notifications for a bad email address and replies sent by an NL to the turf delivery email.   This person's
+contact information is also included in the body of the turf delivery email.</p>")];
+    $form['help2'] = [
+      '#type' => 'markup',
+      '#markup' => t("<p><i>If you just want to set the role of coordinator but do not want to add the additional
+role, use the Manage Users tab.</i></p>")];
     
     $county = $form_state->get('county');
     $coordinators = $this->coordinators->getCoordinators($county);
     $form_state->set('coordinators',$coordinators);
     
-    $form['note1'] = array (
+    $form['note1'] = [
       '#type' => 'markup',
-      '#markup' => t('You can add a new coordinator from the list of prospective NLs.<hr><br>'));
+      '#markup' => t('You can add a new coordinator from the list of prospective NLs.<hr><br>')];
   
     $residence = $form_state->get('residence');
     $hd = $residence['hd'];
@@ -129,27 +141,23 @@ class CoordinatorsForm extends FormBase
       that specified in the MyCampaign record.  This should be a rare situation.')
       ];
     
-    $form['submit-co'] = array(
+    $form['submit-co'] = [
       '#type' => 'submit',
       '#value' => t('Add this Coordinator.'),
-      '#name' => 'add_coordinator',
-    );
+      '#name' => 'add_coordinator',];
     
-    $form['note2'] = array (
+    $form['note2'] = [
       '#type' => 'markup',
-      '#markup' => '<br><hr>Or, you can delete an existing coordinator.',
-    );
+      '#markup' => '<br><hr>Or, you can delete an existing coordinator.',];
     $form['editing'] = $this->buildCoordinatorList($coordinators);
-    $form['note3'] = array (
+    $form['note3'] = [
       '#type' => 'markup',
-      '#markup' => '</div>',
-    );
+      '#markup' => '</div>',];
   
-    $form['delete-co'] = array(
+    $form['delete-co'] = [
       '#type' => 'submit',
       '#value' => t('Delete the selected coordinators.'),
-      '#name' => 'delete_coordinator',
-    );
+      '#name' => 'delete_coordinator',];
     
     return $form;
   }
@@ -254,11 +262,13 @@ class CoordinatorsForm extends FormBase
         }
 
         $email = (empty($altEmail))?$nlsRecord['email']:$altEmail;
+        $firstName = (!empty($nlsRecord['nickname']))?$nlsRecord['nickname']:$nlsRecord['firstName'];
+  
         //nlp_debug_msg('$email',$email);
         $req = array(
           'county' => $form_state->get('county'),
           'mcid' => $mcid,
-          'firstName' => $nlsRecord['firstName'],
+          'firstName' => $firstName,
           'lastName' => $nlsRecord['lastName'],
           'email' => $email,
           'phone' => $nlsRecord['phone'],
@@ -468,12 +478,11 @@ class CoordinatorsForm extends FormBase
       $rows[$cIndex] = $row;
     }
     
-    $form_element['table'] = array(
+    $form_element['table'] = [
       '#type' => 'tableselect',
       '#header' => $header,
       '#options' => $rows,
-      '#empty' => $this->t('No users found'),
-    );
+      '#empty' => $this->t('No users found'),];
     return $form_element;
   }
   
