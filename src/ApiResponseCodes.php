@@ -17,12 +17,14 @@ class ApiResponseCodes
       array('text'=>'Deceased','weight'=>7),
       array('text'=>'Hostile','weight'=>6),
       array('text'=>'Moved','weight'=>5),
+      array('text'=>'Inaccessible','weight'=>12),
     ),
     'Phone'=>array(
       array('text'=>'Left Message','weight'=>8),
       array('text'=>'Deceased','weight'=>7),
       array('text'=>'Hostile','weight'=>6),
       array('text'=>'Wrong Number','weight'=>9),
+      array('text'=>'Not Home','weight'=>11),
     ),
     'Postcard'=>array(
       array('text'=>'Mailed','weight'=>5),
