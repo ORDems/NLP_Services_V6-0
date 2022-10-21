@@ -92,11 +92,11 @@ class NlpReports {
       return '';
     }
     
-    $voterReports = $voterReport = array();
+    $voterReports = [];
     do {
       $report = $result->fetchAssoc();
       if(!$report) {break;}
-      $voterReports[] = $voterReport;
+      $voterReports[] = $report;
     } while (TRUE);
     return $voterReports;
   }
