@@ -338,7 +338,7 @@ class LoginCredentialsReminderForm extends FormBase
       $uid = $user['uid'];
       $mcid = $user['mcid'];
       $row['uid'] = $uid;
-      $row['hd'] = $user['hd'];
+      $row['hd'] = empty($user['hd'])?'':$user['hd'];
       $row['mcid'] = $mcid;
       $row['lastName'] = $user['lastName'];
       $row['firstName'] = $user['firstName'];
