@@ -31,7 +31,7 @@ function recordMinivanReports($reports,$fileType): array
   $defaultResult['firstName'] = NULL;
   $defaultResult['lastName'] = NULL;
   $defaultResult['cycle'] = $cycle;
-  $counts = array('recordCnt' => 0,'processedCnt' => 0, 'duplicateCnt' => 0, 'rejectedCnt' => 0);
+  $counts = ['recordCnt' => 0,'processedCnt' => 0, 'duplicateCnt' => 0, 'rejectedCnt' => 0];
   $mcid = NULL;
   foreach ($reports as $report) {
     $counts['recordCnt']++;
@@ -63,60 +63,65 @@ function recordMinivanReports($reports,$fileType): array
     }
     $defaultResult['contactDate'] = date('Y-m-d',$canvassTime) ;
     $defaultResult['vanid'] = $report['vanid'];
-
-    $action['processReport'] = FALSE;
-    $action['counts'] = array();
+    $actions = [];
     //nlp_debug_msg('filetype',$fileType);
     switch ($fileType) {
 
       case 'survey':
-        $action = $minivanObj->nlp_process_survey($report,$defaultResult,$surveyQuestions,$cid);
+        $actions[0] = $minivanObj->nlp_process_survey($report,$defaultResult,$surveyQuestions,$cid);
         break;
 
       case 'canvass':
-        $action = $minivanObj->process_canvass($report,$defaultResult,$allowedResponseCodes,$cid);
+        $actions = $minivanObj->process_canvass($report,$defaultResult,$allowedResponseCodes,$cid);
         break;
 
       case 'activist':
-        $action = $minivanObj->process_activist($report,$defaultResult,$mcid,$nlpHostile,$cid);
+        $actions[0] = $minivanObj->process_activist($report,$defaultResult,$mcid,$nlpHostile,$cid);
         break;
 
-      case 'note':
-        $action = $minivanObj->process_note($report, $defaultResult);
-        break;
+      //case 'note':
+      //  $actions[0] = $minivanObj->process_note($report, $defaultResult);
+      //  break;
     }
-    //nlp_debug_msg('$action',$action);
-    foreach ($action['counts'] as $countType => $value) {
-      $counts[$countType] += $value;
-    }
-    if($action['processReport']) {
-      if(!$action['mergeReport']) {
-        $rIndex = $nlpReportsObj->setNlReport($action['result']);
-      } else {
-        $nlpReportsObj->mergeReport($action['result']);
-        $rIndex = $action['result']['reportIndex'];
-        //nlp_debug_msg('$rIndex',$rIndex);
+    
+    //nlp_debug_msg('$actions',$actions);
+    
+    
+    foreach($actions as $action) {
+      foreach ($action['counts'] as $countType => $value) {
+        $counts[$countType] += $value;
       }
-      // Mark Contact attempt for this voter.
-      $turfVoter = array();
-      $turfVoter['vanid'] = $vanid;
-      $turfVoter['mcid'] = $mcid;
-      if(!empty($action['type'])) {
-        $turfVoter[$action['type']] = $rIndex;
-      }
-      foreach ($mcids as $mcid => $turfIndexes) {
-        $nl = $nlsObj->getNlById($mcid);
-        //nlp_debug_msg('$nl',$nl);
-        $turfVoter['county'] = $nl['county'];
-        foreach ($turfIndexes as $turfIndex) {
-          $turfVoter['turfIndex'] = $turfIndex;
-          //nlp_debug_msg('$turfVoter',$turfVoter);
-          $votersObj->updateTurfVoter($turfVoter);
+      if ($action['processReport']) {
+        if (!$action['mergeReport']) {
+          $rIndex = $nlpReportsObj->setNlReport($action['result']);
+        } else {
+          $nlpReportsObj->mergeReport($action['result']);
+          $rIndex = $action['result']['reportIndex'];
+          //nlp_debug_msg('$rIndex',$rIndex);
         }
-        // This NL has reported results.
-        $nlsObj->resultsReported($mcid,$nl['county']);
+        // Mark Contact attempt for this voter.
+        $turfVoter = array();
+        $turfVoter['vanid'] = $vanid;
+        $turfVoter['mcid'] = $mcid;
+        if (!empty($action['type'])) {
+          $turfVoter[$action['type']] = $rIndex;
+        }
+        foreach ($mcids as $mcid => $turfIndexes) {
+          $nl = $nlsObj->getNlById($mcid);
+          //nlp_debug_msg('$nl', $nl);
+          $turfVoter['county'] = $nl['county'];
+          foreach ($turfIndexes as $turfIndex) {
+            $turfVoter['turfIndex'] = $turfIndex;
+            //nlp_debug_msg('$turfVoter', $turfVoter);
+            $votersObj->updateTurfVoter($turfVoter);
+          }
+          // This NL has reported results.
+          $nlsObj->resultsReported($mcid, $nl['county']);
+        }
       }
+  
     }
+    
   }
   return $counts;
 }

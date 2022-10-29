@@ -178,12 +178,13 @@ class NlpReports {
     return $voterReports;
   }
  
-  public function reportExists($contactId): bool
+  public function reportExists($type,$contactId): bool
   {
     //nlp_debug_msg('$contactId',$contactId);
     $query = $this->connection->select(self::NLP_RESULTS_TBL, 'r');
     $query->fields('r');
-    $query->condition('ContactID',$contactId);
+    $query->condition('type',$type);
+    $query->condition('contactID',$contactId);
     $result = $query->execute();
     $report = $result->fetchAssoc();
     //nlp_debug_msg('$report',$report);

@@ -30,6 +30,7 @@ class NlpMinivan {
     'contactTypeId' => array('name'=>'contact_type_id','err'=>'contact_type_id'),
     'resultId' => array('name'=>'result_id','err'=>'result_id'),
     'contactId' => array('name'=>'contacts_contact_id','err'=>'contacts_contact_id'),
+    'noteText' => array('name'=>'note_text','err'=>'note_text'),
   );
 
   private array $minivanActivistHdr = array(
@@ -130,7 +131,7 @@ class NlpMinivan {
   public function nlp_process_survey($report,$result,$questions,$cid): array
   {
     $contactId = $report['contactId'];
-    if($this->nlpReportsObj->reportExists($contactId)) {
+    if($this->nlpReportsObj->reportExists('Survey',$contactId)) {
       $action['processReport'] = FALSE;
       $action['counts']['duplicateCnt'] = 1;
       //nlp_debug_msg('$contactId',$contactId);
@@ -183,21 +184,25 @@ class NlpMinivan {
     $nlpConfig = $this->config->get('nlpservices.configuration');
     $electionDates = $nlpConfig->get('nlpservices-election-configuration');
     $cycle = $electionDates['nlp_election_cycle'];
-
+  
+    $actions = [];
+    if(!empty($report['noteText'])) { // A note is included.
+      $actions[0] = $this->process_note($report,$result);
+    }
+    
     if($report['resultId'] == $this::CANVASSED) { // Remove redundant report.
-      $action['processReport'] = FALSE;
-      $action['counts']['duplicateCnt'] = 1;
-      return $action;
+      $actions[1]['processReport'] = FALSE;
+      $actions[1]['counts']['duplicateCnt'] = 1;
+      return $actions;
     }
     $contactId = $report['contactId'];
     //nlp_debug_msg('$contactId',$contactId);
-    $reportExists = $this->nlpReportsObj->reportExists($contactId);
+    $reportExists = $this->nlpReportsObj->reportExists('contact',$contactId);
     //nlp_debug_msg('$reportExists',$reportExists);
     if($reportExists) {
-      $action['processReport'] = FALSE;
-      $action['counts']['duplicateCnt'] = 1;
-      //nlp_debug_msg('$action',$action);
-      return $action;
+      $actions[1]['processReport'] = FALSE;
+      $actions[1]['counts']['duplicateCnt'] = 1;
+      return $actions;
     }
     $vanid = $report['vanid'];
     $rid = $report['resultId'];
@@ -217,10 +222,10 @@ class NlpMinivan {
     }
 
     if(empty($knownContactTypeName)) {
-      $action['processReport'] = FALSE;
-      $action['counts']['rejectedCnt'] = 1;
+      $actions[1]['processReport'] = FALSE;
+      $actions[1]['counts']['rejectedCnt'] = 1;
       //nlp_debug_msg('$action',$action);
-      return $action;
+      return $actions;
     }
 
     $result['active'] = TRUE;
@@ -250,9 +255,9 @@ class NlpMinivan {
         //nlp_debug_msg('$report',$report);
         $existingRIndex = (!empty($report['reportIndex']))?$report['reportIndex']:NULL;  // An entry for the Moved status exists.
         if(!empty($existingRIndex)) {
-          $action['counts']['processedCnt'] = 1;
-          $action['processReport'] = FALSE;
-          return $action;
+          $actions[1]['counts']['processedCnt'] = 1;
+          $actions[1]['processReport'] = FALSE;
+          return $actions;
         }
         $voterAddresses = $this->voterObj->getVoterAddresses($vanid);
         //nlp_debug_msg('$voterAddresses',$voterAddresses);
@@ -271,12 +276,12 @@ class NlpMinivan {
         $result['rIndex'] = NULL;
         $result['value'] = 'moved';
         $result['text'] = $addressEncode;
-        $action['processReport'] = TRUE;
-        $action['mergeReport'] = FALSE;
-        $action['result'] = $result;
-        $action['type'] = 'attemptedContact';
-        $action['counts']['processedCnt'] = 1;
-        return $action;
+        $actions[1]['processReport'] = TRUE;
+        $actions[1]['mergeReport'] = FALSE;
+        $actions[1]['result'] = $result;
+        $actions[1]['type'] = 'attemptedContact';
+        $actions[1]['counts']['processedCnt'] = 1;
+        return $actions;
 
       case 'Deceased':
 
@@ -314,12 +319,12 @@ class NlpMinivan {
 
         return $action;
     }
-    $action['processReport'] = TRUE;
-    $action['mergeReport'] = FALSE;
-    $action['type'] = 'attemptedContact';
-    $action['result'] = $result;
-    $action['counts']['processedCnt'] = 1;
-    return $action;
+    $actions[1]['processReport'] = TRUE;
+    $actions[1]['mergeReport'] = FALSE;
+    $actions[1]['type'] = 'attemptedContact';
+    $actions[1]['result'] = $result;
+    $actions[1]['counts']['processedCnt'] = 1;
+    return $actions;
   }
 
   /** @noinspection PhpUnused */
@@ -331,7 +336,7 @@ class NlpMinivan {
     $cycle = $electionDates['nlp_election_cycle'];
 
     $contactId = $report['contactId'];
-    $exists = $this->nlpReportsObj->reportExists($contactId);
+    $exists = $this->nlpReportsObj->reportExists('Activist',$contactId);
     if($exists) {
       $action['processReport'] = FALSE;
       $action['counts']['duplicateCnt'] = 1;
@@ -352,6 +357,7 @@ class NlpMinivan {
     if(!empty($rIndex)) {
       $action['processReport'] = FALSE;
       $action['counts']['processedCnt'] = 1;
+      return $action;
     }
 
     $result['active'] = TRUE;
@@ -379,16 +385,18 @@ class NlpMinivan {
     $action['counts']['processedCnt'] = 1;
     return $action;
   }
-
-  public function process_note($report,$result): array
+  
+  public function process_note($report, $result): array
   {
     $contactId = $report['contactId'];
-    $exists = $this->nlpReportsObj->reportExists($contactId);
+    $exists = $this->nlpReportsObj->reportExists('Comment',$contactId);
     if($exists) {
       $action['processReport'] = FALSE;
-      $action['counts']['duplicateCnt'] = 1;
+      $action['counts']['duplicateCnt'] = 0;
       return $action;
     }
+    $votersObj = Drupal::getContainer()->get('nlpservices.voters');
+  
     //nlp_debug_msg('report',$report);
     $vanid = $report['vanid'];
 
@@ -400,7 +408,98 @@ class NlpMinivan {
       $note = $noteString;
     }
     $note = str_replace("\r\n", "<br>", $note);
+/*
+    // Find all the NLs with turf that includes this voter.  Catches duplicate
+    // turfs and voters who move.
+    $voterAddresses = $this->voterObj->getVoterAddresses($vanid);
+    //nlp_debug_msg('addresses',$voterAddresses);
+    $nlList = array();
+    $mcid = 0;
+    foreach ($voterAddresses as $voterAddress) {
+      $turfIndex = $voterAddress['turfIndex'];
+      $turfMcid = $this->voterObj->getTurfMcid($vanid,$turfIndex);
+      if(!empty($turfMcid)) {
+        $mcid = $turfMcid;
+        $nl = $this->nlsObj->getNlById($turfMcid);
+        if(!empty($nl)) {
+          $nlTurf['turfIndex'] = $turfIndex;
+          $nlList[$turfMcid][$turfIndex] = $nlTurf;
+        }
+      }
+    }
+*/
+  
+    $voterAddresses = $this->voterObj->getVoterAddresses($vanid);
+    reset($voterAddresses);
+    $voterAddress = $voterAddresses[0];
+    $turfIndex = $voterAddress['turfIndex'];
+    
+    $mcid = NULL;
+    $mcids = $votersObj->getNlId($vanid);
+    //nlp_debug_msg('$mcids',$mcids);
+    if (!empty($mcids)) {
+      reset($mcids);
+      $mcid = key($mcids);
+    }
+    
+    
+    // With luck, there is only onw turf with this voter.
+    // Add a new comment record.
+    $result['type'] = 'Comment';
+    $result['value'] = '';
+    $result['text'] = $note;
+    $result['contactId'] = $report['contactId'];
+    $result['active'] = TRUE;
+    $result['contactType'] = 'Walk';
+    $result['cid'] = NULL;
+    $result['rid'] = NULL;
+    $result['qid'] = NULL;
 
+    
+    $nl = $this->nlsObj->getNlById($mcid);
+    $result['mcid'] = $mcid;
+    $result['county'] = $nl['county'];
+    
+
+    // Record the new note.
+    //nlp_debug_msg('result',$result);
+    $rIndex = $this->nlpReportsObj->setNlReport($result);
+    //$this->voterObj->updateTurfNote($turfIndex,$vanid,$note,$rIndex,$report['noteId']);
+    $this->voterObj->updateTurfNote($turfIndex,$vanid,$note,$rIndex,0);
+  
+    /*
+        foreach ($nlList as $nlTurfs) {
+          foreach ($nlTurfs as $turfIndex=>$nlTurf) {
+            $this->voterObj->updateTurfNote($turfIndex,$vanid,$note,$rIndex,$report['noteId']);
+          }
+        }
+    */
+    $action['processReport'] = FALSE;
+    $action['counts']['processedCnt'] = 0;
+    return $action;
+  }
+  /*
+  public function process_note($report,$result): array
+  {
+    $contactId = $report['contactId'];
+    $exists = $this->nlpReportsObj->reportExists('Comment',$contactId);
+    if($exists) {
+      $action['processReport'] = FALSE;
+      $action['counts']['duplicateCnt'] = 1;
+      return $action;
+    }
+    //nlp_debug_msg('report',$report);
+    $vanid = $report['vanid'];
+    
+    $noteString = $report['noteText'];
+    $commentMax = 190;
+    if (strlen($noteString) > $commentMax) {
+      $note = substr($noteString,0,$commentMax);  // Truncate the comment.
+    } else {
+      $note = $noteString;
+    }
+    $note = str_replace("\r\n", "<br>", $note);
+    
     // Find all the NLs with turf that includes this voter.  Catches duplicate
     // turfs and voters who move.
     $voterAddresses = $this->voterObj->getVoterAddresses($vanid);
@@ -430,7 +529,7 @@ class NlpMinivan {
     $result['cid'] = NULL;
     $result['rid'] = NULL;
     $result['qid'] = NULL;
-
+    
     if(count($nlList) != 1) {
       $result['mcid'] = $nl['county'] = NULL;
     } else {
@@ -438,22 +537,22 @@ class NlpMinivan {
       $result['mcid'] = $mcid;
       $result['county'] = $nl['county'];
     }
-
+    
     // Record the new note.
     //nlp_debug_msg('result',$result);
     $rIndex = $this->nlpReportsObj->setNlReport($result);
-
+    
     foreach ($nlList as $nlTurfs) {
       foreach ($nlTurfs as $turfIndex=>$nlTurf) {
         $this->voterObj->updateTurfNote($turfIndex,$vanid,$note,$rIndex,$report['noteId']);
       }
     }
-
+    
     $action['processReport'] = FALSE;
     $action['counts']['processedCnt'] = 1;
     return $action;
   }
-
+*/
   public function header_validate($fileType,$headerRaw): array
   {
     $messenger = Drupal::messenger();

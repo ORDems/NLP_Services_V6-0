@@ -99,6 +99,7 @@ class NlpImap
     } else {
       $subjects = $this->matchbackSubject;
     }
+    //nlp_debug_msg('$subjects',$subjects);
     $emails = imap_search($connection,'UNSEEN');
     $emailsToProcess = array();
     if($emails) {
@@ -106,7 +107,8 @@ class NlpImap
         $overview = imap_fetch_overview($connection,$emailNumber);
         if($overview[0]->seen) {continue;}
         //nlp_debug_msg('overview', $overview);
-        $subject = $overview[0]->subject;
+        $subject = strtolower($overview[0]->subject);
+        //nlp_debug_msg('$subject',$subject);
         $date = $overview[0]->date;
         $dateParts = explode(' ',$date);
         $day = $dateParts[1];
@@ -114,12 +116,13 @@ class NlpImap
         
         $fileType = NULL;
         foreach ($subjects as $emailSubject => $emailType) {
-          $pos = strpos($emailSubject, $subject);
+          $pos = strpos($subject, $emailSubject);
           if($pos !== FALSE) {
             $fileType = $emailType;
             break;
           }
         }
+        //nlp_debug_msg('$fileType',$fileType);
         if(!empty($fileType)) {
           $emailsToProcess[$emailNumber] = array(
             'fileType' => $fileType,
