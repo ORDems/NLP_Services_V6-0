@@ -12,43 +12,34 @@ class NlpMinivan {
   const MINIVAN_MAX_QUEUE = 200;
   const CANVASSED = 11;  // Report from VAN that voters was canvassed - redundant.
 
-  private array $minivanSurveyHdr = array(
-    'vanid' => array('name'=>'myv_van_id','err'=>'myv_van_id'),
-    'dateCanvassed' => array('name'=>'date_canvassed','err'=>'date_canvassed'),
-    'dateCreated' => array('name'=>'date_created','err'=>'date_created'),
-    'inputTypeId' => array('name'=>'input_type_id','err'=>'input_type_id'),
-    'surveyQuestionId' => array('name'=>'survey_question_id','err'=>'survey_question_id'),
-    'surveyResponseId' => array('name'=>'survey_response_id','err'=>'survey_response_id'),
-    'contactId' => array('name'=>'contacts_contact_id','err'=>'contacts_contact_id'),
-  );
+  private array $minivanSurveyHdr = [
+    'vanid' => ['name'=>'myv_van_id','err'=>'myv_van_id'],
+    'dateCanvassed' => ['name'=>'date_canvassed','err'=>'date_canvassed'],
+    'dateCreated' => ['name'=>'date_created','err'=>'date_created'],
+    'inputTypeId' => ['name'=>'input_type_id','err'=>'input_type_id'],
+    'surveyQuestionId' => ['name'=>'survey_question_id','err'=>'survey_question_id'],
+    'surveyResponseId' => ['name'=>'survey_response_id','err'=>'survey_response_id'],
+    'contactId' => ['name'=>'contacts_contact_id','err'=>'contacts_contact_id'],
+  ];
 
-  private array $minivanCanvassHdr = array(
-    'vanid' => array('name'=>'myv_van_id','err'=>'myv_van_id'),
-    'dateCanvassed' => array('name'=>'date_canvassed','err'=>'date_canvassed'),
-    'dateCreated' => array('name'=>'date_created','err'=>'date_created'),
-    'inputTypeId' => array('name'=>'input_type_id','err'=>'input_type_id'),
-    'contactTypeId' => array('name'=>'contact_type_id','err'=>'contact_type_id'),
-    'resultId' => array('name'=>'result_id','err'=>'result_id'),
-    'contactId' => array('name'=>'contacts_contact_id','err'=>'contacts_contact_id'),
-    'noteText' => array('name'=>'note_text','err'=>'note_text'),
-  );
+  private array $minivanCanvassHdr = [
+    'vanid' => ['name'=>'myv_van_id','err'=>'myv_van_id'],
+    'dateCanvassed' => ['name'=>'date_canvassed','err'=>'date_canvassed'],
+    'dateCreated' => ['name'=>'date_created','err'=>'date_created'],
+    'inputTypeId' => ['name'=>'input_type_id','err'=>'input_type_id'],
+    'contactTypeId' => ['name'=>'contact_type_id','err'=>'contact_type_id'],
+    'resultId' => ['name'=>'result_id','err'=>'result_id'],
+    'contactId' => ['name'=>'contacts_contact_id','err'=>'contacts_contact_id'],
+    'noteText' => ['name'=>'note_text','err'=>'note_text'],
+  ];
 
-  private array $minivanActivistHdr = array(
-    'vanid' => array('name'=>'myv_van_id','err'=>'myv_van_id'),
-    'dateCreated' => array('name'=>'date_created','err'=>'date_created'),
-    'activistCodeId' => array('name'=>'activist_code_id','err'=>'activist_code_id'),
-    'contactId' => array('name'=>'contacts_activist_code_id','err'=>'contacts_activist_code_id'),
-  );
-
-  private array $minivanNoteHdr = array(
-    'vanid' => array('name'=>'myv_van_id','err'=>'myv_van_id'),
-    'dateTimeCreated' => array('name'=>'datetime_created','err'=>'datetime_created'),
-    'noteText' => array('name'=>'note_text','err'=>'note_text'),
-    'noteId' => array('name'=>'contacts_note_id','err'=>'contacts_note_id'),
-    'contactId' => array('name'=>'contacts_contact_id','err'=>'contacts_contact_id'),
-  );
-
-
+  private array $minivanActivistHdr = [
+    'vanid' => ['name'=>'myv_van_id','err'=>'myv_van_id'],
+    'dateCreated' => ['name'=>'date_created','err'=>'date_created'],
+    'activistCodeId' => ['name'=>'activist_code_id','err'=>'activist_code_id'],
+    'contactId' => ['name'=>'contacts_activist_code_id','err'=>'contacts_activist_code_id'],
+  ];
+  
   private NlpReports $nlpReportsObj;
   private NlpVoters $voterObj;
   private NlpNls $nlsObj;
@@ -59,7 +50,6 @@ class NlpMinivan {
     $this->nlpReportsObj = $nlpReportsObj;
     $this->voterObj = $voterObj;
     $this->nlsObj = $nlsObj;
-
   }
 
   public static function create(ContainerInterface $container): NlpMinivan
@@ -69,11 +59,9 @@ class NlpMinivan {
       $container->get('nlpservices.reports'),
       $container->get('nlpservices.voters'),
       $container->get('nlpservices.nls'),
-
     );
   }
-
-
+  
   private function decodeMinivanHdr($fileHdr,$requiredFields): array
   {
     //nlp_debug_msg('header', $fileHdr);
@@ -111,11 +99,6 @@ class NlpMinivan {
   public function decodeMinivanActivistHdr($fileHdr): array
   {
     return $this->decodeMinivanHdr($fileHdr, $this->minivanActivistHdr);
-  }
-
-  public function decodeMinivanNoteHdr($fileHdr): array
-  {
-    return $this->decodeMinivanHdr($fileHdr, $this->minivanNoteHdr);
   }
 
   public function extractMinivanFields($record,$hdrPos): array
@@ -408,26 +391,6 @@ class NlpMinivan {
       $note = $noteString;
     }
     $note = str_replace("\r\n", "<br>", $note);
-/*
-    // Find all the NLs with turf that includes this voter.  Catches duplicate
-    // turfs and voters who move.
-    $voterAddresses = $this->voterObj->getVoterAddresses($vanid);
-    //nlp_debug_msg('addresses',$voterAddresses);
-    $nlList = array();
-    $mcid = 0;
-    foreach ($voterAddresses as $voterAddress) {
-      $turfIndex = $voterAddress['turfIndex'];
-      $turfMcid = $this->voterObj->getTurfMcid($vanid,$turfIndex);
-      if(!empty($turfMcid)) {
-        $mcid = $turfMcid;
-        $nl = $this->nlsObj->getNlById($turfMcid);
-        if(!empty($nl)) {
-          $nlTurf['turfIndex'] = $turfIndex;
-          $nlList[$turfMcid][$turfIndex] = $nlTurf;
-        }
-      }
-    }
-*/
   
     $voterAddresses = $this->voterObj->getVoterAddresses($vanid);
     reset($voterAddresses);
@@ -442,7 +405,6 @@ class NlpMinivan {
       $mcid = key($mcids);
     }
     
-    
     // With luck, there is only onw turf with this voter.
     // Add a new comment record.
     $result['type'] = 'Comment';
@@ -454,105 +416,21 @@ class NlpMinivan {
     $result['cid'] = NULL;
     $result['rid'] = NULL;
     $result['qid'] = NULL;
-
     
     $nl = $this->nlsObj->getNlById($mcid);
     $result['mcid'] = $mcid;
     $result['county'] = $nl['county'];
     
-
     // Record the new note.
     //nlp_debug_msg('result',$result);
     $rIndex = $this->nlpReportsObj->setNlReport($result);
     //$this->voterObj->updateTurfNote($turfIndex,$vanid,$note,$rIndex,$report['noteId']);
     $this->voterObj->updateTurfNote($turfIndex,$vanid,$note,$rIndex,0);
-  
-    /*
-        foreach ($nlList as $nlTurfs) {
-          foreach ($nlTurfs as $turfIndex=>$nlTurf) {
-            $this->voterObj->updateTurfNote($turfIndex,$vanid,$note,$rIndex,$report['noteId']);
-          }
-        }
-    */
     $action['processReport'] = FALSE;
     $action['counts']['processedCnt'] = 0;
     return $action;
   }
-  /*
-  public function process_note($report,$result): array
-  {
-    $contactId = $report['contactId'];
-    $exists = $this->nlpReportsObj->reportExists('Comment',$contactId);
-    if($exists) {
-      $action['processReport'] = FALSE;
-      $action['counts']['duplicateCnt'] = 1;
-      return $action;
-    }
-    //nlp_debug_msg('report',$report);
-    $vanid = $report['vanid'];
-    
-    $noteString = $report['noteText'];
-    $commentMax = 190;
-    if (strlen($noteString) > $commentMax) {
-      $note = substr($noteString,0,$commentMax);  // Truncate the comment.
-    } else {
-      $note = $noteString;
-    }
-    $note = str_replace("\r\n", "<br>", $note);
-    
-    // Find all the NLs with turf that includes this voter.  Catches duplicate
-    // turfs and voters who move.
-    $voterAddresses = $this->voterObj->getVoterAddresses($vanid);
-    //nlp_debug_msg('addresses',$voterAddresses);
-    $nlList = array();
-    $mcid = 0;
-    foreach ($voterAddresses as $voterAddress) {
-      $turfIndex = $voterAddress['turfIndex'];
-      $turfMcid = $this->voterObj->getTurfMcid($vanid,$turfIndex);
-      if(!empty($turfMcid)) {
-        $mcid = $turfMcid;
-        $nl = $this->nlsObj->getNlById($turfMcid);
-        if(!empty($nl)) {
-          $nlTurf['turfIndex'] = $turfIndex;
-          $nlList[$turfMcid][$turfIndex] = $nlTurf;
-        }
-      }
-    }
-    // With luck, there is only onw turf with this voter.
-    // Add a new comment record.
-    $result['type'] = 'Comment';
-    $result['value'] = '';
-    $result['text'] = $note;
-    $result['contactId'] = $report['contactId'];
-    $result['active'] = TRUE;
-    $result['contactType'] = 'Walk';
-    $result['cid'] = NULL;
-    $result['rid'] = NULL;
-    $result['qid'] = NULL;
-    
-    if(count($nlList) != 1) {
-      $result['mcid'] = $nl['county'] = NULL;
-    } else {
-      $nl = $this->nlsObj->getNlById($mcid);
-      $result['mcid'] = $mcid;
-      $result['county'] = $nl['county'];
-    }
-    
-    // Record the new note.
-    //nlp_debug_msg('result',$result);
-    $rIndex = $this->nlpReportsObj->setNlReport($result);
-    
-    foreach ($nlList as $nlTurfs) {
-      foreach ($nlTurfs as $turfIndex=>$nlTurf) {
-        $this->voterObj->updateTurfNote($turfIndex,$vanid,$note,$rIndex,$report['noteId']);
-      }
-    }
-    
-    $action['processReport'] = FALSE;
-    $action['counts']['processedCnt'] = 1;
-    return $action;
-  }
-*/
+  
   public function header_validate($fileType,$headerRaw): array
   {
     $messenger = Drupal::messenger();
@@ -571,9 +449,6 @@ class NlpMinivan {
       case 'activist':
         $fieldPos = $this->decodeMinivanActivistHdr($columnHeader);
         break;
-      case 'note':
-        $fieldPos = $this->decodeMinivanNoteHdr($columnHeader);
-        break;
       default:
         $fieldPos['err'][0] = 'Bad file type';
         break;
@@ -591,7 +466,6 @@ class NlpMinivan {
     //nlp_debug_msg('$pos',$pos);
     //nlp_debug_msg('$reportsRaw',$reportsRaw);
     //nlp_debug_msg('$activistCode',$activistCode);
-
     $reports = array();
     $blockIndex = 0;
     $recordCount = 0;
@@ -636,3 +510,4 @@ class NlpMinivan {
   }
 
 }
+

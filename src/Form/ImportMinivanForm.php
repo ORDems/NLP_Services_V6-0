@@ -22,8 +22,7 @@ class ImportMinivanForm extends FormBase
   protected NlpNls $nls;
   protected NlpEncryption $nlpEncrypt;
   protected NlpMinivan $minivanObj;
-
-
+  
   public function __construct($config, $imapObj, $nls, $nlpEncrypt, $minivanObj)
   {
     $this->config = $config;

@@ -1,6 +1,5 @@
 <?php
 
-
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * recordMinivanReports
  *
@@ -78,15 +77,9 @@ function recordMinivanReports($reports,$fileType): array
       case 'activist':
         $actions[0] = $minivanObj->process_activist($report,$defaultResult,$mcid,$nlpHostile,$cid);
         break;
-
-      //case 'note':
-      //  $actions[0] = $minivanObj->process_note($report, $defaultResult);
-      //  break;
     }
     
     //nlp_debug_msg('$actions',$actions);
-    
-    
     foreach($actions as $action) {
       foreach ($action['counts'] as $countType => $value) {
         $counts[$countType] += $value;
