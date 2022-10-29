@@ -80,7 +80,8 @@ class ImportMatchbacksForm extends FormBase
     $messenger = Drupal::messenger();
 
     $matchbacksFile = $form_state->getValue('matchback_file');
-    //nlp_debug_msg('$matchbacksFile',$matchbacksFile);
+    nlp_debug_msg('$matchbacksFile',$matchbacksFile);
+    if(empty($matchbacksFile)) {return;}
     $matchbacksLoad = File::load ($matchbacksFile[0]);
     //nlp_debug_msg('$matchbacksLoad',$matchbacksLoad);
     $fileName = '';
@@ -108,31 +109,49 @@ class ImportMatchbacksForm extends FormBase
 
     if($fileType == 'csv') {
       $fieldPosHeader = fgetcsv($fh);
+      nlp_debug_msg('$fieldPosHeader',$fieldPosHeader);
       if (empty($fieldPosHeader)) {
-        $messenger->addError('matchback_file','Failed to read Matchback File Header');
+        $messenger->addError('Failed to read Matchback File Header');
+        fclose($fh);
+        $fileObj = Drupal::getContainer()->get('file_system');
+        $fileObj->unlink($fileUri);
         return;
       }
     } else {
       $headerRecord = (string)fgets($fh);
+      nlp_debug_msg('$headerRecord',strToHex($headerRecord));
       if (empty($headerRecord)) {
-        $messenger->addError('matchback_file','Failed to read Matchback File Header');
+        $messenger->addError('Failed to read Matchback File Header');
+        fclose($fh);
+        $fileObj = Drupal::getContainer()->get('file_system');
+        $fileObj->unlink($fileUri);
         return;
       }
+      //$headerRecord = trim($headerRecord);
       $fieldPosHeader = explode("\t", $headerRecord);
     }
     //nlp_debug_msg('hdr', $fieldPosHeader);
     $header = [];
     foreach($fieldPosHeader as $fieldPos) {
-      $header[] = trim(strip_tags(htmlentities(stripslashes($fieldPos),ENT_QUOTES)));
+      //$headerField = stripslashes($fieldPos);
+      //nlp_debug_msg('$headerField',strToHex($headerField));
+      //$headerField = htmlentities($headerField,ENT_QUOTES);
+      //nlp_debug_msg('$headerField',strToHex($headerField));
+      //$headerField = strip_tags($fieldPos);
+      //nlp_debug_msg('$headerField',strToHex($headerField));
+      $headerField = trim($fieldPos);
+      nlp_debug_msg('$headerField',strToHex($headerField));
+      $header[] = $headerField;
     }
+    nlp_debug_msg('$header',$header);
     $fieldPos = $this->matchbacksObj->decodeMatchbackHdr($header);
-    //nlp_debug_msg('pos', $fieldPos);
+    nlp_debug_msg('$fieldPos', $fieldPos);
     if(!$fieldPos['ok']) {
       foreach ($fieldPos['err'] as $errMsg) {
         $messenger->addWarning($errMsg);
       }
       //form_set_error('upload', 'Fix the problem before resubmit.');
-      $messenger->addError('matchback_file', 'Fix the problem before resubmit.');
+      $messenger->addError('Fix the problem before resubmit.');
       return;
     }
     $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
@@ -142,6 +161,7 @@ class ImportMatchbacksForm extends FormBase
       'fileType' => $fileType,
       'fieldPos' => $fieldPos['pos'],
     );
+    nlp_debug_msg('$args',$args);
     $batch = array(
       'operations' => array(
         array('importMatchbacksBatch', array($args))

@@ -18,7 +18,7 @@ function importMatchbacksBatch($arg,&$context) {
   $matchbacksObj = Drupal::getContainer()->get('nlpservices.matchbacks');
   $fileUri = $arg['fileUri'];
   $fieldPos = $arg['fieldPos'];
-  //nlp_debug_msg('$fieldPos',$fieldPos);
+  nlp_debug_msg('$fieldPos',$fieldPos);
   $fileType = $arg['fileType'];
   // Open the ballot received file.
   $fh = fopen($fileUri, "r");
@@ -84,6 +84,10 @@ function importMatchbacksBatch($arg,&$context) {
       $batchVanids[$vanid] = $vanid;
 
       // If the record already exists, skip the insert.
+  
+      $exists = $matchbacksObj->matchbackExists($vanid);
+      if($exists) {continue;}
+      
       $ballotReceivedDate = $voterInfo[$fieldPos['ballotReceived']];
       if(empty($ballotReceivedDate)) {continue;}
       $ballotReceivedTime = strtotime($ballotReceivedDate);  // Convert US date to time.
