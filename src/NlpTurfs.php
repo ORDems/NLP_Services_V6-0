@@ -4,6 +4,7 @@ namespace Drupal\nlpservices;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Database\StatementInterface;
 use Drupal\Core\File\FileSystemInterface;
 use Exception;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -230,6 +231,18 @@ class NlpTurfs {
     return $turfArray;
   }
   
+  public function setTurfCd($turfIndex,$turfCd) {
+    try {
+      $this->connection->merge(self::TURF_TBL)
+        ->keys(array('turfIndex' => $turfIndex,))
+        ->fields(array('turfCd' => $turfCd,))
+        ->execute();
+    } catch (Exception $e) {
+      nlp_debug_msg('e', $e->getMessage() );
+      return;
+    }
+  }
+  
   public function createTurfDisplay($turfArray): array
   {
     $turfDisplay = array();
@@ -361,6 +374,43 @@ class NlpTurfs {
     } while (TRUE);
     if(empty($nlsWithTurfs)) {return NULL;}
     return $nlsWithTurfs;
+  }
+  
+  public function getColumnNames(): array
+  {
+    try {
+      $select = "SHOW COLUMNS FROM  {".self::TURF_TBL.'}';
+      $result = $this->connection->query($select);
+    }
+    catch (Exception $e) {
+      nlp_debug_msg('e', $e->getMessage() );
+      return array();
+    }
+    $colNames = [];
+    do {
+      $name = $result->fetchAssoc();
+      if(empty($name)) {break;}
+      $colNames[] = $name['Field'];
+    } while (TRUE);
+    return $colNames;
+  }
+  
+  public function selectAllTurfs(): ?StatementInterface
+  {
+    try {
+      $query = $this->connection->select(self::TURF_TBL,'t');
+      $query->fields('t');
+      $result = $query->execute();
+    }
+    catch (Exception $e) {
+      nlp_debug_msg('e', $e->getMessage() );
+      return NULL;
+    }
+    return $result;
+  }
+  
+  public function getNextTurf(StatementInterface $result) {
+    return $result->fetchAssoc();
   }
   
 }

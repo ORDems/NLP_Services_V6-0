@@ -277,8 +277,7 @@ class ApiVoter
     
     return $voter;
   }
-
-
+  
   private function findVotingRecord($electionRecords): array
   {
     //nlp_debug_msg('$electionRecords',$electionRecords);
@@ -360,5 +359,42 @@ class ApiVoter
     //nlp_debug_msg('$local',$local);
     return array('mostRecent'=>$mostRecent,'local'=>$local);
     
+  }
+  
+  public function getVoterCd($committeeKey,$database,$vanid): int
+  {
+    $apiKey = $committeeKey['API Key'];
+    $apiURL = $committeeKey['Url'];
+    $user = $committeeKey['App Name'];
+  
+    $expandOptions = '?$expand=districts';
+    $url = 'https://'.$user.':'.$apiKey.'|'.$database.
+      '@'.$apiURL.'/people/'.$vanid.$expandOptions;
+    //nlp_debug_msg('$post_url',$post_url);
+    try {
+      $request = $this->client->get($url);
+      $result = json_decode($request->getBody(), true);
+      //nlp_debug_msg('$result',$result);
+    } catch (Exception $e) {
+      //$messenger->addStatus( $this->t('An error occurred. Please contact the Administrator.'));
+      nlp_debug_msg('Error message',$e->getMessage());
+      return 0;
+    }
+    
+    //nlp_debug_msg('$result',$result);
+    $cd = 0;
+    if(!empty($result['districts'])) {
+      foreach ($result['districts']as $district) {
+        $districtType = $district['name'];
+        
+        if($districtType=='Congressional') {
+          $field = $district['districtFieldValues'][0];
+          $cd = $field['name'];
+          break;
+        }
+      }
+    }
+    if(empty($cd)) {$cd=0;}
+    return $cd;
   }
 }

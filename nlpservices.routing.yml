@@ -30,6 +30,14 @@ nlpservices.export_awards_file:
   requirements:
     _permission: 'nlp tools access'
 
+nlpservices.export_turf_list:
+  path: '/nlp-export-turf-list'
+  defaults:
+    _controller: Drupal\nlpservices\Controller\ExportNlsStatusController::export_turf_list
+    _title: 'Export the list of turfs.'
+  requirements:
+    _permission: 'nlp tools access'
+
 nlpservices.data_entry_help_route:
   path: '/nlp-data-entry-help'
   defaults:

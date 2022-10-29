@@ -9,6 +9,7 @@ Links for functions to create reports.
 {% set minivan = path('nlpservices.import_minivan_form') %}
 {% set nlsStatus = path('nlpservices.export_nls_status') %}
 {% set turfStatus = path('nlpservices.export_turf_status') %}
+{% set turfList = path('nlpservices.export_turf_list') %}
 
 {% trans %}
 
@@ -16,6 +17,8 @@ Links for functions to create reports.
     <ul>
         <li><a href={{ nlsStatus }}>Export the status of NLs.</a></li>
         <li><a href={{ turfStatus }}>Export the status of Turfs.</a></li>
+        <li><a href={{ turfList }}>Export a list of Turfs.</a></li>
+
         <li><a href={{ resultsSummary }}>Display the election results summary.</a></li>
     </ul>
 

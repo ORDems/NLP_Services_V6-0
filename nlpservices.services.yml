@@ -120,6 +120,9 @@ services:
     class: Drupal\nlpservices\NlpExportTurfStatus
     arguments: [ '@file_system'  ,'@nlpservices.voters','@nlpservices.reports',
                  '@nlpservices.nls','@nlpservices.turfs' ,'@nlpservices.matchbacks' ]
+  nlpservices.export_turf_list:
+    class: Drupal\nlpservices\NlpTurfList
+    arguments: [ '@file_system'  , '@nlpservices.turfs' , '@nlpservices.voters' , '@nlpservices.api_voter' ]
   nlpservices.export_award_status:
     class: Drupal\nlpservices\NlpExportAwardStatus
     arguments: [ '@file_system'  , '@nlpservices.awards' ]
