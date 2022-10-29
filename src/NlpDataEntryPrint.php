@@ -105,10 +105,10 @@ be provided and are not shown. </p>';
     //nlp_debug_msg('$turfIndex',$turfIndex);
     $turf = $this->turfsObj->getTurf($turfIndex);
     //nlp_debug_msg('$turf',$turf);
-    $turfPDF = $turf['turfPDF'];
-    if(!empty($turfPDF)) {
+    //$turfPDF = $turf['turfPDF'];
+    if(!empty($turf['turfPDF'])) {
       $pdfPath = $this->pathsObj->getPath('PDF',$county);
-      $pdfUri = $pdfPath . $turfPDF;
+      $pdfUri = $pdfPath . $turf['turfPDF'];
       //$url = file_create_url($pdfUri);
       $url = Drupal::service('file_url_generator')->generateAbsoluteString($pdfUri);
       $page .=  '<br><span style="font-weight:bold; color: blue;">Get your walk sheet: </span><a href="'.$url.

@@ -265,6 +265,10 @@ class DataEntryForm extends FormBase
       $mcid = $form_state->get('mcid');
       $nlsInfo = $this->nls->getNlById($mcid);
     }
+    if(empty($nlsInfo['firstName'])) {
+      $nice = highlight_string("<?php\n dataentry 269 =\n" . var_export($nlsInfo, true) . ";\n?>", TRUE);
+      Drupal::logger('nlpservices')->notice($nice);
+    }
   
     $stateCommitteeKey = $form_state->get('stateCommitteeKey');
     
@@ -318,6 +322,11 @@ class DataEntryForm extends FormBase
   
           $contactMethod = $actions[$vanid]['contact_method'];
           //nlp_debug_msg('$canvassResponseCodes',$canvassResponseCodes);
+          if(empty($canvassResponseCodes[$contactMethod]['responses'][$chosenOption])) {
+            $nice = highlight_string("<?php\n\$actions 326 =\n" . var_export($actions[$vanid], true) . ";\n?>", TRUE);
+            Drupal::logger('nlpservices')->notice($nice);
+            break;
+          }
           $actions[$vanid][$reportType]['rid'] = $canvassResponseCodes[$contactMethod]['responses'][$chosenOption];
   
           $form_state->setValue($valueId,0);
@@ -718,7 +727,14 @@ class DataEntryForm extends FormBase
             $resp['contactDate'] = $common['contactDate'];
             $resp['cycle'] = $common['cycle'];
             $resp['cid'] =  $action['cid'];
-            $resp['rid'] = $action['no_contact']['rid'];
+            if(empty($action['no_contact']['rid'])) {
+              $nice = highlight_string("<?php\n\$actions 731 =\n" . var_export($actions, true) . ";\n?>", TRUE);
+              Drupal::logger('nlpservices')->notice($nice);
+              $rid = NULL;
+            } else {
+              $rid = $action['no_contact']['rid'];
+            }
+            $resp['rid'] = $rid;
             $resp['value'] = $action['no_contact']['chosenOption'];
             $resp['vanid'] = $vanid;
             $resp['mcid'] = $common['mcid'];
@@ -759,7 +775,7 @@ class DataEntryForm extends FormBase
             break;
 
           /*
-          * Hostile -----------------------------------------------------------
+          * Deceased -----------------------------------------------------------
           */
           case 'deceased':  // Deceased.
             $contactType = $action['contact_method'];
@@ -773,6 +789,8 @@ class DataEntryForm extends FormBase
             $resp['mcid'] = $common['mcid'];
             $resp['county'] = $common['county'];
             $resp['turfIndex'] = $common['turfIndex'];
+            $resp['value'] = NULL;
+  
             //nlp_debug_msg('resp',$resp);
             $this->deceasedVoter($resp);
             
@@ -921,7 +939,12 @@ class DataEntryForm extends FormBase
                 $result['text'] = $value['cellPhone'];
                 $result['value'] = 'Wrong number: ';
                 $result['rid'] = $value['wrongNumberCode'];
-                $result['cid'] = $value['cid'];
+                if(empty($action['cid'])) {
+                  $nice = highlight_string("<?php\n\$value 936 =\n" . var_export($action, true) . ";\n?>", TRUE);
+                  Drupal::logger('nlpservices')->notice($nice);
+                  $action['cid'] = NULL;
+                }
+                $result['cid'] = $action['cid'];
                 $this->reports->setNlReport($result);
 
                 $newPhoneNumber = [
@@ -931,7 +954,7 @@ class DataEntryForm extends FormBase
                 $this->voters->updateVoterPhone($vanid,$newPhoneNumber);
 
                 $surveyResponse['rid'] = $value['wrongNumberCode'];
-                $surveyResponse['ContactTypeCode'] = $value['cid'];
+                $surveyResponse['ContactTypeCode'] = $action['cid'];
                 $surveyResponse['phoneId'] = $value['cellPhoneId'];
                 //nlp_debug_msg('surveyResponse', $surveyResponse);
                 if(!empty($value['cellPhoneId'])) {
@@ -943,7 +966,12 @@ class DataEntryForm extends FormBase
                 $result['text'] = $value['cellPhone'];
                 $result['value'] = 'Opt out of texting: ';
                 $result['rid'] = NULL;
-                $result['cid'] = $value['cid'];
+                if(empty($action['cid'])) {
+                  $nice = highlight_string("<?php\n\$value 951 =\n" . var_export($action, true) . ";\n?>", TRUE);
+                  Drupal::logger('nlpservices')->notice($nice);
+                  $action['cid'] = NULL;
+                }
+                $result['cid'] = $action['cid'];
                 $this->reports->setNlReport($result);
                 break;
               case 'BH':
@@ -951,7 +979,12 @@ class DataEntryForm extends FormBase
                 $result['text'] = $value['homePhone'];
                 $result['value'] = 'Wrong number: ';
                 $result['rid'] = $value['wrongNumberCode'];
-                $result['cid'] = $value['cid'];
+                if(empty($action['cid'])) {
+                  $nice = highlight_string("<?php\n\$action 961 =\n" . var_export($action, true) . ";\n?>", TRUE);
+                  Drupal::logger('nlpservices')->notice($nice);
+                  $action['cid'] = NULL;
+                }
+                $result['cid'] = $action['cid'];
                 $this->reports->setNlReport($result);
 
                 $newPhoneNumber = [
@@ -960,7 +993,8 @@ class DataEntryForm extends FormBase
                 ];
                 $this->voters->updateVoterPhone($vanid,$newPhoneNumber);
                 $surveyResponse['rid'] = $value['wrongNumberCode'];
-                $surveyResponse['ContactTypeCode'] = $value['cid'];
+                
+                $surveyResponse['ContactTypeCode'] = $action['cid'];
                 $surveyResponse['phoneId'] = $action['contact_update']['homePhoneId'];
                 //nlp_debug_msg('surveyResponse', $surveyResponse);
                 if(!empty($value['homePhoneId'])) {
@@ -968,6 +1002,7 @@ class DataEntryForm extends FormBase
                 }
                 break;
               case 'NC':
+                if(empty($value['new_phone_number'])) {break;}
                 $result['value'] = 'New cell number';
                 $result['text'] = $value['new_phone_number'];
                 $this->reports->setNlReport($result);
@@ -978,6 +1013,7 @@ class DataEntryForm extends FormBase
                 $this->voters->updateVoterPhone($vanid,$newPhoneNumber);
                 break;
               case 'NH':
+                if(empty($value['new_phone_number'])) {break;}
                 $result['value'] = 'New home number';
                 $result['text'] = $value['new_phone_number'];
                 //nlp_debug_msg('result',$result);
@@ -2558,9 +2594,10 @@ It is not for general comments.">',
     $form_state->set('contactMethods',$contactMethods);
   return TRUE;
   }
- 
-  /**
+  
+  /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
    * formCallback
+   *
    * @noinspection PhpUnused
    * @noinspection PhpUnusedParameterInspection
    */

@@ -389,6 +389,14 @@ class DeliverTurfForm extends FormBase
       notification of a turf to an NL.');
       return;
     }
+    if(empty($nlCoordinator['firstName'])) {
+      $nice = highlight_string("<?php\n\$nlCoordinator 394 =\n" . var_export($nlCoordinator, true) . ";\n?>", TRUE);
+      Drupal::logger('nlpservices')->notice($nice);
+      $nice = highlight_string("<?php\n\$region 396 =\n" . var_export($region, true) . ";\n?>", TRUE);
+      Drupal::logger('nlpservices')->notice($nice);
+      $nlCoordinator['firstName'] = $nlCoordinator['lastName'] = $nlCoordinator['email'] = $nlCoordinator['phone'] ='';
+    }
+    
     $coordinator = [
       'firstName' => $nlCoordinator['firstName'],
       'lastName' => $nlCoordinator['lastName'],
