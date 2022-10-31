@@ -30,7 +30,7 @@ function recordMinivanReports($reports,$fileType): array
   $defaultResult['firstName'] = NULL;
   $defaultResult['lastName'] = NULL;
   $defaultResult['cycle'] = $cycle;
-  $counts = ['recordCnt' => 0,'processedCnt' => 0, 'duplicateCnt' => 0, 'rejectedCnt' => 0];
+  $counts = ['recordCnt' => 0,'processedCnt' => 0, 'duplicateCnt' => 0, 'rejectedCnt' => 0, 'notNlp' => 0, ];
   $mcid = NULL;
   foreach ($reports as $report) {
     $counts['recordCnt']++;
@@ -48,6 +48,9 @@ function recordMinivanReports($reports,$fileType): array
         $defaultResult['lastName'] = $nl['lastName'];
         $defaultResult['county'] = $nl['county'];
       }
+    } else {
+      $counts['notNlp'] = $counts['notNlp']+1;
+      continue;
     }
     $defaultResult['mcid'] = $mcid;
 
@@ -88,7 +91,10 @@ function recordMinivanReports($reports,$fileType): array
         if (!$action['mergeReport']) {
           $rIndex = $nlpReportsObj->setNlReport($action['result']);
         } else {
-          $nlpReportsObj->mergeReport($action['result']);
+          $ok = $nlpReportsObj->mergeReport($action['result']);
+          if(!$ok) {
+            nlp_debug_msg('$actions',$actions);
+          }
           $rIndex = $action['result']['reportIndex'];
           //nlp_debug_msg('$rIndex',$rIndex);
         }
@@ -166,8 +172,8 @@ function importMinivanFinished($success, $results, $unused) {
     $counts = $results['counts'];
     $messenger->addStatus($counts['recordCnt'].' records processed from email, processed: '.
       $counts['processedCnt'].', duplicates: '.$counts['duplicateCnt'].', rejected: '.$counts['rejectedCnt'].
-      ' - subject: '.$subject.'  Date: '.$month.''. $day);
-    $messenger->addStatus('The MiniVAN reports successfully updated.');
+      ', Not an NLP Voter: '.$counts['notNlp'].' - subject: '.$subject.'  Date: '.$month.''. $day, TRUE);
+    //$messenger->addStatus('The MiniVAN reports successfully updated.');
   }
   else {
     $messenger->addError(t('An error occurred.'));

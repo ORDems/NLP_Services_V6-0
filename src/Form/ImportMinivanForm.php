@@ -59,9 +59,10 @@ class ImportMinivanForm extends FormBase
 
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
-    //$messenger = Drupal::messenger();
+    $messenger = Drupal::messenger();
     $connection = $this->imapObj->getImapConnection('minivan');
     if (empty($connection)) {
+      $messenger->addWarning('Can\'t connect to MiniVAN email.');
       return;
     }
 
@@ -82,7 +83,6 @@ class ImportMinivanForm extends FormBase
           $day = $emailToProcess['day'];
           $month = $emailToProcess['month'];
           $fileType = $emailToProcess['fileType'];
-          //$headerResult = nlp_minivan_cmd_header_validate($fileType,$headerRaw);
           $headerResult = $this->minivanObj->header_validate($fileType, $headerRaw);
           //nlp_debug_msg('headerResult', $headerResult);
           if (!$headerResult['ok']) {

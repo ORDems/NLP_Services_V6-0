@@ -283,8 +283,8 @@ class NlpMinivan {
           $resultInactive['active'] = 0;
           $this->nlpReportsObj->updateReport($resultInactive);
           */
-          $action['processReport'] = FALSE;
-          return $action;
+          $actions[1]['processReport'] = FALSE;
+          return $actions;
         }
 
         // Remember the state of the NLP Deceased activist code in VoteBuilder.
@@ -293,14 +293,14 @@ class NlpMinivan {
         $this->voterObj->setVoterStatus($vanid, $voterStatus);
 
         // This voter is being reported as deceased.  Record in NLP Services.
-        $result['value'] = 'deceased';
-        $action['processReport'] = TRUE;
-        $action['mergeReport'] = FALSE;
-        $action['type'] = 'attemptedContact';
-        $action['result'] = $result;
-        $action['counts']['processedCnt'] = 1;
+        $results[1]['value'] = 'deceased';
+        $actions[1]['processReport'] = TRUE;
+        $actions[1]['mergeReport'] = FALSE;
+        $actions[1]['type'] = 'attemptedContact';
+        $actions[1]['result'] = $result;
+        $actions[1]['counts']['processedCnt'] = 1;
 
-        return $action;
+        return $actions;
     }
     $actions[1]['processReport'] = TRUE;
     $actions[1]['mergeReport'] = FALSE;
