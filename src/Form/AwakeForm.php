@@ -12,12 +12,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class AwakeForm extends ConfigFormBase {
   
-  protected NlpReplies $configfactory;
+  protected NlpReplies $config_factory;
   
   protected NlpReplies $repliesObj;
   
   
-  public function __construct(ConfigFactoryInterface $configfactory, $repliesObj) {
+  public function __construct(ConfigFactoryInterface $config_factory, $repliesObj) {
     $this->repliesObj = $repliesObj;
   
     parent::__construct($config_factory);
@@ -60,11 +60,13 @@ class AwakeForm extends ConfigFormBase {
   {
     $messenger = Drupal::messenger();
   
-    if($form_state->get('reenter')) {
+    if(!empty($form_state->get('reenter'))) {
       $form_state->set('reenter',TRUE);
-      
+      $form_state->set('options',[]);
     }
   
+    $options = $form_state->get('options');
+    /*
     $nlpEncrypt = Drupal::getContainer()->get('nlpservices.encryption');
   
     $config = $this->config('nlpservices.configuration');
@@ -94,6 +96,7 @@ class AwakeForm extends ConfigFormBase {
     
     
     $mcid = 101590467;
+    */
   
     //$mcid = 100743936;
   
@@ -101,10 +104,63 @@ class AwakeForm extends ConfigFormBase {
     //$nlRecord = $apiNls->getApiNls($committeeKey,$mcid);
     //nlp_debug_msg('$nlRecord',$nlRecord);
   
-    $form['submit'] = [
+    $form['description'] = [
+      '#type' => 'item',
+      '#title' => 'Find a voter.',
+      '#prefix' => " \n".'<div>'." \n",
+      '#suffix' => " \n".'</div>'." \n",
+      '#markup' => 'Select either the VANID if you know it or select the first and/or last name for a search.  ',
+    ];
+  
+    $form['findVoter'] = [
+      '#title' => 'Enter search criteria',
+      '#prefix' => " \n".'<div id="add-fix" style="width:400px;">'." \n",
+      '#suffix' => " \n".'</div>'." \n",
+      '#type' => 'fieldset',
+    ];
+   
+    // VANID data entry field.
+    $form['findVoter']['vanid'] = [
+      '#title' => 'VANID in VoterFile',
+      '#size' => 11,
+      '#type' => 'textfield',
+    ];
+    // Voter's first name.
+    $form['findVoter']['firstName'] = [
+      '#title' => 'First Name',
+      '#size' => 40,
+      '#type' => 'textfield',
+    ];
+    // Last name data entry field.
+    $form['findVoter']['lastName'] = [
+      '#title' => 'Last Name',
+      '#size' => 40,
+      '#type' => 'textfield',
+    ];
+    
+    // Add a submit button.
+    $form['findVoter']['submit'] = [
       '#type' => 'submit',
-      '#value' => t('Do something.'),
-      '#name' => 'big-test',
+      '#value' => 'Find a voter.',
+      '#name' => 'search',
+    ];
+    
+    
+    if(empty($options)) {
+      return parent::buildForm($form, $form_state);
+    }
+  
+    $form['settings']['voter'] = [
+      '#type' => 'radios',
+      '#title' => 'Voter select',
+      '#options' => $options,
+      '#description' => 'Choose one.',
+    ];
+  
+    $form['chooseVoter'] = [
+      '#type' => 'submit',
+      '#value' => 'Do something.',
+      '#name' => 'chooseVoter',
     ];
     
     return parent::buildForm($form, $form_state);
@@ -113,11 +169,9 @@ class AwakeForm extends ConfigFormBase {
   public function validateForm(array &$form, FormStateInterface $form_state)
   {
     $messenger = Drupal::messenger();
-    $messenger->addMessage('Verify called. '.random_int(1,99));
+    $messenger->addMessage('Verify called. ');
     //$values = $form_state->getValues();
     //nlp_debug_msg('$values',$values);
-    
-   
     parent::validateForm($form, $form_state);
   }
   
@@ -127,15 +181,62 @@ class AwakeForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $form_state->setRebuild();
     $messenger = Drupal::messenger();
-    $messenger->addMessage('Submit called. '.random_int(1,99));
-    //$values = $form_state->getValues();
-    //nlp_debug_msg('$values',$values);
+    $messenger->addMessage('Submit called. ',TRUE);
+    $values = $form_state->getValues();
+    nlp_debug_msg('$values',$values);
     $triggeringElement = $form_state->getTriggeringElement();
     $elementClicked = $triggeringElement['#name'];
     nlp_debug_msg('$elementClicked ',$elementClicked);
   
+    $firstName = $form_state->getValue('firstName');
+    $lastName = $form_state->getValue('lastName');
+    $needles = ['firstName'=>$firstName,'lastName'=>$lastName];
+  
+    $sessionObj = Drupal::getContainer()->get('nlpservices.session_data');
+    $county = $sessionObj->getCounty();
+  
+    $votersObj = Drupal::getContainer()->get('nlpservices.voters');
     
     
+    if($elementClicked=='chooseVoter') {
+      $vanid = $values['voter'];
+      nlp_debug_msg('$vanid',$vanid);
+      
+      $addresses = $votersObj->getVoterAddresses($vanid);
+      nlp_debug_msg('$addresses',$addresses);
+      
+      parent::submitForm($form, $form_state);
+  
+    }
+  
+  
+    $voters = $votersObj->searchVoters($county,$needles);
+    //nlp_debug_msg('$voters',$voters);
+    
+    if(empty($voters)) {
+      $messenger->addMessage('No voters found.');
+      parent::submitForm($form, $form_state);
+    }
+  
+    $options = [];
+    foreach ($voters as $vanid=>$voter) {
+      $option = $voter['lastName'].','.$voter['firstName'].' ';
+      if(!empty($voter['nickname']) AND $voter['nickname']!=$voter['firstName']) {
+        $option .= '('.$voter['nickname'].')'.' ';
+      }
+      $option .= $voter['age'].' '.$voter['sex'].' '.$voter['party'].' ';
+      if(!empty($voter['homePhone'])) {
+        $option .= 'H '.$voter['homePhone'].' ';
+      }
+      if(!empty($voter['cellPhone'])) {
+        $option .= 'C '.$voter['cellPhone'].' ';
+      }
+      $option .= ' ['.$vanid.']';
+      $options[$vanid] = $option;
+    }
+    nlp_debug_msg('$options',$options);
+    
+    $form_state->set('options',$options);
     
     parent::submitForm($form, $form_state);
   }

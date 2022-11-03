@@ -648,5 +648,54 @@ class NlpVoters {
     } while (TRUE);
     return $mcids;
   }
+  
+  public function searchVoters($county,$needles): array
+  {
+    //nlp_debug_msg('$county',strToHex($county));
+    //nlp_debug_msg('$needle',strToHex($needle));
+    try {
+      $query = $this->connection->select(self::VOTER_TBL, 'v');
+      $query->fields('v');
+      //$query->condition('county',$county);
+      /*
+      $orGroup = $query->orConditionGroup()
+        ->condition('lastName', "%" . $query->escapeLike($needles['lastName']) . "%", 'LIKE')
+        ->condition('firstName', "%" . $query->escapeLike($needles['firstName']) . "%", 'LIKE');
+      $query->condition($orGroup);
+      */
+      //nlp_debug_msg('$needles',$needles);
+      //nlp_debug_msg('lastName',strToHex($needles['lastName']));
+      if(!empty($needles['lastName'])) {
+        $query->condition('lastName', "%" . $query->escapeLike($needles['lastName']) . "%", 'LIKE');
+      }
+  
+      //$query->condition('lastName', "%" . $query->escapeLike($needles['lastName']) . "%", 'LIKE');
+      //$query->condition('firstName', "%" . $query->escapeLike($needles['firstName']) . "%", 'LIKE');
+      
+      if(!empty($needles['firstName'])) {
+        $orGroup = $query->orConditionGroup()
+          ->condition('firstName', "%" . $query->escapeLike($needles['firstName']) . "%", 'LIKE')
+          ->condition('nickname', "%" . $query->escapeLike($needles['firstName']) . "%", 'LIKE');
+        $query->condition($orGroup);
+      }
+      $query->orderBy('lastName');
+      $result =  $query->execute();
+    }
+    catch (Exception $e) {
+      nlp_debug_msg('e', $e->getMessage() );
+      return [];
+    }
+    // Fetch each NL record and build the array of information about each NL
+    // needed to build the display table.
+    $voterRecords = [];
+    do {
+      $voterRecord = $result->fetchAssoc();
+      //nlp_debug_msg('$voterRecords',$voterRecords);
+      if(empty($voterRecord)) {break;}
+      $vanid = $voterRecord['vanid'];
+      $voterRecords[$vanid] = $voterRecord;
+    } while (TRUE);
+    return $voterRecords;
+  }
 
 }

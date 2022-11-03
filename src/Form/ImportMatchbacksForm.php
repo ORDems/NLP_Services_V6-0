@@ -80,7 +80,7 @@ class ImportMatchbacksForm extends FormBase
     $messenger = Drupal::messenger();
 
     $matchbacksFile = $form_state->getValue('matchback_file');
-    nlp_debug_msg('$matchbacksFile',$matchbacksFile);
+    //nlp_debug_msg('$matchbacksFile',$matchbacksFile);
     if(empty($matchbacksFile)) {return;}
     $matchbacksLoad = File::load ($matchbacksFile[0]);
     //nlp_debug_msg('$matchbacksLoad',$matchbacksLoad);
@@ -109,7 +109,7 @@ class ImportMatchbacksForm extends FormBase
 
     if($fileType == 'csv') {
       $fieldPosHeader = fgetcsv($fh);
-      nlp_debug_msg('$fieldPosHeader',$fieldPosHeader);
+      //nlp_debug_msg('$fieldPosHeader',$fieldPosHeader);
       if (empty($fieldPosHeader)) {
         $messenger->addError('Failed to read Matchback File Header');
         fclose($fh);
@@ -140,12 +140,12 @@ class ImportMatchbacksForm extends FormBase
       //$headerField = strip_tags($fieldPos);
       //nlp_debug_msg('$headerField',strToHex($headerField));
       $headerField = trim($fieldPos);
-      nlp_debug_msg('$headerField',strToHex($headerField));
+      //nlp_debug_msg('$headerField',strToHex($headerField));
       $header[] = $headerField;
     }
-    nlp_debug_msg('$header',$header);
+    //nlp_debug_msg('$header',$header);
     $fieldPos = $this->matchbacksObj->decodeMatchbackHdr($header);
-    nlp_debug_msg('$fieldPos', $fieldPos);
+    //nlp_debug_msg('$fieldPos', $fieldPos);
     if(!$fieldPos['ok']) {
       foreach ($fieldPos['err'] as $errMsg) {
         $messenger->addWarning($errMsg);
@@ -161,7 +161,7 @@ class ImportMatchbacksForm extends FormBase
       'fileType' => $fileType,
       'fieldPos' => $fieldPos['pos'],
     );
-    nlp_debug_msg('$args',$args);
+    //nlp_debug_msg('$args',$args);
     $batch = array(
       'operations' => array(
         array('importMatchbacksBatch', array($args))

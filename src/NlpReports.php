@@ -13,7 +13,7 @@ use Drupal\Core\Database;
 class NlpReports {
   
   const NLP_RESULTS_TBL = 'nlp_results';
-  const BATCH_LIMIT = 100;
+  const BATCH_LIMIT = 10000;
   
   const CONTACT = 'contact';
   const SURVEY = 'Survey';

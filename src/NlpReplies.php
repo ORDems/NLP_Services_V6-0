@@ -89,6 +89,7 @@ class NlpReplies
       //nlp_debug_msg('$message', $message);
       if (empty($message)) { continue; }
   
+      nlp_debug_msg('subject',$message['subject']);
       $targetType = '';
       $targetMessage = NULL;
       foreach ($this->specialMessages as $targetType=>$targetInfo) {
@@ -96,12 +97,12 @@ class NlpReplies
           //if(in_array($targetSubject,$msg['subject'])) {
           if(strpos($message['subject'],$target['subject']) !== FALSE) {
             $targetMessage = $targetId;
-            break;
+            break 2;
           }
         }
       }
       
-      //nlp_debug_msg('$targetMessage', $targetMessage);
+      nlp_debug_msg('$targetMessage', $targetMessage);
       if(empty($targetMessage)) {
         $messenger->addMessage('Not a target message, Subject: '.$message['subject'],TRUE );
         if(!$this->imapObj->setUnread($connection, $emailNumber)) {
@@ -109,7 +110,7 @@ class NlpReplies
         }
         continue;
       }
-      //nlp_debug_msg('$targetType',$targetType);
+      nlp_debug_msg('$targetType',$targetType);
       
       $email = $recipientEmail = $body = $forwardText = '';
       switch ($targetMessage) {
@@ -164,8 +165,8 @@ have been sent to you.<br>.';
       $params['plainText'] = $this->htmlText->getText();
   
       //nlp_debug_msg('$params',$params);
-      $result = $this->mailManagerObj->mail(NLP_MODULE, 'forward_nl_reply', $to, $languageCode, $params, $from);
-      //$result = NULL;
+      //$result = $this->mailManagerObj->mail(NLP_MODULE, 'forward_nl_reply', $to, $languageCode, $params, $from);
+      $result = NULL;
       if (empty($result['result'])) {
         nlp_debug_msg('result', $result);
       }
@@ -255,8 +256,8 @@ have been sent to you.<br>.';
       if($description == 'html') {
         $body .= $parts['data'];
       } else {
-        //nlp_debug_msg('$parts',$parts);
-        //nlp_debug_msg('$description',$description);
+        nlp_debug_msg('$parts',$parts);
+        nlp_debug_msg('$description',$description);
         if(in_array($description,$partDescriptions)) {
           //nlp_debug_msg('body', strToHex($parts['data']));
           //$description = str_replace (array("\r\n", "\n", "\r"), ' <br>', $parts['description']);
@@ -267,6 +268,7 @@ have been sent to you.<br>.';
         }
       }
     }
+    nlp_debug_msg('$body',$body);
     return $body;
   }
   

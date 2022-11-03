@@ -18,7 +18,7 @@ function importMatchbacksBatch($arg,&$context) {
   $matchbacksObj = Drupal::getContainer()->get('nlpservices.matchbacks');
   $fileUri = $arg['fileUri'];
   $fieldPos = $arg['fieldPos'];
-  nlp_debug_msg('$fieldPos',$fieldPos);
+  //nlp_debug_msg('$fieldPos',$fieldPos);
   $fileType = $arg['fileType'];
   // Open the ballot received file.
   $fh = fopen($fileUri, "r");
