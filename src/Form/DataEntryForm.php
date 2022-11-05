@@ -374,6 +374,10 @@ class DataEntryForm extends FormBase
               $actions[$vanid]['contact_method'] = $contactMethod;
             }
             $contactMethod = $actions[$vanid]['contact_method'];
+            if($contactMethod=='Social Media') {
+              $contactMethod = 'Phone';
+              Drupal::logger('nlpservices')->notice($contactMethod);
+            }
             $actions[$vanid]['cid'] = $canvassResponseCodes[$contactMethod]['code'];
             $actions[$vanid][$reportType]['name'] = 'Moved';
             $actions[$vanid][$reportType]['value'] = $value;
