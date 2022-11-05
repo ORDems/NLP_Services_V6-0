@@ -9,52 +9,56 @@ use Exception;
 
 class ApiResponseCodes
 {
-  private  array $expectedContactTypes = array(
-    'Walk' => array(
-      array('text'=>'Left Message/Lit','weight'=>1),
-      array('text'=>'Not Home','weight'=>11),
-      array('text'=>'Refused','weight'=>2),
-      array('text'=>'Deceased','weight'=>7),
-      array('text'=>'Hostile','weight'=>6),
-      array('text'=>'Moved','weight'=>5),
-      array('text'=>'Inaccessible','weight'=>12),
-    ),
-    'Phone'=>array(
-      array('text'=>'Left Message','weight'=>8),
-      array('text'=>'Deceased','weight'=>7),
-      array('text'=>'Hostile','weight'=>6),
-      array('text'=>'Wrong Number','weight'=>9),
-      array('text'=>'Not Home','weight'=>11),
-    ),
-    'Postcard'=>array(
-      array('text'=>'Mailed','weight'=>5),
-      array('text'=>'Deceased','weight'=>7),
-      array('text'=>'Hostile','weight'=>6),
-    ),
-    'Personal Email'=>array(
-      array('text'=>'Sent Email','weight'=>5),
-      array('text'=>'Deceased','weight'=>7),
-      array('text'=>'Hostile','weight'=>6),
-      array('text'=>'Do Not Email','weight'=>9),
-    ),
-    'SMS Text'=>array(
-      array('text'=>'Texted','weight'=>5),
-      array('text'=>'Deceased','weight'=>7),
-      array('text'=>'Hostile','weight'=>6),
-      array('text'=>'Do Not Text','weight'=>9),
-    ),
-    'Social Media'=>array(
-      array('text'=>'Left Message','weight'=>5),
-    ),
-    'Relational Canvass' => array(
-      array('text'=>'Left Message/Lit','weight'=>1),
-      array('text'=>'Not Home','weight'=>11),
-      array('text'=>'Refused','weight'=>2),
-      array('text'=>'Deceased','weight'=>7),
-      array('text'=>'Hostile','weight'=>6),
-      array('text'=>'Moved','weight'=>5),
-    ),
-  );
+  private  array $expectedContactTypes = [
+    'Walk' => [
+      ['text'=>'Left Message/Lit','weight'=>1],
+      ['text'=>'Not Home','weight'=>11],
+      ['text'=>'Refused','weight'=>2],
+      ['text'=>'Deceased','weight'=>7],
+      ['text'=>'Hostile','weight'=>6],
+      ['text'=>'Moved','weight'=>5],
+      ['text'=>'Inaccessible','weight'=>12],
+    ],
+    'Phone'=>[
+      ['text'=>'Left Message','weight'=>8],
+      ['text'=>'Deceased','weight'=>7],
+      ['text'=>'Hostile','weight'=>6],
+      ['text'=>'Moved','weight'=>5],
+      ['text'=>'Wrong Number','weight'=>9],
+      ['text'=>'Not Home','weight'=>11],
+    ],
+    'Postcard'=>[
+      ['text'=>'Mailed','weight'=>5],
+      ['text'=>'Deceased','weight'=>7],
+      ['text'=>'Hostile','weight'=>6],
+      ['text'=>'Moved','weight'=>5],
+    ],
+    'Personal Email'=>[
+      ['text'=>'Sent Email','weight'=>5],
+      ['text'=>'Deceased','weight'=>7],
+      ['text'=>'Moved','weight'=>5],
+      ['text'=>'Hostile','weight'=>6],
+      ['text'=>'Do Not Email','weight'=>9],
+    ],
+    'SMS Text'=>[
+      ['text'=>'Texted','weight'=>5],
+      ['text'=>'Deceased','weight'=>7],
+      ['text'=>'Moved','weight'=>5],
+      ['text'=>'Hostile','weight'=>6],
+      ['text'=>'Do Not Text','weight'=>9],
+    ],
+    'Social Media'=>[
+      ['text'=>'Left Message','weight'=>5],
+    ],
+    'Relational Canvass' => [
+      ['text'=>'Left Message/Lit','weight'=>1],
+      ['text'=>'Not Home','weight'=>11],
+      ['text'=>'Refused','weight'=>2],
+      ['text'=>'Deceased','weight'=>7],
+      ['text'=>'Hostile','weight'=>6],
+      ['text'=>'Moved','weight'=>5],
+    ],
+  ];
   
   protected ClientInterface $client;
   
