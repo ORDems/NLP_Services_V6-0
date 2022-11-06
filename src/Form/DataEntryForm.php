@@ -325,7 +325,8 @@ class DataEntryForm extends FormBase
           if(empty($canvassResponseCodes[$contactMethod]['responses'][$chosenOption])) {
             $nice = highlight_string("<?php\n\$actions 326 =\n" . var_export($actions[$vanid], true) . ";\n?>", TRUE);
             Drupal::logger('nlpservices')->notice($nice);
-            break;
+            $contactMethod = 'Phone';  // Probably set to Postcard.
+            //break;
           }
           $actions[$vanid][$reportType]['rid'] = $canvassResponseCodes[$contactMethod]['responses'][$chosenOption];
   
