@@ -221,7 +221,54 @@ function nlpservices_form_alter(&$form, FormStateInterface $form_state, $form_id
       //$form['#submit'][] = 'nlpservices_user_submit';
       $form['actions']['submit']['#submit'][] = 'nlpservices_user_submit';
       break;
+  
+    //case 'user_login_block':
+    case 'user_login_form' :
+      $form['actions']['submit']['#value'] = t('Login to Account');
+      $form['#validate'][] = 'nlpservices_login_validate';
+      //$form['actions']['submit']['#submit'][] = 'nlpservices_login_submit';
+      break;
   }
+}
+
+/**
+ * Report login failures to the log file.   We're looking for attempts to guess passwords and to help
+ * NLs who are having trouble with login.
+ *
+ * @param $form
+ * @param FormStateInterface $form_state
+ * @return void
+ * @noinspection PhpUnused
+ * @noinspection PhpUnusedParameterInspection
+ */
+function nlpservices_login_validate(&$form, FormStateInterface $form_state) {
+  $values = $form_state->getValues();
+  $pass = $values['pass'];
+  $userName = $values['name'];
+  $userObj = Drupal::getContainer()->get('nlpservices.drupal_user');
+  $user = $userObj->getUserByName($userName);
+  if(empty($user)) {
+    Drupal::logger('nlpservices')->notice('Unknown user login attempt: '.$userName.' '.$pass);
+    return;
+  }
+  $mcid = $user['mcid'];
+  $magicWordObj = Drupal::getContainer()->get('nlpservices.magic_word');
+  $magicWord = $magicWordObj->getMagicWord($mcid);
+  $admin = (in_array('administrator',$user['roles']) OR in_array('nlp_admin',$user['roles']));
+  if($pass != $magicWord AND !($admin AND empty($magicWord))) {
+    if($admin) {
+      $magicWord = "****";
+    }
+    Drupal::logger('nlpservices')->notice('Login attempt: '.$userName.' miss matched pass: '.$magicWord.' '.$pass);
+  }
+}
+
+/** @noinspection PhpUnused
+ * @noinspection PhpUnusedParameterInspection
+ */
+function nlpservices_login_submit(&$form, FormStateInterface $form_state) {
+  $values = $form_state->getValues();
+  nlp_debug_msg('$values',$values['pass']);
 }
 
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
