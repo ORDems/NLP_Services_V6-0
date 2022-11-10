@@ -1030,7 +1030,15 @@ class DataEntryForm extends FormBase
                 $this->voters->updateVoterPhone($vanid,$newPhoneNumber);
                 break;
               case 'NE':  // New email for voter.$result['type'] = 'New number';
+                //nlp_debug_msg('$actions',$actions);
+                //nlp_debug_msg('$value',$value);
                 $result['value'] = 'New email';
+                
+                if(empty($value['new_email'])) {
+                  $nice = highlight_string("<?php\n\$actions 1038 =\n" . var_export($actions, true) . ";\n?>", TRUE);
+                  Drupal::logger('nlpservices')->notice($nice);
+                  $value['new_email'] = '??';
+                }
                 $result['text'] = $value['new_email'];
                 $this->reports->setNlReport($result);
                 break;
