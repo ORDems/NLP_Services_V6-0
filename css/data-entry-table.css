@@ -44,7 +44,7 @@ div.counts-box-left {float: left; font-size:x-small; width: 180px; margin:0; pad
 div.awards-box-left {float: left; font-size:x-small; width: 250px; margin:0; padding:4px 0 0 0;}
 div.search-box-left {float: left; font-size:x-small; width: 180px; margin:0; padding:4px 0 0 0;}
 div.nav-box-right {float: right; font-size:x-small; width: 400px; margin:0; padding:4px 0 0 0;}
-div.methods-box-left {float: left; font-size:x-small; width: 130px; margin:0; padding:4px 0 0 0;}
+div.methods-box-left {float: left; font-size:x-small; width: 140px; margin:0; padding:4px 0 0 0;}
 
 
 
@@ -92,9 +92,9 @@ td.counts-percent { width: 70px; padding:0 0 0 3px; text-align: left;}
 
 div.method { border: 1px solid red; border-radius: 5px;
     padding-left:5px; padding-right:5px; box-sizing: border-box;
-    width:120px; font-size:x-small;}
-div.methods-box { width:115px; }
-div.method-select-container {float:left; width:110px; font-size: x-small; padding: 0 0 3px 0;}
+    width:130px; font-size:x-small;}
+div.methods-box { width:125px; }
+div.method-select-container {float:left; width:115px; font-size: x-small; padding: 0 0 3px 0;}
 
 div.award-box { width:240px; }
 div.badge-container { position: relative; color: white; float:left; width:110px; }

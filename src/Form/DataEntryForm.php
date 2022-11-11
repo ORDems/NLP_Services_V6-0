@@ -2254,24 +2254,6 @@ It is not for general comments.">',
     $form['date_box_end'] = [
       '#markup' => '</div>',
     ];
-    /*
-    $form['counts_box'] = [
-      '#markup' => '<div class="counts-box-left">',
-    ];
-    //$form['voter_counts'] = $this->voterCounts($turfInfo['voterCount'],$turfInfo['votedCount']);
-    $form['voter_counts'] = $this->voterCounts($turfInfo);
-    $form['date_counts_end'] = [
-      '#markup' => '</div>',
-    ];
-  
-    $form['award_box'] = [
-      '#markup' => '<div class="awards-box-left">',
-    ];
-    $form['award'] = $this->awardDisplay($awards);
-    $form['award_end'] = [
-      '#markup' => '</div>',
-    ];
-  */
   
     $form['method_box'] = [
       '#markup' => '<div class="methods-box-left">',
