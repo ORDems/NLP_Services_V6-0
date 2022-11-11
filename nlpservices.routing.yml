@@ -158,6 +158,14 @@ nlpservices.legislative_fixes_form:
   requirements:
     _permission: 'access content'
 
+nlpservices.cancel_moved_report:
+  path: '/nlp-cancel-moved-report'
+  defaults:
+    _form: Drupal\nlpservices\Form\CancelMovedReport
+    _title: 'Cancel the report that voter has moved.'
+  requirements:
+    _permission: 'access content'
+
 nlpservices.documents_form:
   path: '/nlpservices-documents'
   defaults:

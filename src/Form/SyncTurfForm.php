@@ -423,7 +423,7 @@ class SyncTurfForm extends FormBase {
   
     
     // We have a good turf so insert in database.
-    $turfIndex = $this->insert_turf($stateCommitteeKey,$voters,$turf,$cycleYear,$nlpVoter);
+    $turfIndex = $this->insert_turf($stateCommitteeKey,$voters,$turf,$cycle,$nlpVoter);
     if(empty($turfIndex)) {
       $this->voters->unlockVoters();
       return;
@@ -881,6 +881,9 @@ class SyncTurfForm extends FormBase {
       
       // Add voter to turf.
       $voter['address']['turfIndex'] = $turfIndex;
+      $voter['address']['moved'] = NULL;
+  
+      //nlp_debug_msg('$voter',$voter);
       $this->voters->createVoter($voter);
       
       //nlp_debug_msg('$voterStatus: '.$vanid,$voterStatus);

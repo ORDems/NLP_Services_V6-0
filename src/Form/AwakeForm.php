@@ -139,7 +139,7 @@ class AwakeForm extends ConfigFormBase {
     ];
     
     // Add a submit button.
-    $form['findVoter']['submit'] = [
+    $form['findVoter']['voterSearch'] = [
       '#type' => 'submit',
       '#value' => 'Find a voter.',
       '#name' => 'search',
@@ -168,8 +168,8 @@ class AwakeForm extends ConfigFormBase {
   
   public function validateForm(array &$form, FormStateInterface $form_state)
   {
-    $messenger = Drupal::messenger();
-    $messenger->addMessage('Verify called. ');
+    //$messenger = Drupal::messenger();
+    //$messenger->addMessage('Verify called. ');
     //$values = $form_state->getValues();
     //nlp_debug_msg('$values',$values);
     parent::validateForm($form, $form_state);
@@ -196,47 +196,127 @@ class AwakeForm extends ConfigFormBase {
     $county = $sessionObj->getCounty();
   
     $votersObj = Drupal::getContainer()->get('nlpservices.voters');
-    
-    
-    if($elementClicked=='chooseVoter') {
-      $vanid = $values['voter'];
-      nlp_debug_msg('$vanid',$vanid);
-      
-      $addresses = $votersObj->getVoterAddresses($vanid);
-      nlp_debug_msg('$addresses',$addresses);
-      
-      parent::submitForm($form, $form_state);
+    $reportsObj = Drupal::getContainer()->get('nlpservices.reports');
+    //$turfsObj = Drupal::getContainer()->get('nlpservices.turfs');
   
+    $config = Drupal::config('nlpservices.configuration');
+    $electionDates = $config->get('nlpservices-election-configuration');
+    $cycle = $electionDates['nlp_election_cycle'];
+    //nlp_debug_msg('$cycle',$cycle);
+  
+    $vanid = $values['vanid'];
+  
+    if($elementClicked=='search' AND !empty($vanid)) {$elementClicked='vanid';}
+    $action = 'nada';
+    $existingRIndex = 0;
+    $voters = [];
+    switch ($elementClicked) {
+      case 'vanid':
+        //$vanid = $form_state->getValue('vanid');
+        nlp_debug_msg('$vanid',$vanid);
+        $turf = $votersObj->getVotersTurf($vanid,$cycle);
+        nlp_debug_msg('$turf',$turf);
+        $turfIndex = $turf['turfIndex'];
+  
+        $voter = $votersObj->getVoterById($vanid,$turfIndex);
+        nlp_debug_msg('$voter',$voter);
+        $voters[$voter['vanid']] = $voter;
+        $action = 'options';
+  
+        break;
+        
+        
+      case 'search':
+        $voters = $votersObj->searchVoters($county, $needles);
+        //nlp_debug_msg('$voters',$voters);
+        if (empty($voters)) {
+          $messenger->addMessage('No voters found.');
+          break;
+        }
+        $action = 'options';
+        break;
+        
+        
+      case 'chooseVoter':
+        $vanid = $values['voter'];
+        //nlp_debug_msg('$vanid',$vanid);
+  
+        $addresses = $votersObj->getVoterAddresses($vanid);
+        //nlp_debug_msg('$addresses',$addresses);
+  
+        $moved = $addresses[0]['moved'];
+  
+        $request['vanid'] = $vanid;
+        $request['type'] = 'contact';
+        $request['value'] = 'Moved';
+        $request['cycle'] = $cycle;
+        //nlp_debug_msg('$request',$request);
+        $report = $reportsObj->getReport($request);
+        $existingRIndex = (!empty($report['reportIndex']))?$report['reportIndex']:NULL;  // Report exists.
+        //nlp_debug_msg('$existingRIndex',$existingRIndex);
+  
+        if(empty($moved) AND empty($existingRIndex)) {
+          $messenger->addMessage('There is no report that this voter has moved.');
+          //$form_state->set('options',NULL);
+          $form_state->set('options',NULL);
+          $form_state->unsetValue('lastName');
+          break;
+        }
+  
+        $messenger->addMessage('This voter has been reported as having moved.');
+        $action = 'done';
+        break;
     }
-  
-  
-    $voters = $votersObj->searchVoters($county,$needles);
-    //nlp_debug_msg('$voters',$voters);
     
-    if(empty($voters)) {
-      $messenger->addMessage('No voters found.');
-      parent::submitForm($form, $form_state);
-    }
-  
-    $options = [];
-    foreach ($voters as $vanid=>$voter) {
-      $option = $voter['lastName'].','.$voter['firstName'].' ';
-      if(!empty($voter['nickname']) AND $voter['nickname']!=$voter['firstName']) {
-        $option .= '('.$voter['nickname'].')'.' ';
-      }
-      $option .= $voter['age'].' '.$voter['sex'].' '.$voter['party'].' ';
-      if(!empty($voter['homePhone'])) {
-        $option .= 'H '.$voter['homePhone'].' ';
-      }
-      if(!empty($voter['cellPhone'])) {
-        $option .= 'C '.$voter['cellPhone'].' ';
-      }
-      $option .= ' ['.$vanid.']';
-      $options[$vanid] = $option;
-    }
-    nlp_debug_msg('$options',$options);
+    if($action=='options') {
+      $options = [];
+      foreach ($voters as $vanid => $voter) {
     
-    $form_state->set('options',$options);
+        //$addresses = $votersObj->getVoterAddresses($vanid);
+        //nlp_debug_msg('$addresses',$addresses);
+        //$county = $addresses[0][$vanid]['county'];
+        $option = $voter['lastName'] . ',' . $voter['firstName'] . ' ';
+        if (!empty($voter['nickname']) and $voter['nickname'] != $voter['firstName']) {
+          $option .= '(' . $voter['nickname'] . ') ';
+        }
+        $option .= $voter['age'] . ' ' . $voter['sex'] . ' ' . $voter['party'] . ' ';
+        if (!empty($voter['homePhone'])) {
+          $option .= 'H ' . $voter['homePhone'] . ' ';
+        }
+        if (!empty($voter['cellPhone'])) {
+          $option .= 'C ' . $voter['cellPhone'] . ' ';
+        }
+        //$option .= $voter['county'] . ' [' . $vanid . ']';
+        $option .= ' [' . $vanid . ']';
+  
+        $options[$vanid] = $option;
+      }
+      //nlp_debug_msg('$options',$options);
+  
+      $form_state->set('options', $options);
+    } elseif ($action=='done') {
+      $turf = $votersObj->getVotersTurf($vanid,$cycle);
+      //nlp_debug_msg('$turf',$turf);
+  
+      $turfIndex = $turf['turfIndex'];
+      $messenger->addMessage('turf index = '. $turfIndex);
+      $messenger->addMessage('report index = '. $existingRIndex);
+  
+      if(!empty($existingRIndex)) {
+        $reportsObj->deletereport($existingRIndex);
+      }
+  
+      if(!empty($turfIndex)) {
+        $movedStatus = 0;   // This voter did not move,
+        $votersObj->setMovedStatus($turfIndex,$vanid,$movedStatus);
+      }
+      $messenger->addMessage('The report that this voter moved has been removed.');
+  
+  
+      //$form_state->unsetValue('lastName');
+      $form_state->set('options',NULL);
+      $form_state->setRebuild(FALSE);
+    }
     
     parent::submitForm($form, $form_state);
   }

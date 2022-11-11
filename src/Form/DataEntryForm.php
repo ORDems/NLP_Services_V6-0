@@ -1662,21 +1662,27 @@ class DataEntryForm extends FormBase
       $voterContacts = $this->reports->getNlpReports($vanid);
       //nlp_debug_msg('$voterContacts',$voterContacts);
       $contacted = $attempted = false;
+      $config = Drupal::config('nlpservices.configuration');
+      $electionConfiguration = $config->get('nlpservices-election-configuration');
+      $cycle = $electionConfiguration['nlp_election_cycle'];
       foreach ($voterContacts as $voterContactList) {
         foreach ($voterContactList as $voterContact) {
           //nlp_debug_msg('$voterContact',$voterContact);
           //nlp_debug_msg('$voterContact[type]',$voterContact['type']);
-          if($voterContact['type'] == $this->reports::SURVEY) {
-            $attempted = $contacted = TRUE;
-            break;
-          } elseif ($voterContact['type'] == $this->reports::CONTACT) {
-            $attempted = TRUE;
-            //nlp_debug_msg('$voterContact',$voterContact);
+          if ($voterContact['cycle'] == $cycle) {
+            if ($voterContact['type'] == $this->reports::SURVEY) {
+              $attempted = $contacted = TRUE;
+              break;
+            } elseif ($voterContact['type'] == $this->reports::CONTACT) {
+              $attempted = TRUE;
+              //nlp_debug_msg('$voterContact',$voterContact);
+            }
           }
         }
       }
       if($attempted) {$attemptedCount++;}
       if($contacted) {$contactedCount++;}
+      //nlp_debug_msg('$contactedCount',$contactedCount);
   
       //nlp_debug_msg('reports: '.$vanid,$voterContacts);
       $voterAc = $this->reports->getNlpAcReport($vanid);

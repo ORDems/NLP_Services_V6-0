@@ -336,6 +336,24 @@ class NlpVoters {
     }
     return $result->fetchAssoc();
   }
+  
+  public function getVotersTurf($vanid,$cycle): array
+  {
+    try {
+      $query = $this->connection->select(self::VOTER_TURF_TBL, 'i');
+      $query->fields('i');
+      $query->condition('vanid',$vanid);
+      $query->condition('cycle',$cycle);
+      $result = $query->execute();
+      $dbTurf = $result->fetchAssoc();
+    }
+    catch (Exception $e) {
+      nlp_debug_msg('e', $e->getMessage()  );
+      return [];
+    }
+    if(empty($dbTurf)) {return [];}
+    return $dbTurf;
+  }
 
   public function deleteVotersInTurf($turfIndex) {
     $this->connection->delete(self::VOTER_TURF_TBL)
@@ -655,8 +673,11 @@ class NlpVoters {
     //nlp_debug_msg('$needle',strToHex($needle));
     try {
       $query = $this->connection->select(self::VOTER_TBL, 'v');
+      $query->join(self::VOTER_TURF_TBL, 'g', 'g.vanid = v.vanid');
+  
       $query->fields('v');
-      //$query->condition('county',$county);
+      $query->addField('g','county');
+      $query->condition('county',$county);
       /*
       $orGroup = $query->orConditionGroup()
         ->condition('lastName', "%" . $query->escapeLike($needles['lastName']) . "%", 'LIKE')
@@ -678,6 +699,7 @@ class NlpVoters {
           ->condition('nickname', "%" . $query->escapeLike($needles['firstName']) . "%", 'LIKE');
         $query->condition($orGroup);
       }
+      
       $query->orderBy('lastName');
       $result =  $query->execute();
     }
