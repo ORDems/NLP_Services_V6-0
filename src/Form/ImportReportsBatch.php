@@ -1,6 +1,6 @@
 <?php
 
-const MAX_QUEUE_LIMIT = '100';
+const MAX_QUEUE_LIMIT = '10';
 
 /** * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * importReportsBatch
@@ -57,7 +57,12 @@ function importReportsBatch($arg,&$context) {
     $recordCount++;
     $fields = array();
     foreach ($fieldPos as $key => $column) {
-      $fields[$key] = $report[$column];
+      if($key == 'text') {
+        $fields[$key] = preg_replace('/\s+|[[:^print:]]/', '', $report[$column]);
+      } else {
+        $fields[$key] = $report[$column];
+      }
+      //$fields[$key] = preg_replace('/[0-9\@\.\;\" "]+/', '', $report[$column]);
     }
     //nlp_debug_msg('fields', $fields);
   
