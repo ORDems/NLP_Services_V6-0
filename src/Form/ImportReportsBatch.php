@@ -58,7 +58,8 @@ function importReportsBatch($arg,&$context) {
     $fields = array();
     foreach ($fieldPos as $key => $column) {
       if($key == 'text') {
-        $fields[$key] = preg_replace('/\s+|[[:^print:]]/', '', $report[$column]);
+        //$fields[$key] = preg_replace('/\s+|[[:^print:]]/', '', $report[$column]);
+        $fields[$key] = trim(strip_tags(htmlentities(stripslashes($report[$column]),ENT_QUOTES)));
       } else {
         $fields[$key] = $report[$column];
       }

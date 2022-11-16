@@ -291,17 +291,30 @@ class ApiVoter
       $localYear = trim($localYear);
       $localType = trim($localType);
     }
-    list($year, ,$type) = explode('-',$cycle);
+    list($year,$month,$type) = explode('-',$cycle);
     // For a general election in an even year, look back starting with the primary else look back starting with the
     // previous general election.
-    $general = FALSE;
+    //$general = FALSE;  // Show previous primary.
     if($year % 2 == 0){
-      if($type != 'G') {
-        $year = $year-2;
-        $general = TRUE;
+      switch ($type) {
+        case 'G':
+          $general = FALSE;  // Show previous primary.
+          break;
+        case 'P':
+          $year = $year-2;  // Show the previous general.
+          $general = TRUE;
+          break;
+        default: // U.
+          if($month>10) { // Late special election.
+            $general = FALSE;  // Show this year's primary.
+          } else {
+            $year = $year-2;
+            $general = TRUE;
+          }
+          break;
       }
-    } else {
-      $general = TRUE;
+    } else {  // Odd year.
+      $general = TRUE;  // Show general election from previous even year.
       $year--;
     }
     $twoDigitYear = substr($year,-2);
