@@ -16,7 +16,7 @@ use Drupal\nlpservices\NlpReports;
 class ExportVoterContactReportsForm extends FormBase
 {
 
-  const NR_NLS_REPORTS = 'nls_reports';
+  const NR_NLS_REPORTS = 'voter_contact_reports';
 
   protected NlpReports $reports;
 
@@ -50,13 +50,17 @@ class ExportVoterContactReportsForm extends FormBase
     if (!empty($form_state->get('reenter'))) {
       $args = $form_state->get('args');
       $form['count'] = [
-        '#markup' => 'Record count: '.$args['rowCount'],
+        '#markup' => 'Count of voter contact reports in database: '.$args['rowCount'],
       ];
       $url = Drupal::service('file_url_generator')->generateAbsoluteString($args['uri']);
       $form['file'] = [
         '#markup' =>  '<p><a  href='.$url.'>Right-click here</a> to download the NLs reports. </p>',
       ];
     } else {
+      $form['currentCycle'] = [
+        '#type' => 'checkbox',
+        '#title' => 'Export only the current election.',
+      ];
       $form['upload_file'] = [
         '#type' => 'submit',
         '#id' => 'export-file',
@@ -74,7 +78,9 @@ class ExportVoterContactReportsForm extends FormBase
   {
     $form_state->set('reenter', TRUE);
     $form_state->setRebuild();
-    $args = $this->exportVoterContactReports();
+    $currentCycleOnly = $form_state->getValue('currentCycle');
+    //nlp_debug_msg('$currentCycleOnly',$currentCycleOnly);
+    $args = $this->exportVoterContactReports($currentCycleOnly);
     $form_state->set('args', $args);
   }
 
@@ -93,9 +99,10 @@ class ExportVoterContactReportsForm extends FormBase
    * information. The nickname and last name of the NL is included to make the
    * export file a little easier to read.
    *
+   * @param $currentCycleOnly
    * @return array
    */
-  function exportVoterContactReports(): array
+  function exportVoterContactReports($currentCycleOnly): array
   {
     $messenger = Drupal::messenger();
     // Use the public folder for saving temp files.
@@ -103,13 +110,14 @@ class ExportVoterContactReportsForm extends FormBase
     // Use a date in the name to make the file unique., just in case two people
     // are doing an export at the same time.
     $createDate = date('Y-m-d-H-i-s',time());
+    $config = Drupal::config('nlpservices.configuration');
+    $electionConfiguration = $config->get('nlpservices-election-configuration');
+    $cycle = $electionConfiguration['nlp_election_cycle'];
+    $type = ($currentCycleOnly)?'cycle-'.$cycle:'all-cycles';
     // Open a temp file for receiving the records.
-    $fileName = self::NR_NLS_REPORTS.'-'.$createDate.'.csv';
+    $fileName = self::NR_NLS_REPORTS.'_'.$type.'_date'.'-'.$createDate.'.csv';
     $tempUri = $tempDir.'/'.$fileName;
-    //nlp_debug_msg('$tempUri',$tempUri);
     // Create a managed file for temporary use.  Drupal will delete after 6 hours.
-    //$file = file_save_data('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
-    //$file = Drupal::service('file_system')->saveData('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
     $file = Drupal::service('file.repository')->writeData('', $tempUri, FileSystemInterface::EXISTS_REPLACE);
     $file->setTemporary();
     try{
@@ -125,32 +133,37 @@ class ExportVoterContactReportsForm extends FormBase
     $columnNames = $this->reports->getColumnNames();
     $columnNames[] = 'nickname';
     $columnNames[] = 'lastName';
+    $columnNames[] = 'cd';
     $columnNames[] = 'EOR';
     // Write the header as the first record in this tab delimited file.
     $string = implode(",", $columnNames)."\n";
     fwrite($fh,$string);
     fclose($fh);
-    $rowCount = $this->reports->getReportCount();
+    
+    $countCycle = ($currentCycleOnly)?$cycle:NULL;
+    $rowCount = $this->reports->getReportCount($countCycle);
     $modulePath = Drupal::service('extension.list.module')->getPath(NLP_MODULE);
-    $args = array (
+    $args = [
       'uri' => $tempUri,
       'columnNames' => $columnNames,
       'rowCount' => $rowCount,
-    );
-    $batch = array(
-      'operations' => array(
-        array('exportVoterContactReportsBatch', array($args))
-      ),
+      'singleCycle' => $currentCycleOnly,
+      'cycle' => $cycle,
+    ];
+    $batch = [
+      'operations' => [
+        ['exportVoterContactReportsBatch', array($args)]
+      ],
       'file' => $modulePath.'/src/Form/ExportVoterContactReportsBatch.php',
       'finished' => 'exportVoterContactReportsBatchFinished',
-      'title' => t('Processing export reports.'),
-      'init_message' => t('Reports export is starting.'),
-      'progress_message' => t('Processed @percentage % of reports database.'),
-      'error_message' => t('Export reports has encountered an error.'),
-    );
+      'title' => 'Processing export reports.',
+      'init_message' => 'Reports export is starting.',
+      'progress_message' => 'Processed @percentage % of reports database.',
+      'error_message' => 'Export reports has encountered an error.',
+    ];
     //nlp_debug_msg('$batch',$batch);
     batch_set($batch);
-    $messenger->addStatus('Batch started');
+    //$messenger->addStatus('Batch started');
     return $args;
   }
 }

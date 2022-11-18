@@ -388,13 +388,15 @@ class NlpVoters {
     return TRUE;
   }
   
-  public function fetchVoterAddress($vanid,$turfIndex): array
+  public function fetchVoterAddress($vanid,$turfIndex=NULL): array
   {
     try {
       $query = $this->connection->select(self::VOTER_ADDRESS_TBL, 'a');
       $query->fields('a');
+      if(!empty($turfIndex)) {
+        $query->condition('turfIndex',$turfIndex);
+      }
       $query->condition('vanid',$vanid);
-      $query->condition('turfIndex',$turfIndex);
       $result = $query->execute();
     }
     catch (Exception $e) {
@@ -454,7 +456,7 @@ class NlpVoters {
     }
   }
   
-  public function getVoterById($vanid,$turfIndex): array
+  public function getVoterById($vanid,$turfIndex=NULL): array
   {
     try {
       $query = $this->connection->select(self::VOTER_TBL, 'v');
@@ -470,6 +472,11 @@ class NlpVoters {
     if(empty($voter)) {return [];}  // voter not known.
     $voter['address'] = $this->fetchVoterAddress($vanid,$turfIndex);
     return $voter;
+  }
+  
+  public function getVoterCd($vanid) {
+    $address = $this->fetchVoterAddress($vanid,NULL);
+    return $address['cd'];
   }
 
   public function getVoted($county): int

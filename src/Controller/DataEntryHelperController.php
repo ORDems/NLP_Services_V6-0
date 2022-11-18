@@ -47,8 +47,9 @@ class DataEntryHelperController extends ControllerBase
 
   public function about(): array
   {
+    Drupal::service("page_cache_kill_switch")->trigger();
     return  [
-      '#markup' => 'NLP Services Version 6.0',
+      '#markup' => '<p style="font-size: large;">NLP Services Version 6.1</p>',
     ];
   }
   
@@ -65,11 +66,8 @@ class DataEntryHelperController extends ControllerBase
 
   public function printable_calling_page($turfIndex): array
   {
-    //nlp_debug_msg('$turfIndex',$turfIndex);
     $voters = $this->dataEntryPrint->getVoters($turfIndex);
-    //nlp_debug_msg('$voters',$voters);
     $page = $this->dataEntryPrint->buildCallList($voters);
-    //nlp_debug_msg('$page',$page);
     Drupal::service("page_cache_kill_switch")->trigger();
     $output = [
       '#markup' => $page,

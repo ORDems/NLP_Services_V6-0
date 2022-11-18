@@ -16,6 +16,8 @@ function exportVoterContactReportsBatch($arg,&$context)
   // Retrieve the values determined when we validated the form submittal
   $reportsUri = $arg['uri'];
   $rowCount = $arg['rowCount'];
+  $singleCycle = $arg['singleCycle'];
+  $cycle = $arg['cycle'];
 
   // Open the input file and position for writing at the end.
   $fh = fopen($reportsUri, "a");
@@ -33,8 +35,11 @@ function exportVoterContactReportsBatch($arg,&$context)
   }
   $nlsObj = Drupal::getContainer()->get('nlpservices.nls');
   $reportsObj = Drupal::getContainer()->get('nlpservices.reports');
-
-  $result = $reportsObj->selectAllReports($nextRecord);
+  $voterObj = Drupal::getContainer()->get('nlpservices.voters');
+  
+  $selectedCycle = ($singleCycle)?$cycle:NULL;
+  //nlp_debug_msg('$selectedCycle',$selectedCycle);
+  $result = $reportsObj->selectAllReports($nextRecord,$selectedCycle);
   // Get the records one at a time.
   $recordCount = 0;
   do {
@@ -50,6 +55,11 @@ function exportVoterContactReportsBatch($arg,&$context)
     if(!empty($nl['lastName'])) {
       $record['nickname'] = html_entity_decode($nl['nickname']);
       $record['lastName'] = html_entity_decode($nl['lastName']);
+    }
+    $record['cd'] = '';
+    if($singleCycle) {
+      $vanid = $rawRecord['vanid'];
+      $record['cd'] = $voterObj->getVoterCd($vanid);
     }
     $record['EOR'] = "EOR";
     fputcsv($fh, $record);

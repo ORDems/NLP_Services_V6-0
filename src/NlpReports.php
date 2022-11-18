@@ -792,10 +792,13 @@ class NlpReports {
     return $colNames;
   }
   
-  public function getReportCount(): int
+  public function getReportCount($cycle=NULL): int
   {
     try {
       $query = $this->connection->select(self::NLP_RESULTS_TBL, 'r');
+      if(!empty($cycle)) {
+        $query->condition('cycle',$cycle);
+      }
       $numRows = $query->countQuery()->execute()->fetchField();
     }
     catch (Exception $e) {
@@ -805,11 +808,14 @@ class NlpReports {
     return $numRows;
   }
   
-  public function selectAllReports ($nextRecord): ?Database\StatementInterface
+  public function selectAllReports ($nextRecord,$cycle): ?Database\StatementInterface
   {
     try {
       $query = $this->connection->select(self::NLP_RESULTS_TBL, 'r');
       $query->fields('r');
+      if(!empty($cycle)) {
+        $query->condition('cycle',$cycle);
+      }
       $query->range($nextRecord, self::BATCH_LIMIT);
       $result = $query->execute();
     }
