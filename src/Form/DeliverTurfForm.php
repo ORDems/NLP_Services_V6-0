@@ -108,7 +108,11 @@ class DeliverTurfForm extends FormBase
       $form_state->set('selectedPrecinct', 0);
       $factory = Drupal::service('tempstore.private');
       $store = $factory->get('nlpservices.session_data');
-      $county = $store->get('County');
+      //$county = $store->get('County');
+      
+      $sessionObj = Drupal::getContainer()->get('nlpservices.session_data');
+      $county = $sessionObj->getCounty();
+      
       $form_state->set('county', $county);
       $config = Drupal::config('nlpservices.configuration');
       $electionDates = $config->get('nlpservices-election-configuration');
@@ -120,6 +124,9 @@ class DeliverTurfForm extends FormBase
 
     }
     $county = $form_state->get('county');
+    $form['county-name'] = [
+        '#markup' => "<h1>".$county." County</h1>",
+    ];
     $selectedHd = $form_state->get('selectedHd');
     //nlp_debug_msg('$selectedHd',$selectedHd);
     $selectedPrecinct = $form_state->get('selectedPrecinct');
